@@ -670,7 +670,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
   cvs.addEventListener('pointerup', e => {
     if (!pd || Math.hypot(e.clientX - pd[0], e.clientY - pd[1]) > 6) return; const r = cvs.getBoundingClientRect(); let best = null, bd = 22;
     for (const a of AG) { if (!a.vis) continue; pv.set(a.x, a.y + 0.5, a.z).project(T3.camera); if (pv.z > 1) continue; const sx = (pv.x + 1) / 2 * r.width + r.left, sy = (1 - pv.y) / 2 * r.height + r.top, d = Math.hypot(sx - e.clientX, sy - e.clientY); if (d < bd) { bd = d; best = a; } }
-    if (best) { seleccionar(best, false); abrirRed(best.e); } // clic en un animal: su ficha y la ventana con la red de su especie
+    if (best && !T3.seguidor) { seleccionar(best, false); abrirRed(best.e); } // clic en un animal: su ficha y la ventana con la red de su especie (con data3d/seguir.js, el clic lo sigue)
   });
 
   /* ---------- ventana con la red de una especie (red ego: la especie al centro y sus relaciones alrededor) ---------- */

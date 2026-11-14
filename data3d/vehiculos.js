@@ -346,7 +346,7 @@ export function crearVehiculos({ T3, cuantos, movil, maxDist = Infinity }) {
   blob.count = 0; blob.frustumCulled = false; blob.renderOrder = -3; blob.instanceMatrix.setUsage(THREE.DynamicDrawUsage); grupo.add(blob);
 
   const d = new THREE.Object3D(), ds = new THREE.Object3D(), col = new THREE.Color(), cam = new THREE.Vector3();
-  let nb = 0, CERCA = movil ? 90 : 230;
+  let nb = 0, CERCA = movil ? 90 : 230, tAhora = 0;
   const elegir = (a, tipo) => {
     const def = TIPOS[tipo], r = Math.random(); let acc = 0, v = def.v[def.v.length - 1][0];
     for (const [n, p] of def.v) { acc += p; if (r < acc) { v = n; break; } }
@@ -358,9 +358,11 @@ export function crearVehiculos({ T3, cuantos, movil, maxDist = Infinity }) {
     grupo,
     // desplazamiento lateral hacia la derecha del sentido de marcha (en Colombia se maneja por la derecha)
     carril(a, tipo) { if (a._vv === undefined) elegir(a, tipo); return (tipo === 'camion' ? 2.0 : tipo === 'carro' ? 1.8 : tipo === 'moto' ? 1.4 : 2.7) + a._vl; },
-    inicio() { for (const k in V) { V[k].nc = 0; V[k].nl = 0; } nb = 0; T3.camera.getWorldPosition(cam); },
+    vistos: [], // vehículos puestos en este cuadro (para seguirlos: data3d/seguir.js)
+    inicio() { for (const k in V) { V[k].nc = 0; V[k].nl = 0; } nb = 0; T3.camera.getWorldPosition(cam); api.vistos.length = 0; tAhora = performance.now(); },
     poner(a, tipo, x, y, z, rumbo) {
       if (a._vv === undefined) elegir(a, tipo);
+      a._x = x; a._y = y; a._z = z; a._r = rumbo; a._tp = tipo; a._ts = tAhora; api.vistos.push(a);
       const o = V[a._vv]; if (!o) return;
       d.position.set(x, y, z); d.rotation.set(0, rumbo, 0); d.updateMatrix();
       const dist = Math.hypot(x - cam.x, z - cam.z, y - cam.y), cerca = dist < CERCA && o.nc < o.capC;

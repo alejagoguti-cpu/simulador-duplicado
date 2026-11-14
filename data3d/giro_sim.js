@@ -485,10 +485,11 @@ export async function iniciarSimulacion(cfg = {}) {
     }
     // ---- vehículos realistas: reemplazan las cajas de carros, motos, camiones y bicis (las cajas siguen guardando la posición para las luces de noche) ----
     try {
-      const mv = await import('./vehiculos.js?v=2');
+      const mv = await import('./vehiculos.js?v=3');
       VEH = mv.crearVehiculos({ T3, cuantos, movil: !!T3.movil });
       VEH.tipos = { carro: 1, moto: 1, camion: 1, bici: 1 };
       for (const k of Object.keys(VEH.tipos)) if (MALLAS[k]) MALLAS[k].visible = false;
+      T3.vehGiro = VEH; // para seguir un vehículo (data3d/seguir.js)
     } catch (e) { console.warn('vehículos realistas:', e); VEH = null; }
     // ---- luces de los vehículos de noche (T3.noche: 0 de día, 1 de noche; la pone data3d/cielo.js): faros, luces traseras y haz en el piso ----
     const LUZ = {}; // tipo -> [faros, traseras, haz] (mismas matrices que la caja; el frente es +z)
@@ -509,6 +510,7 @@ export async function iniciarSimulacion(cfg = {}) {
       LUZ._haz = mHaz;
     }
     const d = new THREE.Object3D(), n = {};
+    T3.giroSim = { A, ACT, OX, OZ, Y0, MALLAS }; // personas y vehículos de la simulación, para seguirlos (data3d/seguir.js)
     actualizar3D = () => {
       const activos = {}; for (const k in n) n[k] = 0;
       if (VEH) VEH.inicio();

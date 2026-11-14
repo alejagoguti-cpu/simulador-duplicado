@@ -829,6 +829,7 @@ function flight(ms) {
       if (Math.abs(fm - (T3._movF || 0)) > 0.01) T3._movT = ahora; T3._movF = fm;
       if (T3.ao) { const mov = KEN && ahora - (T3._movT || 0) < 300; T3.ao.enabled = !mov; if (T3.rpLiviano) T3.rpLiviano.enabled = mov; }
     }
+    if (T3.seguidor) T3.seguidor.update(dt); // seguir un agente (data3d/seguir.js): la cámara lo acompaña
     if (!compilandoGPU(cam)) if (!(SIM && SIM.render(cam))) { if (T3.composer) T3.composer.render(); else T3.renderer.render(T3.scene, cam); } // con un sensor (CRT, NVG, FLIR) dibuja el simulador; si no, render con oclusión ambiental
     requestAnimationFrame(flight); return;
   }
@@ -2461,7 +2462,7 @@ async function buildTraffic(THREE) {
   T3.scene.add(bodies, cabins, wheels);
   if (KEN) { // Kennedy: la simulación SUMO se dibuja con los vehículos realistas (data3d/vehiculos.js): carros, taxis, camionetas, motos y camiones
     try {
-      const mv = await import('./data3d/vehiculos.js?v=2');
+      const mv = await import('./data3d/vehiculos.js?v=3');
       T3.vehSUMO = mv.crearVehiculos({ T3, movil: LIVIANO, maxDist: LIVIANO ? 1200 : 3200, cuantos: { carro: maxi * 3, moto: Math.ceil(maxi * 3 * 0.32), camion: Math.ceil(maxi * 3 * 0.14) } /* hasta 3 copias de la grabación en hora pico */ });
       T3.sumoActivo = true; // la simulación del giro deja de dibujar sus carros, motos y camiones (sigue contando para los indicadores)
     } catch (e) { console.warn('vehículos SUMO:', e); T3.vehSUMO = null; }
@@ -3580,7 +3581,7 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
   listoK().then(() => import('./data3d/canchas.js?v=2')).then(m => m.iniciarCanchas({ THREE: T3.THREE, T3, OX: 2095.67, OZ: -109.06, Y0: 0, movil: MOVIL })).catch(e => console.warn('canchas:', e));
   const FAUNA_RED = ['tingua', 'garza', 'pato', 'monjita', 'copeton', 'mirla', 'colibri']; // las mueve la red biótica
   let EST = null; // estrategias de la propuesta (data3d/estrategias.js): reemplazan las convenciones P1-P4
-  Promise.all([import('./data3d/giro_sim.js?v=26'), import('./data3d/estrategias.js?v=15'), listoK()])
+  Promise.all([import('./data3d/giro_sim.js?v=27'), import('./data3d/estrategias.js?v=15'), listoK()])
     .then(async ([m, me]) => {
       /* rendimiento: estrategias, plan de Bavaria y plan de Corabastos se arman a la vez (antes uno tras otro) */
       let PLAN = null, CPLAN = null; // E1 Bavaria Común (data3d/bavaria_plan.js) · E3 Corabastos reducido (data3d/corabastos_plan.js)
@@ -3648,8 +3649,8 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
       }
       return import('./data3d/cielo.js?v=8');
     }).then(m => { T3.cielo = m.iniciarCielo({ THREE: T3.THREE, T3, luzMalla }); }) // cielo y luz de 24 horas con el reloj de la simulación
-    .then(() => import('./data3d/biotica.js?v=14')).then(m => m.iniciarBiotica({ THREE: T3.THREE, T3, lw, OX: 2095.67, OZ: -109.06, Y0: 2.0, movil: MOVIL, huertas: EST ? EST.sitios() : null }))
-    .then(bio => { T3.bio = bio; import('./data3d/tablero.js?v=5').then(m => { T3.tablero = m.iniciarTablero({ T3, bio }); }).catch(e => console.warn('tablero:', e)); }) // tablero en vivo de las relaciones bióticas
+    .then(() => import('./data3d/biotica.js?v=15')).then(m => m.iniciarBiotica({ THREE: T3.THREE, T3, lw, OX: 2095.67, OZ: -109.06, Y0: 2.0, movil: MOVIL, huertas: EST ? EST.sitios() : null }))
+    .then(bio => { T3.bio = bio; import('./data3d/tablero.js?v=5').then(m => { T3.tablero = m.iniciarTablero({ T3, bio }); }).catch(e => console.warn('tablero:', e)); import('./data3d/seguir.js?v=1').then(m => m.iniciarSeguir({ THREE: T3.THREE, T3, say })).catch(e => console.warn('seguir:', e)); }) // tablero en vivo de las relaciones bióticas
     .then(() => import('./data3d/actores.js?v=7')).then(m => m.iniciarActores({ THREE: T3.THREE, T3, lw, OX: 2095.67, OZ: -109.06, Y0: 2.0 })).then(a => { T3.actores = a; }) // capa de redes de actores (9 estrategias del Excel)
     .catch(e => console.warn('simulación Kennedy:', e));
 } else import('./data3d/simulador.js?v=6').then(m => {
