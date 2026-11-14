@@ -438,7 +438,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
   let iEnc = 0, tIdx = 0;
   function actualizarRed(dt) {
     if ((tIdx -= dt) <= 0) { tIdx = 0.4; indexar(); }
-    const n = Math.max(1, Math.ceil(AG.length / 40)); // cada agente rehace sus conexiones ~1,5 veces por segundo
+    const n = Math.max(1, Math.ceil(AG.length * Math.min(dt, 0.1) * 1.5)); // cada agente rehace sus conexiones ~1,5 veces por segundo, sin importar los cuadros por segundo (antes: por cuadro, y con el 3D pesado había menos conexiones)
     for (let k = 0; k < n; k++) {
       const a = AG[iEnc++ % AG.length], claves = [];
       for (const v of conexiones(a)) {
@@ -794,7 +794,9 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
   function cuadro() {
     const ahora = performance.now(), dt = Math.min(0.1, (ahora - ult) / 1000); ult = ahora;
     if ((tAC -= dt) <= 0) { tAC = 1; actualizarAC(); }
-    for (const a of AG) { if (a.huye && (a.huye.t -= dt) <= 0) a.huye = null; MOV[ESP[a.e].mov](a, dt); }
+    for (const a of AG) { // escenario "hoy" (ESTADO.escenario, lo cambia el tablero): las huertas del proyecto no existen y su fauna tampoco
+      if (a.h.tipo === 'huerta') { if (ESTADO.escenario === 'hoy') { if (!a._fuera) { a._fuera = true; a.vis = false; a.duerme = true; } continue; } if (a._fuera) { a._fuera = false; a.vis = a.e !== 'abeja'; a.duerme = false; } }
+      if (a.huye && (a.huye.t -= dt) <= 0) a.huye = null; MOV[ESP[a.e].mov](a, dt); }
     actualizarRed(dt); instancias(dt); if ((nCuadro = (nCuadro + 1) % 2) === 0) dibujarRed(ahora / 1000); // líneas y marcas cada dos cuadros: alivia la subida a la tarjeta gráfica
     if ((tUI -= dt) <= 0) { tUI = 0.5; TIPOS.forEach(t => { const el = document.getElementById('bt-c-' + t.id); if (el) el.textContent = CUENTA[t.id]; }); if (ESTADO.sel) pintarFicha(); }
     if (ESTADO.sel && (tPot -= dt) <= 0) { tPot = 1.5; ESTADO.pot = redPotencial(ESTADO.sel); }
