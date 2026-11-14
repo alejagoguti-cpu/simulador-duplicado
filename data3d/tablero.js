@@ -59,6 +59,33 @@ body.tb-abierto #dock{display:none}
 #tb .ind .dif i{position:absolute;top:0;bottom:0;border-radius:3px}
 #tb .ley2{display:flex;gap:14px;margin:2px 0 8px;font-size:11px;color:var(--ui-tx2,#9aa2a7)}#tb .ley2 span{display:flex;align-items:center;gap:6px}#tb .ley2 i{width:10px;height:10px;border-radius:3px}
 #tb .nota2{margin-top:10px;font-size:10.5px;line-height:1.5;color:var(--ui-tx3,#646c71)}
+#tb .tour{width:100%;height:34px;margin-top:12px;border:1px solid rgba(226,165,91,.42);border-radius:8px;background:rgba(226,165,91,.13);color:#f2c995;font:500 12px var(--ui-sans,sans-serif);cursor:pointer}
+#tb .tour:hover{background:rgba(226,165,91,.2)}
+#tb .kp2{display:grid;grid-template-columns:repeat(3,1fr);margin:6px 0 12px}
+#tb .kp2 div{padding:0 10px;border-left:1px solid var(--ui-bd,rgba(255,255,255,.075))}#tb .kp2 div:first-child{padding-left:0;border-left:0}
+#tb .kp2 b{display:block;font:400 20px/1.1 var(--ui-sans,sans-serif)}#tb .kp2 small{display:block;margin-top:3px;font-size:10.5px;line-height:1.3;color:var(--ui-tx3,#646c71)}
+#tb .calles{display:grid;gap:6px}
+#tb .calle{display:grid;grid-template-columns:minmax(0,1fr) 120px 92px;gap:8px;align-items:center;font-size:11.5px}
+#tb .calle .n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#tb .calle .b{position:relative;height:6px}#tb .calle .b::before{content:'';position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:rgba(255,255,255,.18)}
+#tb .calle .b i{position:absolute;top:0;bottom:0;border-radius:3px}
+#tb .calle .v{text-align:right;color:var(--ui-tx2,#9aa2a7);font-size:11px}#tb .calle .v b{font-weight:500}
+#tb .fila2{display:flex;gap:4px;margin-top:12px}
+#tb .fila2 button{flex:1;height:30px;border:1px solid var(--ui-bd,rgba(255,255,255,.075));border-radius:7px;background:rgba(255,255,255,.035);color:var(--ui-tx2,#9aa2a7);font:500 11px var(--ui-sans,sans-serif);cursor:pointer}
+#tb .fila2 button.on{background:rgba(226,165,91,.13);color:#f2c995;border-color:rgba(226,165,91,.42)}
+#tp{position:fixed;z-index:27;left:290px;bottom:84px;width:min(400px,calc(100vw - 24px));display:none;padding:14px 16px 12px;font:400 12px var(--ui-sans,'Inter',system-ui,sans-serif);color:var(--ui-tx,#e9ebec);
+  background:var(--ui-bg,rgba(13,15,18,.86));border:1px solid var(--ui-bd,rgba(255,255,255,.075));border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.3);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px)}
+#tp.on{display:block}
+#tp .paso{font:500 9.5px var(--ui-mono,monospace);letter-spacing:.14em;text-transform:uppercase;color:#f2c995}
+#tp h4{margin:4px 0 10px;font:500 16px/1.25 var(--ui-sans,sans-serif)}
+#tp dl{margin:0;display:grid;grid-template-columns:72px 1fr;gap:6px 10px;font-size:12px;line-height:1.45}
+#tp dt{color:var(--ui-tx3,#646c71)}#tp dd{margin:0;color:var(--ui-tx2,#c9ced1)}#tp dd b{color:var(--ui-tx,#e9ebec);font-weight:500}
+#tp .nav{display:flex;gap:4px;margin-top:12px;align-items:center}
+#tp .nav span{flex:1;display:flex;gap:4px}#tp .nav span i{width:16px;height:3px;border-radius:2px;background:rgba(255,255,255,.12)}#tp .nav span i.on{background:#e2a55b}
+#tp .nav button{height:30px;padding:0 14px;border:1px solid var(--ui-bd,rgba(255,255,255,.075));border-radius:7px;background:rgba(255,255,255,.035);color:var(--ui-tx2,#9aa2a7);font:500 11px var(--ui-sans,sans-serif);cursor:pointer}
+#tp .nav button.pri{background:rgba(226,165,91,.13);color:#f2c995;border-color:rgba(226,165,91,.42)}
+#tp .x{position:absolute;right:8px;top:8px;width:26px;height:26px;border:0;border-radius:6px;background:none;color:var(--ui-tx2,#9aa2a7);font:300 18px/1 var(--ui-sans,sans-serif);cursor:pointer}
+@media(max-width:760px){#tp{left:12px;right:12px;width:auto;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 64px)}#tb .calle{grid-template-columns:minmax(0,1fr) 70px 84px}}
 #tb .chip{display:flex;align-items:center;gap:6px;height:24px;padding:0 9px 0 8px;border:1px solid rgba(255,255,255,.07);border-radius:12px;background:rgba(255,255,255,.03);color:var(--ui-tx2,#9aa2a7);font:400 11px var(--ui-sans,sans-serif);cursor:pointer}
 #tb .chip i{width:7px;height:7px;border-radius:50%}
 #tb .chip b{font-weight:500;color:var(--ui-tx,#e9ebec)}
@@ -94,7 +121,13 @@ body.tb-abierto #dock{display:none}
       <div class="ley2"><span><i style="background:${CHOY}"></i>Kennedy hoy</span><span><i style="background:${CPRO}"></i>Con el proyecto</span></div>
       <canvas id="tb-arana" aria-label="Gráfico de araña: indicadores de los dos escenarios"></canvas>
       <div class="cmp" id="tb-cmp"><div class="vacio">Cargando indicadores…</div></div>
-      <div class="nota2" id="tb-nota2"></div></div>
+      <div class="nota2" id="tb-nota2"></div>
+      <button class="tour" id="tb-tour">Ver cómo se implanta el proyecto, paso a paso</button></div>
+    <div class="gr"><h3>Carga: ¿alivia o desplaza?<span>camiones por hora que cambian</span></h3>
+      <div class="kp2"><div><b id="tb-kmA">–</b><small>km de calles con menos camiones</small></div><div><b id="tb-kmC">–</b><small>km de calles con más camiones</small></div><div><b id="tb-desp">–</b><small>camiones/h hacia los mercados</small></div></div>
+      <div class="calles" id="tb-calles"></div>
+      <div class="fila2"><button id="tb-vcarga" class="on">Ver en el mapa</button><button id="tb-ircarga">Ir a Corabastos y los mercados</button></div>
+      <div class="nota2" id="tb-nota3"></div></div>
     <div class="chips" id="tb-chips">${TIPOS.map(t => `<button class="chip" data-t="${t.id}" title="${esc(t.n)}: mostrar u ocultar en el territorio"><i style="background:${t.c}"></i>${CORTO[t.id] || esc(t.n)} <b id="tb-c${t.id}">0</b></button>`).join('')}</div>
     <div class="gr"><h3>Quién interactúa con quién<span>ahora</span></h3><canvas id="tb-cuerda" aria-label="Diagrama de cuerdas de las interacciones que están ocurriendo"></canvas><div class="pie" id="tb-pie1">Pasa o toca una especie para ver con quién está interactuando.</div></div>
     <div class="gr"><h3>Interacciones durante el día<span id="tb-ld">encuentros por tipo</span></h3><canvas id="tb-flujo" aria-label="Encuentros por tipo de relación durante el día"></canvas><div class="ejes"><span>0 h</span><span>6</span><span>12</span><span>18</span><span>24</span></div><div class="pie" id="tb-pie2">Arrastra sobre la gráfica para cambiar la hora de la simulación.</div></div>
@@ -131,6 +164,7 @@ body.tb-abierto #dock{display:none}
     escAct = e; ESTADO.escenario = e; T3.escenario = e; tCambio = performance.now();
     tb.querySelectorAll('#tb-esc button').forEach(b => b.classList.toggle('on', b.dataset.e === e));
     const b = document.getElementById('gs-cv-b'); if (b && b.classList.contains('on') !== (e === 'proyecto')) b.click(); // prende o apaga todas las estrategias en el 3D
+    if (CAPA) CAPA.ver(e === 'proyecto' && verCarga); // capa de carga desplazada (data3d/carga.js)
     pintarComparacion();
   }
   tb.querySelectorAll('#tb-esc button').forEach(b => b.onclick = () => ponerEscenario(b.dataset.e));
@@ -354,6 +388,66 @@ body.tb-abierto #dock{display:none}
     TIPOS.forEach(t => { const el = $('tb-c' + t.id); if (el) el.textContent = ENC[t.id]; tb.querySelector(`.chip[data-t="${t.id}"]`).classList.toggle('off', !activo(t.id)); });
     if (hoverN) textoNodo(hoverN);
   }
+
+  /* ---------- CARGA: ¿alivia o desplaza? (data3d/carga.js + carga.json) ---------- */
+  const lwM = window.REN3D && window.REN3D.lw; // marco "modelo" (x este, y norte) -> mundo
+  let CAPA = null, verCarga = true;
+  const volar = (x, z, dist) => {
+    const V = T3.THREE.Vector3, cam = T3.camera, tg = T3.orbit.target, c1 = new V(x, 0, z), dir = cam.position.clone().sub(tg); dir.y = 0; if (dir.lengthSq() < 1) dir.set(0, 0, 1); dir.normalize();
+    const p1 = c1.clone().addScaledVector(dir, dist * 0.45); p1.y = dist * 1.05; // casi en planta: se leen las calles if (T3.seguidor) T3.seguidor.soltar(); T3.anim = { t: 0, dur: 2.4, p0: cam.position.clone(), p1, c0: tg.clone(), c1 };
+  };
+  if (lwM) import('./carga.js?v=2').then(m => m.crearCapaCarga({ THREE: T3.THREE, T3, lw: lwM }).then(c => { CAPA = c; CAPA.COL = [m.COL_MAS, m.COL_MENOS]; pintarCarga(); CAPA.ver(escAct === 'proyecto' && verCarga); })).catch(e => console.warn('carga:', e));
+  function pintarCarga() {
+    if (!CAPA) return; const D = CAPA.datos, [MAS, MENOS] = CAPA.COL, f = (v, d = 1) => v.toLocaleString('es-CO', { maximumFractionDigits: d });
+    $('tb-kmA').textContent = f(D.kmAlivia); $('tb-kmC').textContent = f(D.kmCarga); $('tb-desp').textContent = f(D.desplazadosH);
+    const L = D.calles.filter(c => c.n !== 'Calle sin nombre'), mx = Math.max(...L.map(c => Math.abs(c.d)), 1);
+    $('tb-calles').innerHTML = L.map(c => { const w = Math.abs(c.d) / mx * 50; return `<div class="calle"><span class="n">${esc(c.n)}</span><span class="b"><i style="${c.d > 0 ? 'left:50%' : 'right:50%'};width:${w.toFixed(1)}%;background:${c.d > 0 ? MAS : MENOS}"></i></span><span class="v"><b style="color:${c.d > 0 ? MAS : MENOS}">${c.d > 0 ? '+' : '−'}${f(Math.abs(c.d))}</b> · ${c.ddB > 0 ? '+' : ''}${f(c.ddB)} dB</span></div>`; }).join('');
+    $('tb-nota3').innerHTML = `Modelo [SUP]: los camiones que dejan de ir a Corabastos (${f(D.retiro)} %, según el área de naves retirada) siguen desde cada costado del predio hasta ${D.mercados.length} mercados de barrio, por la ruta más corta para un camión en la red de OpenStreetMap. Flujo actual de cada calle: grabación SUMO de hora pico. Ruido: CoRTN. En el mapa: <b style="color:${MAS}">rojo</b> gana camiones, <b style="color:${MENOS}">verde azulado</b> pierde.`;
+  }
+  $('tb-vcarga').onclick = (ev) => { verCarga = !verCarga; ev.currentTarget.classList.toggle('on', verCarga); if (verCarga && escAct !== 'proyecto') ponerEscenario('proyecto'); if (CAPA) CAPA.ver(escAct === 'proyecto' && verCarga); };
+  $('tb-ircarga').onclick = () => { if (!CAPA) return; if (escAct !== 'proyecto') ponerEscenario('proyecto'); verCarga = true; $('tb-vcarga').classList.add('on'); CAPA.ver(true); volar(CAPA.centro[0], CAPA.centro[1], CAPA.radio * 2.2); };
+
+  /* ---------- RECORRIDO: cómo se implanta el proyecto (dónde, qué deciden, qué cambia en la simulación) ---------- */
+  const tp = document.createElement('div'); tp.id = 'tp'; tp.setAttribute('role', 'dialog'); tp.setAttribute('aria-label', 'Cómo se implanta el proyecto'); document.body.appendChild(tp);
+  let paso = 0, PASOS = null;
+  const cJSON = (u) => (window.cargarJSON || ((x) => fetch(x).then(r => r.json())))(u);
+  async function armarPasos() {
+    const [CO, BV, BP, E] = await Promise.all(['data3d/corabastos.json?v=3', 'data3d/bavaria.json?v=3', 'data3d/bavaria_pres.json', 'data3d/estrategias.json'].map(u => cJSON(u).catch(() => null)));
+    const centro = (P) => { const s = P.reduce((a, p) => [a[0] + p[0], a[1] + p[1]], [0, 0]); return lwM(s[0] / P.length, s[1] / P.length); };
+    const est = (id) => (E && E.estrategias.find(e => e.id === id)) || {};
+    const f = (v, d = 0) => Number(v).toLocaleString('es-CO', { maximumFractionDigits: d });
+    const A = ESC.corabastos.accesos, camH = (k) => A.reduce((s, a) => s + a[k].camH, 0), sx = ESC.sintaxis, po = ESC.polinizadores, D = CAPA && CAPA.datos;
+    const naves = CO ? CO.naves.length : 37, fuera = CO ? CO.naves.filter(n => n.dh < 120) : [], m2f = fuera.reduce((s, n) => s + n.L * n.W, 0);
+    const e8 = est('E8'), lot = (e8.capas || []).map(c => [c.n, c.lotes.length, c.techos.length]);
+    return [
+      { t: 'El problema', h: 'La carga de alimentos se concentra en Corabastos', esc: 'hoy', donde: 'Corabastos, borde con el humedal La Vaca', dec: `Hoy toda la carga llega a un solo predio de ${f(409286 / 1e4, 1)} ha.`, cambia: `En hora pico pasan <b>${f(camH('hoy'))} camiones/h</b> por las vías del borde, con un ruido de <b>${f(energiaHoy(), 1)} dB</b>.`, ir: CO ? [...centro(CO.poly), 1100] : null },
+      { t: 'Decisión 1 · E3', h: 'Corabastos reducido', esc: 'proyecto', donde: 'Las naves a menos de 120 m del humedal La Vaca', dec: `Se retiran <b>${fuera.length} de ${naves} naves</b> (${f(m2f)} m², ${f(ESC.corabastos.retiroNaves, 1)} % del área de naves) y esa franja se restaura hacia La Vaca. Las naves que quedan pasan a patio de transferencia, frío, orgánicos, banco de alimentos y mercado.`, cambia: `Camiones en el borde: <b>${f(camH('hoy'))} → ${f(camH('proyecto'))}/h</b>. Ruido: <b>${f(energiaHoy(), 1)} → ${f(energiaPro(), 1)} dB</b>.`, ir: CO ? [...centro(CO.poly), 900] : null },
+      D && { t: 'Decisión 2', h: 'Mercados de barrio', esc: 'proyecto', donde: D.mercados.map(m => m.calle).filter(Boolean).slice(0, 4).join(', ') + '…', dec: `La carga que deja Corabastos va a <b>${D.mercados.length} mercados de barrio</b> en tiendas que ya existen, repartidos por Kennedy.`, cambia: `Llegan <b>${f(D.desplazadosH, 1)} camiones/h</b> a los mercados: alivian <b>${f(D.kmAlivia, 1)} km</b> del borde de Corabastos, pero cargan <b>${f(D.kmCarga, 1)} km</b> de calles de barrio (rojo en el mapa). Es el punto a resolver: rutas y horarios de carga.`, ir: CAPA ? [CAPA.centro[0], CAPA.centro[1], CAPA.radio * 2.2] : null, carga: true },
+      { t: 'Decisión 3 · E1', h: 'Bavaria Común', esc: 'proyecto', donde: `Predio de la antigua fábrica de Bavaria (${f(BP ? BP.area_ha : 71.2, 1)} ha)`, dec: `Se conserva el bosque (<b>${f(BP && BP.suelo ? BP.suelo.bosque_ha || 22.17 : 22.17, 1)} ha</b>), se abren <b>${f(sx.pasajes_m / 1000, 1)} km de pasajes</b> públicos y el predio produce alimento: ${BP ? f(BP.bancales.length) : '1.187'} bancales y ${BP ? f(BP.techos.length) : 159} techos productivos.`, cambia: `Integración local (R800) alrededor del predio: <b>${f(sx.antes.nain8, 3)} → ${f(sx.despues.nain8, 3)}</b>; profundidad media <b>${f(sx.antes.prof, 2)} → ${f(sx.despues.prof, 2)}</b>.`, ir: BV ? [...centro(BV.sitio), 1300] : null },
+      { t: 'Decisión 4 · E8', h: 'Red distribuida de huertas', esc: 'proyecto', donde: lot.map(l => `${l[0].replace('Huertas en ', '')}: ${f(l[1])} lotes${l[2] ? ', ' + f(l[2]) + ' techos' : ''}`).join(' · '), dec: 'Huertas en lotes baldíos y en las cubiertas de las viviendas, con abejas, aves y lombrices.', cambia: `Kennedy a menos de ${po.radio} m de un hábitat de polinizadores: <b>${f(po.hoy, 1)} % → ${f(po.proyecto, 1)} %</b>. En la red biótica aparecen la fauna y las interacciones de las huertas.`, ir: e8.centro ? [...lwM(e8.centro[0], e8.centro[1]), 2600] : null },
+      { t: 'Decisión 5 · E5', h: 'Corredor biótico de humedales', esc: 'proyecto', donde: 'Humedales El Burro, La Vaca y Techo', dec: `Los tres humedales (${f((est('E5').area || 256351) / 1e4, 1)} ha) se conectan con las huertas y Bavaria como corredor para la fauna.`, cambia: 'Interacciones bióticas medidas en vivo en los dos escenarios a la misma hora (tablero, «Hoy vs. proyecto»).', ir: [2095.67, -109.06, 900] },
+      { t: 'Otras decisiones', h: 'Tiendas, plazas, vivienda y cuidado', esc: 'proyecto', donde: 'Toda la localidad', dec: `E2 ${f(est('E2').n_lotes || 460)} tiendas de barrio · E4 distrito de orgánicos y hongos · E6 ${f(est('E6').n_lotes || 379)} lugares de vivienda y actividad · E7 plazas y conjuntos · E9 ${f(est('E9').n_lotes || 79)} manzanas del cuidado.`, cambia: 'Se ven en el 3D con sus conexiones; todavía no tienen un indicador propio en el tablero.', ir: null }
+    ].filter(Boolean);
+  }
+  const energiaHoy = () => energia(ESC.corabastos.accesos.map(a => a.hoy)), energiaPro = () => energia(ESC.corabastos.accesos.map(a => a.proyecto));
+  function mostrarPaso() {
+    const P = PASOS[paso]; if (!P) return;
+    if (P.esc !== escAct) ponerEscenario(P.esc);
+    if (CAPA) CAPA.ver(P.esc === 'proyecto' && (P.carga || verCarga));
+    if (P.ir) volar(P.ir[0], P.ir[1], P.ir[2]);
+    tp.innerHTML = `<button class="x" aria-label="Cerrar">×</button><div class="paso">${esc(P.t)} · ${paso + 1} de ${PASOS.length}</div><h4>${esc(P.h)}</h4>
+      <dl><dt>Dónde</dt><dd>${esc(P.donde)}</dd><dt>Qué deciden</dt><dd>${P.dec}</dd><dt>Qué cambia</dt><dd>${P.cambia}</dd></dl>
+      <div class="nav"><span>${PASOS.map((_, i) => `<i class="${i === paso ? 'on' : ''}"></i>`).join('')}</span><button id="tp-a" ${paso ? '' : 'disabled'}>Anterior</button><button id="tp-s" class="pri">${paso < PASOS.length - 1 ? 'Siguiente' : 'Terminar'}</button></div>`;
+    tp.querySelector('.x').onclick = () => tp.classList.remove('on');
+    tp.querySelector('#tp-a').onclick = () => { if (paso > 0) { paso--; mostrarPaso(); } };
+    tp.querySelector('#tp-s').onclick = () => { if (paso < PASOS.length - 1) { paso++; mostrarPaso(); } else tp.classList.remove('on'); };
+  }
+  $('tb-tour').onclick = async () => {
+    if (!ESC) return; PASOS = await armarPasos(); paso = 0; tp.classList.add('on');
+    if (innerWidth <= 760) abrir(false); // en celular el recorrido ocupa la parte de abajo
+    mostrarPaso();
+  };
+  addEventListener('keydown', (e) => { if (!tp.classList.contains('on')) return; if (e.key === 'ArrowRight') tp.querySelector('#tp-s')?.click(); if (e.key === 'ArrowLeft') tp.querySelector('#tp-a')?.click(); if (e.key === 'Escape') tp.classList.remove('on'); });
 
   let raf = 0, tPrev = performance.now(), tFlujo = 0;
   function cuadro() {
