@@ -73,6 +73,10 @@ body.tb-abierto #dock{display:none}
 #tb .fila2{display:flex;gap:4px;margin-top:12px}
 #tb .fila2 button{flex:1;height:30px;border:1px solid var(--ui-bd,rgba(255,255,255,.075));border-radius:7px;background:rgba(255,255,255,.035);color:var(--ui-tx2,#9aa2a7);font:500 11px var(--ui-sans,sans-serif);cursor:pointer}
 #tb .fila2 button.on{background:rgba(226,165,91,.13);color:#f2c995;border-color:rgba(226,165,91,.42)}
+#tb .sx2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+#tb .sx2 h5{margin:0 0 6px;font:500 11px var(--ui-sans,sans-serif);color:var(--ui-tx2,#9aa2a7)}
+#tb .sx2 button{display:flex;justify-content:space-between;gap:6px;width:100%;padding:4px 0;border:0;border-top:1px solid rgba(255,255,255,.05);background:none;color:var(--ui-tx,#e9ebec);font:400 11.5px var(--ui-sans,sans-serif);text-align:left;cursor:pointer}
+#tb .sx2 button:hover{color:#f2c995}#tb .sx2 button small{color:var(--ui-tx3,#646c71);white-space:nowrap}
 #tp{position:fixed;z-index:27;left:290px;bottom:84px;width:min(400px,calc(100vw - 24px));display:none;padding:14px 16px 12px;font:400 12px var(--ui-sans,'Inter',system-ui,sans-serif);color:var(--ui-tx,#e9ebec);
   background:var(--ui-bg,rgba(13,15,18,.86));border:1px solid var(--ui-bd,rgba(255,255,255,.075));border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.3);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px)}
 #tp.on{display:block}
@@ -128,6 +132,12 @@ body.tb-abierto #dock{display:none}
       <div class="calles" id="tb-calles"></div>
       <div class="fila2"><button id="tb-vcarga" class="on">Ver en el mapa</button><button id="tb-ircarga">Ir a Corabastos y los mercados</button></div>
       <div class="nota2" id="tb-nota3"></div></div>
+    <div class="gr"><h3>Carros y sintaxis espacial<span id="tb-rho">¿la forma de la red explica el tráfico?</span></h3>
+      <canvas id="tb-sx" aria-label="Flujo de carros de cada calle según su elección angular"></canvas>
+      <div class="ejes"><span>elección baja</span><span>elección (sintaxis espacial, percentil)</span><span>alta</span></div>
+      <div class="sx2"><div><h5>Más carros de lo que la red explica</h5><div id="tb-sxM"></div></div><div><h5>Menos carros de lo que la red explica</h5><div id="tb-sxm"></div></div></div>
+      <div class="fila2"><button id="tb-sxver">Ver la elección en el mapa</button></div>
+      <div class="nota2" id="tb-nota4"></div></div>
     <div class="chips" id="tb-chips">${TIPOS.map(t => `<button class="chip" data-t="${t.id}" title="${esc(t.n)}: mostrar u ocultar en el territorio"><i style="background:${t.c}"></i>${CORTO[t.id] || esc(t.n)} <b id="tb-c${t.id}">0</b></button>`).join('')}</div>
     <div class="gr"><h3>Quién interactúa con quién<span>ahora</span></h3><canvas id="tb-cuerda" aria-label="Diagrama de cuerdas de las interacciones que están ocurriendo"></canvas><div class="pie" id="tb-pie1">Pasa o toca una especie para ver con quién está interactuando.</div></div>
     <div class="gr"><h3>Interacciones durante el día<span id="tb-ld">encuentros por tipo</span></h3><canvas id="tb-flujo" aria-label="Encuentros por tipo de relación durante el día"></canvas><div class="ejes"><span>0 h</span><span>6</span><span>12</span><span>18</span><span>24</span></div><div class="pie" id="tb-pie2">Arrastra sobre la gráfica para cambiar la hora de la simulación.</div></div>
@@ -142,7 +152,7 @@ body.tb-abierto #dock{display:none}
   btn.innerHTML = '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="m7 15 4-5 3 3 5-7"/></svg>Tablero';
   if (hud) { if (pj && pj.parentElement === hud) hud.insertBefore(btn, pj); else hud.appendChild(btn); } else { btn.style.cssText = 'position:fixed;z-index:12;right:14px;bottom:20px'; document.body.appendChild(btn); }
   const abierto = () => document.body.classList.contains('tb-abierto');
-  const abrir = (on) => { document.body.classList.toggle('tb-abierto', on); btn.classList.toggle('on', on); if (on) { pintarTexto(); cancelAnimationFrame(raf); tPrev = performance.now(); raf = requestAnimationFrame(cuadro); } };
+  const abrir = (on) => { document.body.classList.toggle('tb-abierto', on); btn.classList.toggle('on', on); if (on) { pintarTexto(); setTimeout(dibujarSintaxis, 60); cancelAnimationFrame(raf); tPrev = performance.now(); raf = requestAnimationFrame(cuadro); } };
   btn.onclick = () => abrir(!abierto());
   tb.querySelector('.x').onclick = () => abrir(false);
   tb.querySelectorAll('.chip').forEach(b => b.onclick = () => {
@@ -396,7 +406,7 @@ body.tb-abierto #dock{display:none}
     const V = T3.THREE.Vector3, cam = T3.camera, tg = T3.orbit.target, c1 = new V(x, 0, z), dir = cam.position.clone().sub(tg); dir.y = 0; if (dir.lengthSq() < 1) dir.set(0, 0, 1); dir.normalize();
     const p1 = c1.clone().addScaledVector(dir, dist * 0.45); p1.y = dist * 1.05; // casi en planta: se leen las calles if (T3.seguidor) T3.seguidor.soltar(); T3.anim = { t: 0, dur: 2.4, p0: cam.position.clone(), p1, c0: tg.clone(), c1 };
   };
-  if (lwM) import('./carga.js?v=2').then(m => m.crearCapaCarga({ THREE: T3.THREE, T3, lw: lwM }).then(c => { CAPA = c; CAPA.COL = [m.COL_MAS, m.COL_MENOS]; pintarCarga(); CAPA.ver(escAct === 'proyecto' && verCarga); })).catch(e => console.warn('carga:', e));
+  if (lwM) import('./carga.js?v=3').then(m => m.crearCapaCarga({ THREE: T3.THREE, T3, lw: lwM }).then(c => { CAPA = c; CAPA.COL = [m.COL_MAS, m.COL_MENOS]; pintarCarga(); pintarSintaxis(); CAPA.ver(escAct === 'proyecto' && verCarga); })).catch(e => console.warn('carga:', e));
   function pintarCarga() {
     if (!CAPA) return; const D = CAPA.datos, [MAS, MENOS] = CAPA.COL, f = (v, d = 1) => v.toLocaleString('es-CO', { maximumFractionDigits: d });
     $('tb-kmA').textContent = f(D.kmAlivia); $('tb-kmC').textContent = f(D.kmCarga); $('tb-desp').textContent = f(D.desplazadosH);
@@ -404,6 +414,31 @@ body.tb-abierto #dock{display:none}
     $('tb-calles').innerHTML = L.map(c => { const w = Math.abs(c.d) / mx * 50; return `<div class="calle"><span class="n">${esc(c.n)}</span><span class="b"><i style="${c.d > 0 ? 'left:50%' : 'right:50%'};width:${w.toFixed(1)}%;background:${c.d > 0 ? MAS : MENOS}"></i></span><span class="v"><b style="color:${c.d > 0 ? MAS : MENOS}">${c.d > 0 ? '+' : '−'}${f(Math.abs(c.d))}</b> · ${c.ddB > 0 ? '+' : ''}${f(c.ddB)} dB</span></div>`; }).join('');
     $('tb-nota3').innerHTML = `Modelo [SUP]: los camiones que dejan de ir a Corabastos (${f(D.retiro)} %, según el área de naves retirada) siguen desde cada costado del predio hasta ${D.mercados.length} mercados de barrio, por la ruta más corta para un camión en la red de OpenStreetMap. Flujo actual de cada calle: grabación SUMO de hora pico. Ruido: CoRTN. En el mapa: <b style="color:${MAS}">rojo</b> gana camiones, <b style="color:${MENOS}">verde azulado</b> pierde.`;
   }
+  /* ---------- carros vs. sintaxis espacial (carga.json · sintaxisTrafico) ---------- */
+  let SXL = null;
+  function pintarSintaxis() {
+    const S = CAPA && CAPA.datos.sintaxisTrafico; if (!S) return; const f = (v, d = 2) => v.toLocaleString('es-CO', { maximumFractionDigits: d });
+    $('tb-rho').textContent = `ρ = ${f(S.rhoC)} con la elección · ${f(S.rhoI)} con la integración`;
+    const item = (o) => `<button data-x="${o.p[0]}" data-y="${o.p[1]}"><span>${esc(o.n)}</span><small>${f(o.c * 100, 0)} % · ${f(o.q, 0)} veh/h</small></button>`;
+    $('tb-sxM').innerHTML = S.masDeLoEsperado.map(item).join(''); $('tb-sxm').innerHTML = S.menosDeLoEsperado.map(item).join('');
+    tb.querySelectorAll('.sx2 button').forEach(b => b.onclick = () => { const [x, z] = lwM(+b.dataset.x, +b.dataset.y); volar(x, z, 420); });
+    $('tb-nota4').innerHTML = `Cada punto es una calle de Kennedy (${f(S.n, 0)} tramos vehiculares dentro del área con tráfico simulado): su <b>elección angular</b> (cuántos recorridos más cortos la atraviesan, método DepthmapX) contra los vehículos por hora de la grabación SUMO en hora pico. La línea es la mediana de cada décimo de elección y la franja va del cuartil 25 al 75. ρ de Spearman: ${f(S.rhoC)} (0 = no hay relación, 1 = el orden coincide). Las calles que se salen del patrón muestran lo que la forma de la red no explica: destinos como Corabastos, el TransMilenio o los bordes del área simulada.`;
+    dibujarSintaxis();
+  }
+  function dibujarSintaxis() {
+    const S = CAPA && CAPA.datos.sintaxisTrafico; if (!S) return; if (!SXL) SXL = lienzo('tb-sx', 190); SXL.medir();
+    const { g, w, h } = SXL, pad = 30, Y = (q) => h - 14 - Math.log10(1 + q) / Math.log10(1 + 1000) * (h - 26), X = (c) => pad + c * (w - pad - 4);
+    g.clearRect(0, 0, w, h); g.font = '400 10px Inter,system-ui,sans-serif'; g.textBaseline = 'middle'; g.textAlign = 'right';
+    for (const q of [0, 10, 100, 1000]) { const y = Y(q); g.strokeStyle = 'rgba(255,255,255,.06)'; g.beginPath(); g.moveTo(pad, y); g.lineTo(w, y); g.stroke(); g.fillStyle = '#646c71'; g.fillText(q === 1000 ? '1.000' : String(q), pad - 5, y); }
+    g.save(); g.translate(9, h / 2); g.rotate(-Math.PI / 2); g.textAlign = 'center'; g.fillText('veh/h', 0, 0); g.restore();
+    for (const [c, q] of S.puntos) { const x = X(c) + (Math.random() - 0.5) * 2, y = Y(q) + (Math.random() - 0.5) * (q ? 1 : 6); g.fillStyle = q ? 'rgba(143,176,201,.28)' : 'rgba(143,176,201,.1)'; g.fillRect(x - 1, y - 1, 2, 2); }
+    // franja del cuartil 25 al 75 y mediana
+    const B = S.bins; g.beginPath(); B.forEach((b, i) => { const x = X(b.c); i ? g.lineTo(x, Y(b.q75)) : g.moveTo(x, Y(b.q75)); }); [...B].reverse().forEach(b => g.lineTo(X(b.c), Y(b.q25))); g.closePath(); g.fillStyle = 'rgba(226,165,91,.16)'; g.fill();
+    g.beginPath(); B.forEach((b, i) => { const x = X(b.c); i ? g.lineTo(x, Y(b.q50)) : g.moveTo(x, Y(b.q50)); }); g.strokeStyle = '#e2a55b'; g.lineWidth = 2; g.stroke();
+    for (const b of B) { g.beginPath(); g.arc(X(b.c), Y(b.q50), 3, 0, TAU); g.fillStyle = '#e2a55b'; g.fill(); }
+    const u = B[B.length - 1]; g.fillStyle = '#f2c995'; g.textAlign = 'right'; g.fillText(`mediana ${u.q50} veh/h`, X(u.c) - 6, Y(u.q50) - 10);
+  }
+  $('tb-sxver').onclick = () => { const b = document.querySelector('#gs-capa [data-c="c"]'); if (b) b.click(); };
   $('tb-vcarga').onclick = (ev) => { verCarga = !verCarga; ev.currentTarget.classList.toggle('on', verCarga); if (verCarga && escAct !== 'proyecto') ponerEscenario('proyecto'); if (CAPA) CAPA.ver(escAct === 'proyecto' && verCarga); };
   $('tb-ircarga').onclick = () => { if (!CAPA) return; if (escAct !== 'proyecto') ponerEscenario('proyecto'); verCarga = true; $('tb-vcarga').classList.add('on'); CAPA.ver(true); volar(CAPA.centro[0], CAPA.centro[1], CAPA.radio * 2.2); };
 

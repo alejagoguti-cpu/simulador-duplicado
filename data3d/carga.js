@@ -4,7 +4,7 @@
    Marcas: los 8 mercados de barrio y las salidas de la carga desde cada costado de Corabastos. */
 export const COL_MAS = '#e0603a', COL_MENOS = '#4fb3a6';
 export async function crearCapaCarga({ THREE, T3, lw }) {
-  const D = await (window.cargarJSON || ((u) => fetch(u).then(r => r.json())))('data3d/carga.json?v=1');
+  const D = await (window.cargarJSON || ((u) => fetch(u).then(r => r.json())))('data3d/carga.json?v=2');
   const grupo = new THREE.Group(); grupo.name = 'carga'; grupo.visible = false; T3.scene.add(grupo);
   const Y = () => (T3.viaY != null ? T3.viaY : 0.62) + 0.45;
   const P = [], C = [], I = [], cMas = new THREE.Color(COL_MAS), cMenos = new THREE.Color(COL_MENOS);

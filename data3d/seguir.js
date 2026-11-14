@@ -37,7 +37,7 @@ export function iniciarSeguir({ THREE, T3, say }) {
       frente: (a) => [Math.cos(a.rot), -Math.sin(a.rot)],
       nombre: (a) => T3.bio.ESP[a.e].n, clase: (a) => { const c = T3.bio.CAT[T3.bio.ESP[a.e].cat]; return c ? c.n : 'Fauna'; },
       cam: (a) => { const e = T3.bio.ESP[a.e]; return e.ave ? [11, 6, 0.4] : [8, 5, 0.15]; },
-      extra: (a) => { const est = a.caza ? 'Persiguiendo una presa' : a.huye ? 'Huyendo' : a.duerme ? 'En reposo' : (ESTX[a.st] || 'Moviéndose'); const nL = (a.links || []).filter(k => T3.bio.LINKS.get(k)).length; return `<span>${esc(est)}</span><span>${esc(a.h.n)}</span><span><b>${nL}</b> ${nL === 1 ? 'relación' : 'relaciones'} ahora</span>`; }
+      extra: (a) => { const est = a.caza ? 'Persiguiendo una presa' : a.huye ? 'Huyendo' : a.duerme && !(a.vel > 0.05) ? 'En reposo' : (ESTX[a.st] || 'Moviéndose'); const nL = (a.links || []).filter(k => T3.bio.LINKS.get(k)).length; return `<span>${esc(est)}</span><span>${esc(a.h.n)}</span><span><b>${nL}</b> ${nL === 1 ? 'relación' : 'relaciones'} ahora</span>`; }
     }
   };
 

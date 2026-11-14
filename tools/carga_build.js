@@ -21,7 +21,7 @@ const cortn = (q, p, V = 30) => 42.2 + 10 * Math.log10(Math.max(q, 20)) + 33 * M
 /* ---------- grafo: la red de calles de OpenStreetMap ya conectada en sus cruces (giro_sim.json, la misma de la sintaxis espacial) ---------- */
 const GS_ = R('giro_sim.json'), OX = 2095.67, OZ = -109.06, aModelo = ([x, y]) => [x + OX + LC.x, LC.y - (y + OZ)];
 const PT = GS_.nodos.map(aModelo);
-const E = GS_.seg.filter(s => s.v).map((s, ie) => { const pts = s.p.map(aModelo); return { ie, j: s.j, cls: s.j >= 3 ? 'mid' : 'local', pts, L: s.L, a: s.a, b: s.b, q: new Set(), d: 0 }; });
+const E = GS_.seg.filter(s => s.v).map((s, ie) => { const pts = s.p.map(aModelo); return { ie, j: s.j, cls: s.j >= 3 ? 'mid' : 'local', pts, L: s.L, a: s.a, b: s.b, q: new Set(), d: 0, si: s.i, sc: s.c, sk: s.k }; });
 const ADJ = PT.map(() => []); for (const e of E) { ADJ[e.a].push(e); ADJ[e.b].push(e); }
 const COSTO_J = [1.8, 1.8, 1.3, 1.1, 1, 1]; // residencial 1,8 · terciaria 1,3 · secundaria 1,1 · primaria y troncal 1 (un camión prefiere las vías principales)
 function dijkstra(src) {
@@ -39,6 +39,7 @@ console.log('nodos', PT.length, 'componente mayor', nMax, 'componentes', TAM.len
 const cercanoNodo = (x, y, filtro) => { let b = -1, bd = Infinity; for (let i = 0; i < PT.length; i++) { if (comp[i] !== cMax || (filtro && !filtro(i))) continue; const d = Math.hypot(PT[i][0] - x, PT[i][1] - y); if (d < bd) { bd = d; b = i; } } return b; };
 
 /* ---------- 1. flujo actual por tramo ---------- */
+const CELV = new Map();
 const CEL = 25, GS = new Map(); // índice de segmentos de los tramos
 E.forEach(e => { for (let k = 1; k < e.pts.length; k++) { const [x0, y0] = e.pts[k - 1], [x1, y1] = e.pts[k]; for (let i = Math.floor(Math.min(x0, x1) / CEL) - 1; i <= Math.floor(Math.max(x0, x1) / CEL) + 1; i++) for (let j = Math.floor(Math.min(y0, y1) / CEL) - 1; j <= Math.floor(Math.max(y0, y1) / CEL) + 1; j++) { const g = i * 100003 + j; let L = GS.get(g); if (!L) GS.set(g, L = []); L.push([e, x0, y0, x1, y1]); } } });
 const tramoEn = (x, y) => { const L = GS.get(Math.floor(x / CEL) * 100003 + Math.floor(y / CEL)); if (!L) return null; let b = null, bd = 10; for (const [e, x0, y0, x1, y1] of L) { const ex = x1 - x0, ey = y1 - y0, l2 = ex * ex + ey * ey || 1, t = Math.max(0, Math.min(1, ((x - x0) * ex + (y - y0) * ey) / l2)), d = Math.hypot(x - x0 - t * ex, y - y0 - t * ey); if (d < bd) { bd = d; b = e; } } return b; };
@@ -47,11 +48,11 @@ for (let k = 0; k < I.n; k++) {
   let o = 4; const ns = dv.getUint16(o, true); o += 2; o += 4; let prev = new Map();
   for (let s = 0; s < ns; s++) {
     const n = dv.getUint16(o, true); o += 2; const pid = o, pdx = o + 2 * n, pdy = o + 4 * n; o += 6 * n; const cur = new Map(); let id = 0;
-    for (let i = 0; i < n; i++) { id += dv.getUint16(pid + 2 * i, true); const p = prev.get(id); const xi = p ? p[0] + dv.getInt16(pdx + 2 * i, true) : dv.getUint16(pdx + 2 * i, true), yi = p ? p[1] + dv.getInt16(pdy + 2 * i, true) : dv.getUint16(pdy + 2 * i, true); cur.set(id, [xi, yi]); if (s % 2) continue; const e = tramoEn(xi / I.scale, yi / I.scale); if (e) e.q.add(id); }
+    for (let i = 0; i < n; i++) { id += dv.getUint16(pid + 2 * i, true); const p = prev.get(id); const xi = p ? p[0] + dv.getInt16(pdx + 2 * i, true) : dv.getUint16(pdx + 2 * i, true), yi = p ? p[1] + dv.getInt16(pdy + 2 * i, true) : dv.getUint16(pdy + 2 * i, true); cur.set(id, [xi, yi]); if (s % 2) continue; { const k = Math.floor(xi / I.scale / 250) * 1000 + Math.floor(yi / I.scale / 250); CELV.set(k, (CELV.get(k) || 0) + 1); } const e = tramoEn(xi / I.scale, yi / I.scale); if (e) e.q.add(id); }
     prev = cur;
   }
 }
-const H = 3600 / I.NS;
+const H = 3600 / I.NS; // CELV: celdas de 250 m donde la grabación SUMO tiene vehículos (fuera de ellas no hay tráfico simulado)
 for (const e of E) { const L = [...e.q]; e.qh = L.length * H; e.ch = L.filter(esCamion).length * H; }
 
 /* ---------- 2. mercados de barrio (como propuesta.js) ---------- */
@@ -96,5 +97,20 @@ const out = {
   salidas: SAL, kmAlivia: km(t => t.d < 0), kmCarga: km(t => t.d > 0),
   calles: CALLES.slice(0, 8).concat(CALLES.slice(-8).filter(c => c.d < 0)), tramos: T
 };
-fs.writeFileSync(D('carga.json'), JSON.stringify(out));
+/* ---------- 5. ¿la sintaxis espacial explica el tráfico? flujo SUMO de cada calle vs. su elección e integración angular ----------
+   Solo calles vehiculares dentro de Kennedy (k = 1) con su largo > 20 m. Correlación de rangos de Spearman (no supone una relación lineal). */
+const VS = E.filter(e => { if (!e.sk || e.L <= 20) return false; const m = e.pts[Math.floor(e.pts.length / 2)]; const k = Math.floor(m[0] / 250) * 1000 + Math.floor(m[1] / 250), n = (CELV.get(k) || 0) + (CELV.get(k + 1) || 0) + (CELV.get(k - 1) || 0) + (CELV.get(k + 1000) || 0) + (CELV.get(k - 1000) || 0); return n >= 2000; }); // dentro de Kennedy y bien adentro del área con tráfico simulado (la celda y sus vecinas con 2.000 muestras o más)
+const rangos = (v) => { const o = v.map((x, i) => [x, i]).sort((a, b) => a[0] - b[0]), r = new Array(v.length); for (let i = 0; i < o.length;) { let j = i; while (j + 1 < o.length && o[j + 1][0] === o[i][0]) j++; for (let k = i; k <= j; k++) r[o[k][1]] = (i + j) / 2; i = j + 1; } return r; };
+const spearman = (a, b) => { const ra = rangos(a), rb = rangos(b), n = a.length, ma = (n - 1) / 2; let sab = 0, saa = 0, sbb = 0; for (let i = 0; i < n; i++) { sab += (ra[i] - ma) * (rb[i] - ma); saa += (ra[i] - ma) ** 2; sbb += (rb[i] - ma) ** 2; } return sab / Math.sqrt(saa * sbb); };
+const q = VS.map(e => e.qh);
+const BINS = Array.from({ length: 10 }, (_, k) => { const L = VS.filter(e => e.sc >= k / 10 && (e.sc < (k + 1) / 10 || k === 9)).map(e => e.qh).sort((a, b) => a - b); const p = (f) => L.length ? L[Math.min(L.length - 1, Math.floor(f * L.length))] : 0; return { c: (k + 0.5) / 10, n: L.length, q25: Math.round(p(0.25)), q50: Math.round(p(0.5)), q75: Math.round(p(0.75)), con: r1(L.filter(x => x > 0).length / Math.max(1, L.length) * 100) }; });
+// anomalías: mucho tráfico con poca elección (lo que la forma de la red no explica: destinos como Corabastos) y al revés
+const conNombre = VS.map(e => { const m = e.pts[Math.floor(e.pts.length / 2)]; return { e, n: null, m }; });
+const anom = (f, orden) => { const L = conNombre.filter(x => f(x.e)).sort(orden).slice(0, 40); const vistos = new Set(), o = []; for (const x of L) { const n = nombre(x.m[0], x.m[1]); if (!n || vistos.has(n)) continue; vistos.add(n); o.push({ n, c: r1(x.e.sc, 2), q: Math.round(x.e.qh), p: x.m.map(v => r1(v)) }); if (o.length >= 4) break; } return o; };
+const PUNTOS = VS.filter((e, i) => e.qh > 0 || i % 4 === 0).map(e => [r1(e.sc, 3), Math.round(e.qh), e.j]);
+out.sintaxisTrafico = {
+  n: VS.length, rhoC: r1(spearman(VS.map(e => e.sc), q), 2), rhoI: r1(spearman(VS.map(e => e.si), q), 2), bins: BINS, puntos: PUNTOS,
+  masDeLoEsperado: anom(e => e.sc < 0.5 && e.qh > 300, (a, b) => b.e.qh - a.e.qh),
+  menosDeLoEsperado: anom(e => e.sc > 0.9 && e.qh < 20, (a, b) => b.e.sc - a.e.sc)
+};fs.writeFileSync(D('carga.json'), JSON.stringify(out));
 console.log(JSON.stringify({ ...out, tramos: out.tramos.length }, null, 1));
