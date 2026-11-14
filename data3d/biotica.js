@@ -68,6 +68,22 @@ const POR_HUERTA = { abeja: 10, lombriz: 6, copeton: 3, mirla: 2, colibri: 1 }; 
 const POR_PARQUE = { abeja: 1.2, lombriz: 0.6, copeton: 3, mirla: 1.6, torcaza: 2.2, colibri: 1, chamon: 0.6, cucarachero: 1, rata: 0.8, lagartija: 0.8, caracol: 1.4, culebra: 0.25, curi: 0.3, comadreja: 0.12, cernicalo: 0.05, buho: 0.04 };
 // conexiones: con quién se une cada animal (individuo más cercano de cada especie relacionada en la red, y árbol relacionado)
 const R_RED = 220, R_RAPAZ = 420, R_ARBOL = 90, CERCA = 18;
+/* ritmo de 24 horas [SUP]: qué tan activa está cada especie a cada hora (0 = en reposo, 1 = actividad plena).
+   diurna: aves con coro del alba y pico de la tarde · calor: necesitan sol (abejas, reptiles, cernícalo) ·
+   nocturna: búho, garza nocturna, rata, rana, caracol, lombriz · crepuscular: curí y comadreja · agua: aves acuáticas (descansan en balsa) */
+const RITMO = { tingua: 'agua', garza: 'diurna', garzaNoc: 'nocturna', pato: 'agua', focha: 'agua', monjita: 'diurna', copeton: 'diurna', mirla: 'diurna', colibri: 'diurna', chamon: 'diurna', torcaza: 'diurna', cucarachero: 'diurna', cernicalo: 'calor', buho: 'nocturna', abeja: 'calor', lombriz: 'nocturna', curi: 'crepuscular', comadreja: 'crepuscular', rata: 'nocturna', rana: 'nocturna', culebra: 'calor', lagartija: 'calor', caracol: 'nocturna' };
+const sstep = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+const campana = (h, mu, s) => { let d = Math.abs(h - mu) % 24; if (d > 12) d = 24 - d; return Math.exp(-0.5 * (d / s) ** 2); };
+export function actividad(k, h) { // h en horas (0-24)
+  const dia = sstep(5.2, 6.4, h) * (1 - sstep(17.8, 19, h));
+  switch (RITMO[k]) {
+    case 'calor': return 0.03 + 0.97 * dia * campana(h, 12.8, 2.4);
+    case 'nocturna': return 0.08 + 0.92 * (1 - dia) * (0.7 + 0.3 * campana(h, 21, 2.5));
+    case 'crepuscular': return 0.1 + 0.9 * Math.max(campana(h, 6, 1.2), campana(h, 18.5, 1.3));
+    case 'agua': return 0.2 + 0.8 * dia * (0.6 + 0.4 * Math.max(campana(h, 7, 1.5), campana(h, 17, 1.5)));
+    default: return 0.04 + 0.96 * dia * (0.5 + 0.5 * Math.max(campana(h, 7, 1.4), campana(h, 16.8, 1.3)));
+  }
+}
 
 export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = false, huertas = null }) {
   const [{ LineSegments2 }, { LineSegmentsGeometry }, { LineMaterial }] = await Promise.all([import('three/addons/lines/LineSegments2.js'), import('three/addons/lines/LineSegmentsGeometry.js'), import('three/addons/lines/LineMaterial.js')]);
@@ -76,6 +92,10 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
   const rnd = Math.random, gauss = () => { let u = 0, v = 0; while (!u) u = rnd(); while (!v) v = rnd(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(6.283 * v); };
   const TIPOS = B.tipos, COLT = TIPOS.map(t => new THREE.Color(t.c));
   const GY = Y0; // suelo y lámina de agua en el marco de la maqueta (el mismo de las personas de la simulación)
+  // actividad de cada especie a la hora del reloj de la simulación (T3.reloj): al terminar cada pausa, el animal sigue en reposo con probabilidad 1 - actividad
+  const AC = {}, horaSim = () => { const r = T3.reloj; return r && r.t >= 0 ? (r.t / 60) % 24 : 9; };
+  const actualizarAC = () => { const h = horaSim(); for (const k of Object.keys(ESP)) AC[k] = actividad(k, h); }; actualizarAC();
+  const despierta = (a) => { if (a.huye || rnd() < AC[a.e]) { a.duerme = false; return true; } a.duerme = true; return false; };
 
   /* ---------- relaciones de la red por especie ---------- */
   const REL = {}; for (const k of Object.keys(ESP)) REL[k] = { flora: new Map(), fauna: [] };
@@ -265,7 +285,8 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
     const e = ESP[a.e];
     if (a.st === 'posado') {
       a.vel = 0; if (a.huye) { a.t = 0; }
-      if ((a.t -= dt) > 0) { if (rnd() < dt * 0.3) a.rot += gauss() * 0.8; return; }
+      if ((a.t -= dt) > 0) { if (!a.duerme && rnd() < dt * 0.3) a.rot += gauss() * 0.8; return; }
+      if (!despierta(a)) { a.t = 4 + rnd() * 8; return; } // a esta hora sigue posado, en reposo
       const [x, y, z, t] = elegirPercha(a); a.arb = t; vuelo(a, x, y, z, e.v * (0.85 + rnd() * 0.3));
       for (const b of a.h.ag[a.e]) if (b !== a && b.st === 'posado' && Math.hypot(b.x - a.x, b.z - a.z) < 22 && rnd() < 0.65) { b.arb = t; b.t = 0; const o = 3 + rnd() * 3; vuelo(b, x + gauss() * o, y + gauss() * 0.5, z + gauss() * o, a.f.v * (0.9 + rnd() * 0.2)); b.f.retraso = rnd() * 0.8; }
       return;
@@ -281,6 +302,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
     if (a.st === 'posado' || a.st === 'liba') {
       a.vel = 0; if (a.arb) { a.x = a.arb.x + Math.cos(a.ang) * 1.3 + Math.sin(a.flap * 0.05) * 0.15; a.z = a.arb.z + Math.sin(a.ang) * 1.3; a.y = a.arb.y - 0.4 + Math.sin(a.flap * 0.03) * 0.12; a.rot = Math.atan2(Math.sin(a.ang), -Math.cos(a.ang)); }
       if ((a.t -= dt) > 0) return;
+      if (!despierta(a)) { a.st = 'posado'; a.t = 4 + rnd() * 8; return; }
       let L = alcanzables(a, 150).filter(t => t !== a.arb); if (!L.length) L = arbolesCerca(a.h, a.x, a.z, 120);
       if (!L.length) { a.t = 3; return; }
       L.sort((p, q) => Math.hypot(p.x - a.x, p.z - a.z) - Math.hypot(q.x - a.x, q.z - a.z)); const t = L[Math.floor(rnd() * Math.min(5, L.length))];
@@ -298,7 +320,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
     for (const b of a.h.ag[a.e]) { if (b === a || !b.vis) continue; const dx = b.x - a.x, dz = b.z - a.z, d = Math.hypot(dx, dz); if (d < 1.4 && d > 1e-3) { rx -= dx / d; rz -= dz / d; } else if (d < 9) { ox += Math.cos(b.rot); oz -= Math.sin(b.rot); } else if (d < 30) { cx += dx / d; cz += dz / d; n++; } }
     let vx, vz; a.ang += gauss() * 0.4 * dt; vx = Math.cos(a.ang) * 0.6; vz = Math.sin(a.ang) * 0.6;
     if (rx || rz) { vx += rx * 2; vz += rz * 2; } else { vx += ox * 0.25 + cx * 0.5; vz += oz * 0.25 + cz * 0.5; }
-    let v = e.v; if (a.huye) { vx += (a.x - a.huye.x) * 0.2; vz += (a.z - a.huye.z) * 0.2; v *= 4; }
+    a.duerme = AC[a.e] < 0.3; let v = e.v * (0.35 + 0.65 * AC[a.e]); /* de noche la balsa casi no se mueve */ if (a.huye) { vx += (a.x - a.huye.x) * 0.2; vz += (a.z - a.huye.z) * 0.2; v *= 4; }
     const l = Math.hypot(vx, vz) || 1, nx = a.x + vx / l * v * dt, nz = a.z + vz / l * v * dt;
     if (dentro(nx, nz, a.h.poly)) { a.x = nx; a.z = nz; girarA(a, vx, vz, dt, 2); a.vel = v; } else { a.ang += Math.PI * (0.5 + rnd() * 0.5); }
     a.y = GY - 0.02 + Math.sin(a.flap * 0.02) * 0.02;
@@ -307,7 +329,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
     const e = ESP[a.e];
     if (a.huye) { const dx = a.x - a.huye.x, dz = a.z - a.huye.z, d = Math.hypot(dx, dz) || 1, nx = a.x + dx / d * 1.6 * dt, nz = a.z + dz / d * 1.6 * dt; if (dentro(nx, nz, a.h.poly)) { a.x = nx; a.z = nz; } girarA(a, dx, dz, dt, 8); a.vel = 1.6; return; }
     if ((a.t -= dt) > 0 && a.st === 'quieto') { a.vel = 0; return; }
-    if (a.st === 'quieto') { a.st = 'camina'; a.t = 3 + rnd() * 8; }
+    if (a.st === 'quieto') { if (!despierta(a)) { a.vel = 0; a.t = 4 + rnd() * 8; return; } a.st = 'camina'; a.t = 3 + rnd() * 8; }
     if (a.t <= 0) { a.st = 'quieto'; a.t = 2 + rnd() * 6; return; }
     a.ang += gauss() * 1.2 * dt; let vx = Math.cos(a.ang), vz = Math.sin(a.ang);
     const [b, d] = bordeCercano(a.h, a.x, a.z); if (d > 14) { vx += (b[0] - a.x) / d * 1.5; vz += (b[1] - a.z) / d * 1.5; }
@@ -318,12 +340,12 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
   function moverVadea(a, dt) { // garzas: vadeo lento con esperas; vuelan a dormir a los árboles
     const e = ESP[a.e];
     if (a.st === 'vuelo') { moverAve(a, dt); if (a.st === 'posado') a.st = a.arb ? 'percha' : 'quieto', a.t = a.arb ? 20 + rnd() * 50 : 4 + rnd() * 10; return; }
-    if (a.st === 'percha') { a.vel = 0; if ((a.t -= dt) > 0 && !a.huye) return; const p = puntoEn(a.h); a.arb = null; vuelo(a, p[0], GY, p[1], 6); return; }
-    if (a.huye || rnd() < dt * (e.perchar ? 0.02 : 0.006)) { // a un árbol de la red (anidamiento de dosel / dormidero)
+    if (a.st === 'percha') { a.vel = 0; if ((a.t -= dt) > 0 && !a.huye) return; if (!despierta(a)) { a.t = 10 + rnd() * 20; return; } const p = puntoEn(a.h); a.arb = null; vuelo(a, p[0], GY, p[1], 6); return; }
+    if (a.huye || rnd() < dt * (e.perchar ? 0.02 : 0.006) * (AC[a.e] < 0.3 ? 6 : 1)) { // en sus horas de reposo vuela antes al dormidero // a un árbol de la red (anidamiento de dosel / dormidero)
       let L = alcanzables(a, 280); if (!L.length) L = arbolesCerca(a.h, a.x, a.z, 200);
       if (L.length) { const t = L[Math.floor(rnd() * L.length)]; a.arb = t; a.huye = null; vuelo(a, t.x, t.y + 0.3, t.z, 6, 6); return; }
     }
-    if (a.st === 'quieto') { a.vel = 0; if ((a.t -= dt) > 0) return; a.st = 'camina'; a.t = 2 + rnd() * 6; a.obj = [a.x + gauss() * 6, a.z + gauss() * 6]; if (!dentro(a.obj[0], a.obj[1], a.h.poly)) a.obj = puntoEn(a.h); }
+    if (a.st === 'quieto') { a.vel = 0; if ((a.t -= dt) > 0) return; if (!despierta(a)) { a.t = 5 + rnd() * 10; return; } a.st = 'camina'; a.t = 2 + rnd() * 6; a.obj = [a.x + gauss() * 6, a.z + gauss() * 6]; if (!dentro(a.obj[0], a.obj[1], a.h.poly)) a.obj = puntoEn(a.h); }
     if (a.st === 'camina') { if (alPunto(a, a.obj[0], a.obj[1], e.v, dt) || (a.t -= dt) <= 0) { a.st = 'quieto'; a.t = 5 + rnd() * 18; } a.y = GY; }
   }
   function moverRapaz(a, dt) { // planeo en círculos y picada sobre la presa
@@ -337,14 +359,14 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
     a.ang += a.w * dt; const px = a.x, pz = a.z;
     a.x += (a.cx + Math.cos(a.ang) * a.rad - a.x) * Math.min(1, dt * 0.8); a.z += (a.cz + Math.sin(a.ang) * a.rad - a.z) * Math.min(1, dt * 0.8);
     if (a.st === 'planea') a.y += (GY + a.alt - a.y) * Math.min(1, dt * 0.5);
-    girarA(a, a.x - px, a.z - pz, dt, 3); a.vel = e.v; a.cool = (a.cool || 0) - dt;
+    girarA(a, a.x - px, a.z - pz, dt, 3); a.vel = e.v; a.cool = (a.cool || 0) - dt; a.duerme = AC[a.e] < 0.25;
     if (rnd() < dt * 0.01) { a.cx = a.h.cx + gauss() * 80; a.cz = a.h.cz + gauss() * 80; }
   }
   function moverSuelo(a, dt) { // caminata correlacionada con ámbito hogareño (clase L8)
     const e = ESP[a.e];
     if (a.huye) { const dx = a.x - a.huye.x, dz = a.z - a.huye.z, d = Math.hypot(dx, dz) || 1, v = Math.max(1.4, e.v * 3); a.x += dx / d * v * dt; a.z += dz / d * v * dt; girarA(a, dx, dz, dt, 8); a.vel = v; a.y = GY; return; }
     if (a.caza) { const p = a.caza; if (alPunto(a, p.x, p.z, e.caza, dt) || Math.hypot(p.x - a.x, p.z - a.z) > 30) { a.caza = null; a.ev++; a.st = 'quieto'; a.t = 6; } a.y = GY; return; }
-    if (a.st === 'quieto') { a.vel = 0; if ((a.t -= dt) > 0) return; a.st = 'camina'; a.t = 3 + rnd() * 10; }
+    if (a.st === 'quieto') { a.vel = 0; if ((a.t -= dt) > 0) return; if (!despierta(a)) { a.t = 4 + rnd() * 8; return; } a.st = 'camina'; a.t = 3 + rnd() * 10; }
     a.ang += gauss() * 1.5 * dt; let vx = Math.cos(a.ang), vz = Math.sin(a.ang);
     const dh = Math.hypot(a.hx - a.x, a.hz - a.z); if (dh > 25) { vx += (a.hx - a.x) / dh * 1.2; vz += (a.hz - a.z) / dh * 1.2; }
     const l = Math.hypot(vx, vz) || 1, v = a.e === 'lagartija' && rnd() < 0.3 ? e.v * 4 : e.v;
@@ -354,6 +376,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
   function moverRana(a, dt) {
     if (a.salto) { const s = a.salto; s.u += dt / 0.35; const u = Math.min(1, s.u); a.x = s.x0 + (s.x1 - s.x0) * u; a.z = s.z0 + (s.z1 - s.z0) * u; a.y = GY + Math.sin(Math.PI * u) * 0.25 * MAL.rana.s * 0.2; if (u >= 1) { a.salto = null; a.y = GY; } return; }
     if ((a.t -= dt) > 0 && !a.huye) return;
+    if (!despierta(a)) { a.t = 3 + rnd() * 6; return; }
     let dx = Math.cos(a.ang), dz = Math.sin(a.ang); if (a.huye) { dx = a.x - a.huye.x; dz = a.z - a.huye.z; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l; } else { a.ang += gauss() * 1.2; const dh = Math.hypot(a.hx - a.x, a.hz - a.z); if (dh > 6) { dx = (a.hx - a.x) / dh; dz = (a.hz - a.z) / dh; } }
     const L = 0.5 * MAL.rana.s * 0.35; a.salto = { u: 0, x0: a.x, z0: a.z, x1: a.x + dx * L, z1: a.z + dz * L }; a.rot = Math.atan2(-dz, dx); a.t = 2 + rnd() * 5;
   }
@@ -364,7 +387,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
       L.sort((p, q) => Math.hypot(p.x - a.x, p.z - a.z) - Math.hypot(q.x - a.x, q.z - a.z)); const t = L[Math.floor(rnd() * Math.min(6, L.length))];
       a.arb = t; a.ang = rnd() * 6.28; vuelo(a, t.x + Math.cos(a.ang) * 1.4, t.y - 0.3 + gauss() * 0.6, t.z + Math.sin(a.ang) * 1.4, ESP.abeja.v * (0.8 + rnd() * 0.4), 1 + rnd() * 2);
     };
-    if (a.st === 'colmena') { a.vel = 0; a.vis = false; if ((a.t -= dt) > 0) return; a.vis = true; a.flores = 3 + Math.floor(rnd() * 3); otraFlor(); return; }
+    if (a.st === 'colmena') { a.vel = 0; a.vis = false; if ((a.t -= dt) > 0) return; if (!despierta(a)) { a.t = 5 + rnd() * 10; return; } a.vis = true; a.flores = 3 + Math.floor(rnd() * 3); otraFlor(); return; }
     if (a.st === 'liba') { a.vel = 0; if (a.arb) { a.x = a.arb.x + Math.cos(a.ang) * 1.4 + Math.sin(a.flap * 0.03) * 0.2; a.z = a.arb.z + Math.sin(a.ang) * 1.4; a.rot = Math.atan2(Math.sin(a.ang), -Math.cos(a.ang)); }
       if ((a.t -= dt) > 0) return; a.ev++; if (--a.flores <= 0) { a.vuelta = true; vuelo(a, a.colmena[0], GY + 1, a.colmena[1], ESP.abeja.v, 2.5); } else otraFlor(); return; }
     const f = a.f; f.s += f.v * dt; const u = Math.min(1, f.s / f.d), px = a.x, pz = a.z;
@@ -372,10 +395,11 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
     if (u >= 1) { if (a.vuelta) { a.vuelta = false; a.st = 'colmena'; a.t = 6 + rnd() * 18; a.arb = null; } else { a.st = 'liba'; a.t = 2 + rnd() * 3; } }
   }
   function moverLombriz(a, dt) { // casi quieta; a ratos se mete en la tierra y vuelve a salir
-    if (rnd() < dt * 0.015) a.vis = !a.vis;
+    if (rnd() < dt * 0.015) a.vis = a.vis ? rnd() < 0.15 : rnd() < AC.lombriz; // sale a la superficie sobre todo de noche y en tierra húmeda
+    a.duerme = !a.vis;
     a.ang += gauss() * 0.5 * dt; a.x += Math.cos(a.ang) * 0.004 * dt * 8; a.z += Math.sin(a.ang) * 0.004 * dt * 8; a.rot = Math.atan2(-Math.sin(a.ang), Math.cos(a.ang)); a.y = GY;
   }
-  const MOV = { abeja: moverAbeja, lombriz: moverLombriz, vuela: moverAve, colibri: moverColibri, nada: moverNada, orilla: moverOrilla, vadea: moverVadea, rapaz: moverRapaz, suelo: moverSuelo, rana: moverRana, caracol: (a, dt) => { a.ang += gauss() * 0.2 * dt; a.x += Math.cos(a.ang) * 0.004 * dt; a.z += Math.sin(a.ang) * 0.004 * dt; a.rot = Math.atan2(-Math.sin(a.ang), Math.cos(a.ang)); a.y = GY; } };
+  const MOV = { abeja: moverAbeja, lombriz: moverLombriz, vuela: moverAve, colibri: moverColibri, nada: moverNada, orilla: moverOrilla, vadea: moverVadea, rapaz: moverRapaz, suelo: moverSuelo, rana: moverRana, caracol: (a, dt) => { a.duerme = AC.caracol < 0.4; if (a.duerme) { a.vel = 0; return; } a.vel = 0.004; a.ang += gauss() * 0.2 * dt; a.x += Math.cos(a.ang) * 0.004 * dt; a.z += Math.sin(a.ang) * 0.004 * dt; a.rot = Math.atan2(-Math.sin(a.ang), Math.cos(a.ang)); a.y = GY; } };
 
   /* ---------- red de conexiones entre agentes ----------
      Cada animal se une, según la red, con el individuo más cercano de cada especie con la que tiene relación (hasta 220 m;
@@ -401,13 +425,15 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
       const m = masCercano(r.o, a.x, a.z, e.mov === 'rapaz' ? R_RAPAZ : R_RED, a); if (!m) continue;
       const [b, d] = m; L.push({ b, t: r.t, r: r.r, d });
       if (r.t === 0) { // depredación: persecución y huida
-        if (e.mov === 'rapaz' && a.st === 'planea' && (a.cool || 0) <= 0 && d < 90 && rnd() < 0.3) { a.st = 'picada'; a.presa = b; a.t = 6; }
+        if (e.mov === 'rapaz' && a.st === 'planea' && (a.cool || 0) <= 0 && d < 90 && rnd() < 0.3 * AC[a.e]) { a.st = 'picada'; a.presa = b; a.t = 6; }
         if (e.caza && !a.caza && d < 22) a.caza = b;
         if (d < 25 || a.presa === b) huir(b, a);
       }
       if (r.t === 7 && e.mov === 'vuela' && a.st === 'posado' && d < 40 && rnd() < 0.15) a.t = 0; // el chamón sigue al hospedero
     }
-    L.sort((p, q) => p.d - q.d); return L.slice(0, 5);
+    L.sort((p, q) => p.d - q.d);
+    if (a.duerme) return L.filter(v => v.t === 4 || v.t === 6).slice(0, 5); // en reposo solo quedan el refugio y el dosel donde duerme
+    return L.slice(0, 5);
   }
   let iEnc = 0, tIdx = 0;
   function actualizarRed(dt) {
@@ -764,9 +790,10 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
     cancelAnimationFrame(animRed); animRed = requestAnimationFrame(cuadro);
   }
 
-  /* ---------- bucle ---------- */  let ult = performance.now(), tUI = 0, tPot = 0, nCuadro = 0;
+  /* ---------- bucle ---------- */  let ult = performance.now(), tUI = 0, tPot = 0, nCuadro = 0, tAC = 0;
   function cuadro() {
     const ahora = performance.now(), dt = Math.min(0.1, (ahora - ult) / 1000); ult = ahora;
+    if ((tAC -= dt) <= 0) { tAC = 1; actualizarAC(); }
     for (const a of AG) { if (a.huye && (a.huye.t -= dt) <= 0) a.huye = null; MOV[ESP[a.e].mov](a, dt); }
     actualizarRed(dt); instancias(dt); if ((nCuadro = (nCuadro + 1) % 2) === 0) dibujarRed(ahora / 1000); // líneas y marcas cada dos cuadros: alivia la subida a la tarjeta gráfica
     if ((tUI -= dt) <= 0) { tUI = 0.5; TIPOS.forEach(t => { const el = document.getElementById('bt-c-' + t.id); if (el) el.textContent = CUENTA[t.id]; }); if (ESTADO.sel) pintarFicha(); }
@@ -774,5 +801,5 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
     requestAnimationFrame(cuadro);
   }
   requestAnimationFrame(cuadro);
-  return { AG, ESP, LINKS, ESTADO };
+  return { AG, ESP, LINKS, ESTADO, TIPOS, CAT, CUENTA, ENC, HAB, AC, CERCA, flora: B.flora, actividad, horaSim, verRed: abrirRed, seleccionar };
 }
