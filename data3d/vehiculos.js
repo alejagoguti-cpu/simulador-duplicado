@@ -302,6 +302,36 @@ const TIPOS = {
 };
 const SOMBRA = { carro: [2.5, 5.4], camion: [3.2, 8.8], moto: [1.0, 2.4], bici: [0.8, 2.1] };
 
+/* ---------- CARRO REAL (modelo 3D real): los carros más cercanos a la cámara usan un modelo real en vez del procedural ----------
+   Ferrari 458 Italia de vicent091036 (Sketchfab), el mismo del ejemplo de carros de three.js (data3d/modelos/ferrari.glb, Draco).
+   Solo el exterior (carrocería, vidrios, llantas, rines, luces: ~125 mil triángulos), por eso solo los REAL_MAX más cercanos.
+   Se descarga y se arma UNA vez para todos los conjuntos de vehículos. */
+const CAT_MAT = (n) => /Body_Color/.test(n) ? ['pintura'] : /Glass_Gray|Projector/.test(n) ? ['vidrio'] : /Taillight/.test(n) ? ['luces', [0.55, 0.02, 0.02]] : /Turn_Signal/.test(n) ? ['luces', [0.9, 0.45, 0.05]]
+  : /chrome|metal/i.test(n) ? ['metal'] : /Tires/.test(n) ? ['partes', CAUCHO] : /Yellow/.test(n) ? ['partes', [0.8, 0.6, 0.05]] : /Blue/.test(n) ? ['partes', [0.05, 0.2, 0.6]] : ['partes', /plastic/i.test(n) ? PLAST : NEGRO];
+const SOLO = /^(body|glass|tire|rim_..|wheel|lights|lights_red|grills|trim|yellow_trim|blue|metal|chrome)$/;
+let PROMESA_REAL = null;
+function geometriaReal() {
+  return PROMESA_REAL || (PROMESA_REAL = (async () => {
+    const [{ GLTFLoader }, { DRACOLoader }] = await Promise.all([import('three/addons/loaders/GLTFLoader.js'), import('three/addons/loaders/DRACOLoader.js')]);
+    const dl = new DRACOLoader(); dl.setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/gltf/');
+    const gl = new GLTFLoader(); gl.setDRACOLoader(dl);
+    const g = await gl.loadAsync('data3d/modelos/ferrari.glb'); g.scene.updateMatrixWorld(true);
+    const partes = [], caja = new THREE.Box3(), cola = new THREE.Vector3(), v = new THREE.Vector3(); let nCola = 0;
+    g.scene.traverse(o => {
+      if (!o.isMesh || !SOLO.test(o.name)) return;
+      const geo = o.geometry.clone().applyMatrix4(o.matrixWorld), m = Array.isArray(o.material) ? o.material[0] : o.material, c = CAT_MAT(m.name || '');
+      geo.computeBoundingBox(); caja.union(geo.boundingBox); partes.push([c, geo]);
+      if (c[0] === 'luces' && c[1] && c[1][1] < 0.1) { geo.boundingBox.getCenter(v); cola.add(v); nCola++; } // luces traseras: marcan la cola
+    });
+    // orientar: largo sobre z, frente hacia +z (lejos de las luces traseras), llantas en y = 0
+    const sz = caja.getSize(new THREE.Vector3()), ctr = caja.getCenter(new THREE.Vector3()); if (nCola) cola.divideScalar(nCola);
+    const rot = sz.x > sz.z ? (cola.x > ctr.x ? Math.PI / 2 : -Math.PI / 2) : (cola.z > ctr.z ? Math.PI : 0);
+    const K = new Kit();
+    for (const [[mat, c], geo] of partes) { geo.translate(-ctr.x, -caja.min.y, -ctr.z); geo.rotateY(rot); for (const k of Object.keys(geo.attributes)) if (!['position', 'normal', 'uv'].includes(k)) geo.deleteAttribute(k); K.add(mat, geo, c); }
+    return K.build();
+  })());
+}
+
 export function crearVehiculos({ T3, cuantos, movil, maxDist = Infinity }) {
   const env = T3.env || T3.scene.environment || null;
   const fis = !movil;
@@ -345,6 +375,8 @@ export function crearVehiculos({ T3, cuantos, movil, maxDist = Infinity }) {
   const blob = new THREE.InstancedMesh(bg, new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(cv), transparent: true, depthWrite: false, opacity: 0.75, polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -20 }), Math.max(1, total));
   blob.count = 0; blob.frustumCulled = false; blob.renderOrder = -3; blob.instanceMatrix.setUsage(THREE.DynamicDrawUsage); grupo.add(blob);
 
+  let REAL = null; const REAL_MAX = movil ? 0 : 12, CERCA_R = 120; // carros reales: los 12 más cercanos (en celular, ninguno)
+  if (REAL_MAX) geometriaReal().then(G => { REAL = { cerca: Object.entries(G).map(([mat, geo]) => ({ mat, m: mk(geo, M[mat], REAL_MAX, false, mat === 'pintura') })), nc: 0 }; }).catch(e => console.warn('carro real:', e));
   const d = new THREE.Object3D(), ds = new THREE.Object3D(), col = new THREE.Color(), cam = new THREE.Vector3();
   let nb = 0, CERCA = movil ? 90 : 230, tAhora = 0;
   const elegir = (a, tipo) => {
@@ -359,13 +391,18 @@ export function crearVehiculos({ T3, cuantos, movil, maxDist = Infinity }) {
     // desplazamiento lateral hacia la derecha del sentido de marcha (en Colombia se maneja por la derecha)
     carril(a, tipo) { if (a._vv === undefined) elegir(a, tipo); return (tipo === 'camion' ? 2.0 : tipo === 'carro' ? 1.8 : tipo === 'moto' ? 1.4 : 2.7) + a._vl; },
     vistos: [], // vehículos puestos en este cuadro (para seguirlos: data3d/seguir.js)
-    inicio() { for (const k in V) { V[k].nc = 0; V[k].nl = 0; } nb = 0; T3.camera.getWorldPosition(cam); api.vistos.length = 0; tAhora = performance.now(); },
+    inicio() { for (const k in V) { V[k].nc = 0; V[k].nl = 0; } nb = 0; T3.camera.getWorldPosition(cam); api.vistos.length = 0; tAhora = performance.now(); api.tPrev = api.tFrame || 0; api.tFrame = tAhora; if (REAL) REAL.nc = 0; },
     poner(a, tipo, x, y, z, rumbo) {
       if (a._vv === undefined) elegir(a, tipo);
-      a._x = x; a._y = y; a._z = z; a._r = rumbo; a._tp = tipo; a._ts = tAhora; api.vistos.push(a);
+      a._x = x; a._y = y; a._z = z; a._r = rumbo; a._tp = tipo; a._ts = tAhora; a._vs = api; api.vistos.push(a);
       const o = V[a._vv]; if (!o) return;
       d.position.set(x, y, z); d.rotation.set(0, rumbo, 0); d.updateMatrix();
-      const dist = Math.hypot(x - cam.x, z - cam.z, y - cam.y), cerca = dist < CERCA && o.nc < o.capC;
+      const dist = Math.hypot(x - cam.x, z - cam.z, y - cam.y);
+      if (REAL && tipo === 'carro' && a._vv !== 'pickup' && a._vv !== 'van' && dist < CERCA_R && REAL.nc < REAL_MAX && nb < blob.instanceMatrix.count) { // carro real de cerca
+        const i = REAL.nc++; col.setHex(a._vc); for (const p of REAL.cerca) { p.m.setMatrixAt(i, d.matrix); if (p.mat === 'pintura') p.m.setColorAt(i, col); }
+        const S = SOMBRA.carro; ds.position.set(x, y + 0.03, z); ds.rotation.set(0, rumbo, 0); ds.scale.set(S[0], 1, S[1]); ds.updateMatrix(); blob.setMatrixAt(nb++, ds.matrix); return;
+      }
+      const cerca = dist < CERCA && o.nc < o.capC;
       if (dist > maxDist || (!cerca && o.nl >= o.capL) || nb >= blob.instanceMatrix.count) return; // muy lejos o sin cupo: no se dibuja
       const lista = cerca ? o.cerca : o.lejos, i = cerca ? o.nc++ : o.nl++;
       col.setHex(a._vc);
@@ -378,6 +415,7 @@ export function crearVehiculos({ T3, cuantos, movil, maxDist = Infinity }) {
         for (const [lista, n] of [[o.cerca, o.nc], [o.lejos, o.nl]]) for (const p of lista) { p.m.count = n; p.m.instanceMatrix.needsUpdate = true; if (p.m.instanceColor) p.m.instanceColor.needsUpdate = true; }
       }
       blob.count = nb; blob.instanceMatrix.needsUpdate = true;
+      if (REAL) for (const p of REAL.cerca) { p.m.count = REAL.nc; p.m.instanceMatrix.needsUpdate = true; if (p.m.instanceColor) p.m.instanceColor.needsUpdate = true; }
     },
     set visible(v) { grupo.visible = v; },
     setCerca(m) { CERCA = m; }

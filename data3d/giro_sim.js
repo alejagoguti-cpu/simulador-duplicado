@@ -485,7 +485,7 @@ export async function iniciarSimulacion(cfg = {}) {
     }
     // ---- vehículos realistas: reemplazan las cajas de carros, motos, camiones y bicis (las cajas siguen guardando la posición para las luces de noche) ----
     try {
-      const mv = await import('./vehiculos.js?v=3');
+      const mv = await import('./vehiculos.js?v=5');
       VEH = mv.crearVehiculos({ T3, cuantos, movil: !!T3.movil });
       VEH.tipos = { carro: 1, moto: 1, camion: 1, bici: 1 };
       for (const k of Object.keys(VEH.tipos)) if (MALLAS[k]) MALLAS[k].visible = false;

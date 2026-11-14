@@ -20,7 +20,7 @@ export function iniciarSeguir({ THREE, T3, say }) {
   // adaptador: posición, frente (vector en el piso) y textos de cada clase
   const AD = {
     veh: {
-      pos: (o, P) => { P.set(o._x, o._y, o._z); return ahora() - o._ts < 800; },
+      pos: (o, P) => { P.set(o._x, o._y, o._z); return !o._vs || o._ts >= (o._vs.tPrev || 0); }, // sigue en la simulación si se puso en el último cuadro
       frente: (o) => [Math.sin(o._r), Math.cos(o._r)],
       nombre: (o) => VAR[o._vv] || 'Vehículo', clase: (o) => o._tp === 'moto' ? 'Moto' : o._tp === 'camion' ? 'Camión' : o._tp === 'bici' ? 'Bicicleta' : 'Carro',
       cam: (o) => o._tp === 'camion' ? [22, 30, 1.9] : o._tp === 'moto' || o._tp === 'bici' ? [13, 21, 1.1] : [16, 25, 1.2], // por encima de las copas de los árboles de la calle
