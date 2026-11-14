@@ -1,89 +1,66 @@
-/* ============ TABLERO · RELACIONES BIÓTICAS ============
-   Indicadores en vivo de la red biótica del simulador (data3d/biotica.js), en un solo panel sobrio: secciones separadas
-   por líneas finas, cifras en texto y gráficas simples (sin anillos, radares ni brillos).
-   - Actividad: cada especie tiene un ritmo de 24 horas [SUP] (actividad(k, h) en biotica.js); al terminar cada pausa el animal
-     sigue en reposo con probabilidad 1 - actividad. "Esperada" = promedio del ritmo; "medida" = individuos que no están en reposo.
-   - Conexiones: enlaces de la red entre individuos y árboles. Encuentro: los dos a menos de 18 m (la interacción ocurre).
-   Se actualiza dos veces por segundo; los datos se acumulan aunque el tablero esté cerrado. */
+/* ============ TABLERO · INTERACCIONES BIÓTICAS EN VIVO ============
+   Tres gráficas sobre lo que está ocurriendo en la red biótica del simulador (data3d/biotica.js):
+   1. Cuerda: quién interactúa con quién AHORA (especies de fauna y árboles alrededor; cintas = encuentros, color = tipo de relación).
+   2. Flujo del día: encuentros de cada tipo a lo largo de las 24 h (se va construyendo con el reloj de la simulación).
+   3. Pulso: cada encuentro nuevo es un punto en la franja de su tipo; los puntos corren hacia la izquierda (últimos 90 s).
+   Encuentro: dos agentes relacionados en la red a menos de 18 m (la interacción está ocurriendo). */
 export function iniciarTablero({ T3, bio }) {
-  const { AG, ESP, LINKS, TIPOS, CAT, CUENTA, ENC, CERCA, flora, actividad, ESTADO } = bio;
+  const { AG, ESP, LINKS, TIPOS, CAT, ENC, CERCA, flora, ESTADO } = bio;
   const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const hhmm = (min) => { min = ((Math.floor(min) % 1440) + 1440) % 1440; return String(Math.floor(min / 60)).padStart(2, '0') + ':' + String(min % 60).padStart(2, '0'); };
-  const pct = (v) => Math.round(v * 100);
-  const num = (v) => v.toLocaleString('es-CO');
+  const num = (v) => Math.round(v).toLocaleString('es-CO');
+  const TAU = Math.PI * 2, NT = TIPOS.length;
+  const rgba = (hex, a) => { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; };
+  const VERBO = { 0: 'caza a', 1: 'se alimenta de', 2: 'dispersa semillas de', 3: 'coopera con', 4: 'se refugia en', 5: 'visita las flores de', 6: 'anida en', 7: 'parasita el nido de', 8: 'compite con' };
+  const CORTO = { 0: 'Depredación', 1: 'Herbivoría', 2: 'Dispersión', 3: 'Mutualismo', 4: 'Refugio', 5: 'Polinización', 6: 'Dosel', 7: 'Parasitismo', 8: 'Competencia' };
 
-  /* ---------- datos fijos ---------- */
-  const GR = [...new Set(AG.map(a => ESP[a.e].cat))].sort((p, q) => p - q);
-  const nomGr = (c) => ({ 'Lombrices (suelo)': 'Lombrices', 'Flora y arbolado': 'Flora' }[CAT[c].n] || CAT[c].n);
-  const grupoHab = (h) => h.tipo === 'humedal' ? h.n : h.tipo === 'huerta' ? 'Huertas urbanas' : h.cnt ? (/bavaria/i.test(h.n) ? 'Bosque de Bavaria' : h.n) : 'Parques y zonas verdes';
-  const HABS = []; { const m = new Map(); for (const a of AG) { const k = grupoHab(a.h); if (!m.has(k)) { const o = { n: k, ag: [] }; m.set(k, o); HABS.push(o); } m.get(k).ag.push(a); } HABS.sort((p, q) => q.ag.length - p.ag.length); }
-  const MOD = Array.from({ length: 96 }, (_, i) => { let s = 0; for (const a of AG) s += actividad(a.e, i / 4); return s / AG.length; });
-  const MODG = {}; for (const c of GR) { const L = AG.filter(a => ESP[a.e].cat === c); MODG[c] = Array.from({ length: 48 }, (_, i) => L.reduce((s, a) => s + actividad(a.e, i / 2), 0) / L.length); }
+  /* ---------- nodos de la cuerda: fauna (orden fijo por grupo) + árboles más visitados ---------- */
+  const presentes = new Set(AG.map(a => a.e));
+  const FAUNA = Object.keys(ESP).filter(k => presentes.has(k)).sort((p, q) => ESP[p].cat - ESP[q].cat || ESP[p].n.localeCompare(ESP[q].n));
+  const NODO = new Map(); // id -> { n, c, v (suavizado) }
+  for (const k of FAUNA) NODO.set('e:' + k, { n: ESP[k].n, c: CAT[ESP[k].cat].c, v: 0, fauna: true });
+  const MAXF = 5, ACUF = new Map(); let FLSET = new Set(); // árboles con nodo propio (los más visitados); el resto va a "Otros árboles"
+  const nodoFlora = (f) => { if (FLSET.has(f)) return 'f:' + f; return 'f:otros'; };
+  NODO.set('f:otros', { n: 'Otros árboles', c: '#5f7a66', v: 0 });
+  const PAR = new Map(); // "src|dst|t" -> { s, d, t, v (suavizado), obj }
 
   /* ---------- series ---------- */
-  let diaAct = -1, primado = false, tFeed = 0;
-  const MED = new Array(96).fill(null), FEED = [], VISTO = new Map();
-  let ult = { t: 0, h: 0, dia: 1, mov: 0, ale: 0, rep: 0, act: 0, gr: {}, hab: [], con: 0, enc: 0 };
+  let diaAct = -1, primado = false, ahoraEnc = 0;
+  const DIA = Array.from({ length: 96 }, () => ({ n: 0, s: new Float32Array(NT) })); // promedio de encuentros por tipo en cada cuarto de hora
+  const EV = [], VISTO = new Map(); // pulsos: { tr (ms reales), t, txt, hab }
 
-  /* ---------- estilos: los mismos tokens de ui_sobrio.css ---------- */
+  /* ---------- estilos ---------- */
   const css = document.createElement('style'); css.textContent = `
-#tb{position:fixed;z-index:13;right:14px;top:14px;bottom:84px;width:400px;display:none;flex-direction:column;overflow:hidden;
+#tb{position:fixed;z-index:13;right:14px;top:14px;bottom:84px;width:460px;display:none;flex-direction:column;overflow:hidden;
   font:400 12px var(--ui-sans,'Inter',system-ui,sans-serif);color:var(--ui-tx,#e9ebec);background:var(--ui-bg,rgba(13,15,18,.8));
   border:1px solid var(--ui-bd,rgba(255,255,255,.075));border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.28);
   -webkit-backdrop-filter:blur(16px) saturate(1.1);backdrop-filter:blur(16px) saturate(1.1);font-variant-numeric:tabular-nums}
 body.tb-abierto #tb{display:flex}
 body.tb-abierto #dock{display:none}
-#tb .cab{flex:none;display:flex;align-items:center;justify-content:space-between;padding:12px 12px 12px 16px;border-bottom:1px solid var(--ui-bd,rgba(255,255,255,.075))}
-#tb .cab h2{margin:0;font:500 13px var(--ui-sans,sans-serif)}
-#tb .cab h2 span{color:var(--ui-tx3,#646c71);font-weight:400;margin-left:6px}
-#tb .x{width:26px;height:26px;border:0;border-radius:6px;background:none;color:var(--ui-tx2,#9aa2a7);font:300 18px/1 var(--ui-sans,sans-serif);cursor:pointer}
+#tb .cab{flex:none;display:flex;align-items:flex-end;gap:14px;padding:14px 12px 12px 18px}
+#tb .cab .big{font:300 40px/0.95 var(--ui-sans,sans-serif);letter-spacing:-.02em}
+#tb .cab .lbl{flex:1;padding-bottom:2px;font-size:12px;line-height:1.35;color:var(--ui-tx2,#9aa2a7)}
+#tb .cab .lbl b{display:block;color:var(--ui-tx,#e9ebec);font-weight:500}
+#tb .x{align-self:flex-start;width:26px;height:26px;border:0;border-radius:6px;background:none;color:var(--ui-tx2,#9aa2a7);font:300 18px/1 var(--ui-sans,sans-serif);cursor:pointer}
 #tb .x:hover{background:rgba(255,255,255,.06);color:var(--ui-tx,#e9ebec)}
-#tb .cuerpo{overflow:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent}
-#tb .sec{padding:14px 16px;border-top:1px solid var(--ui-bd,rgba(255,255,255,.075))}
-#tb .sec:first-child{border-top:0}
-#tb .tit{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin:0 0 10px;font-size:12px;font-weight:500}
-#tb .tit span{font-weight:400;font-size:11px;color:var(--ui-tx3,#646c71);text-align:right}
-#tb .hora{display:flex;align-items:baseline;gap:12px}
-#tb .hora b{font:300 34px/1 var(--ui-sans,sans-serif);letter-spacing:-.01em}
-#tb .hora span{color:var(--ui-tx2,#9aa2a7);font-size:12px;line-height:1.35}
-#tb .kpis{display:grid;grid-template-columns:repeat(3,1fr);margin-top:14px}
-#tb .kpis div{padding:0 12px;border-left:1px solid var(--ui-bd,rgba(255,255,255,.075))}
-#tb .kpis div:first-child{padding-left:0;border-left:0}
-#tb .kpis b{display:block;font:400 20px/1.1 var(--ui-sans,sans-serif)}
-#tb .kpis small{display:block;margin-top:3px;font-size:11px;color:var(--ui-tx3,#646c71)}
-#tb .graf{position:relative;touch-action:none;cursor:ew-resize}
-#tb .graf svg{display:block;width:100%;height:118px}
-#tb .ejes{display:flex;justify-content:space-between;margin-top:4px;font-size:10px;color:var(--ui-tx3,#646c71)}
-#tb .ley{display:flex;gap:16px;margin-top:8px;font-size:11px;color:var(--ui-tx2,#9aa2a7)}
-#tb .ley span{display:flex;align-items:center;gap:6px}#tb .ley i{width:14px;border-top:1.5px solid}
-#tb .filas{display:grid;gap:7px}
-#tb .fila{display:grid;grid-template-columns:minmax(0,1fr) 96px 54px;gap:10px;align-items:center;width:100%;padding:0;border:0;background:none;color:inherit;font:inherit;text-align:left}
-#tb button.fila{cursor:pointer}
-#tb button.fila:hover .n{color:var(--ui-acc-tx,#f2c995)}
-#tb .fila.off{opacity:.35}
-#tb .fila .n{display:flex;align-items:center;gap:8px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ui-tx,#e9ebec)}
-#tb .fila .n i{flex:none;width:6px;height:6px;border-radius:50%}
-#tb .fila .v{text-align:right;color:var(--ui-tx2,#9aa2a7);font-size:11px}
-#tb .fila .v b{color:var(--ui-tx,#e9ebec);font-weight:400}
-#tb .barra{position:relative;height:3px;border-radius:2px;background:rgba(255,255,255,.07)}
-#tb .barra i{position:absolute;left:0;top:0;bottom:0;border-radius:2px;transition:width .4s ease}
-#tb .barra .t{background:rgba(255,255,255,.22)}#tb .barra .e{background:var(--ui-acc,#e2a55b)}
-#tb .grupo{grid-template-columns:76px minmax(0,1fr) 38px}
-#tb .grupo svg{display:block;width:100%;height:20px}
-#tb .grupo .v{color:var(--ui-tx,#e9ebec)}
-#tb .bit{display:grid;gap:0}
-#tb .ev{display:grid;grid-template-columns:40px 1fr;gap:8px;padding:7px 0;border-top:1px solid rgba(255,255,255,.045);cursor:pointer}
-#tb .ev:first-child{border-top:0;padding-top:0}
-#tb .ev time{color:var(--ui-tx3,#646c71);font-size:11px}
-#tb .ev div{line-height:1.4}
-#tb .ev small{display:block;font-size:11px;color:var(--ui-tx3,#646c71)}
-#tb .ev:hover div>span{color:var(--ui-acc-tx,#f2c995)}
-#tb .vacio{color:var(--ui-tx3,#646c71)}
-#tb .nota{padding:12px 16px 16px;border-top:1px solid var(--ui-bd,rgba(255,255,255,.075));font-size:10.5px;line-height:1.5;color:var(--ui-tx3,#646c71)}
+#tb .cuerpo{overflow:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent;padding-bottom:6px}
+#tb .chips{display:flex;flex-wrap:wrap;gap:4px;padding:0 16px 12px}
+#tb .chip{display:flex;align-items:center;gap:6px;height:24px;padding:0 9px 0 8px;border:1px solid rgba(255,255,255,.07);border-radius:12px;background:rgba(255,255,255,.03);color:var(--ui-tx2,#9aa2a7);font:400 11px var(--ui-sans,sans-serif);cursor:pointer}
+#tb .chip i{width:7px;height:7px;border-radius:50%}
+#tb .chip b{font-weight:500;color:var(--ui-tx,#e9ebec)}
+#tb .chip.off{opacity:.35}
+#tb .chip:hover{border-color:rgba(255,255,255,.18)}
+#tb .gr{position:relative;padding:12px 16px 4px;border-top:1px solid var(--ui-bd,rgba(255,255,255,.075))}
+#tb .gr h3{display:flex;justify-content:space-between;align-items:baseline;margin:0 0 4px;font:500 12px var(--ui-sans,sans-serif)}
+#tb .gr h3 span{font-weight:400;font-size:11px;color:var(--ui-tx3,#646c71)}
+#tb canvas{display:block;width:100%;touch-action:none}
+#tb .pie{min-height:32px;padding:6px 0 8px;font-size:11.5px;line-height:1.4;color:var(--ui-tx2,#9aa2a7)}
+#tb .pie b{color:var(--ui-tx,#e9ebec);font-weight:500}
+#tb .ejes{display:flex;justify-content:space-between;font-size:10px;color:var(--ui-tx3,#646c71);margin-top:2px}
 #b-tablero svg{opacity:.8}
 @media(max-width:760px){
-  #tb{left:8px;right:8px;width:auto;top:auto;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 64px);height:min(72vh,700px);z-index:26}
-  #tb .fila{grid-template-columns:minmax(0,1fr) 70px 50px}
+  #tb{left:8px;right:8px;width:auto;top:auto;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 64px);height:min(76vh,760px);z-index:26}
+  #tb .cab .big{font-size:34px}
   body #hud-c{max-width:calc(100vw - 16px);padding:3px!important}
   body #hud-c button{padding:10px 4px!important;letter-spacing:.02em!important;font-size:10px!important}
   body #hud-c #b-pajaro{padding:10px 10px!important;letter-spacing:.08em!important}
@@ -92,143 +69,209 @@ body.tb-abierto #dock{display:none}
 }`;
   document.head.appendChild(css);
 
-  /* ---------- estructura ---------- */
-  const W = 360, HG = 118, Y0 = 104, AMP = 92, X = (i, n) => i / (n - 1) * W, Y = (v) => Y0 - v * AMP;
-  // noche (antes de las 5:45 y después de las 18:45) como un sombreado suave detrás de la curva
-  const noche = `<rect x="0" y="0" width="${(5.75 / 24 * W).toFixed(1)}" height="${Y0}" fill="rgba(0,0,0,.22)"/><rect x="${(18.75 / 24 * W).toFixed(1)}" y="0" width="${(W - 18.75 / 24 * W).toFixed(1)}" height="${Y0}" fill="rgba(0,0,0,.22)"/>`;
-  const tb = document.createElement('section'); tb.id = 'tb'; tb.setAttribute('aria-label', 'Tablero de relaciones bióticas');
+  const tb = document.createElement('section'); tb.id = 'tb'; tb.setAttribute('aria-label', 'Tablero de interacciones bióticas');
   tb.innerHTML = `
-  <div class="cab"><h2>Relaciones bióticas<span>tablero</span></h2><button class="x" aria-label="Cerrar">×</button></div>
+  <div class="cab"><div class="big" id="tb-n">0</div><div class="lbl"><b>interacciones ocurriendo</b><span id="tb-h">00:00</span></div><button class="x" aria-label="Cerrar">×</button></div>
   <div class="cuerpo">
-    <div class="sec">
-      <div class="hora"><b id="tb-hora">00:00</b><span id="tb-fase"></span></div>
-      <div class="kpis"><div><b id="tb-k1">0 %</b><small>despiertos</small></div><div><b id="tb-k2">0</b><small>conexiones</small></div><div><b id="tb-k3">0</b><small>encuentros ahora</small></div></div>
-    </div>
-    <div class="sec">
-      <div class="tit">Actividad durante el día<span id="tb-lect">arrastra para cambiar la hora</span></div>
-      <div class="graf" id="tb-graf"><svg viewBox="0 0 ${W} ${HG}" preserveAspectRatio="none" aria-label="Porcentaje de individuos despiertos durante el día">
-        ${noche}
-        ${[0.5, 1].map(v => `<line x1="0" x2="${W}" y1="${Y(v)}" y2="${Y(v)}" stroke="rgba(255,255,255,.06)" vector-effect="non-scaling-stroke"/>`).join('')}
-        <line x1="0" x2="${W}" y1="${Y0}" y2="${Y0}" stroke="rgba(255,255,255,.14)" vector-effect="non-scaling-stroke"/>
-        <path id="tb-pmod" fill="none" stroke="#7d858a" stroke-width="1.2" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/>
-        <path id="tb-parea" fill="rgba(226,165,91,.10)"/>
-        <path id="tb-pmed" fill="none" stroke="#e2a55b" stroke-width="1.6" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
-        <line id="tb-cur" y1="0" y2="${Y0}" stroke="#e9ebec" stroke-width="1" vector-effect="non-scaling-stroke"/>
-      </svg></div>
-      <div class="ejes"><span>0 h</span><span>6</span><span>12</span><span>18</span><span>24</span></div>
-      <div class="ley"><span><i style="border-color:#e2a55b"></i>Medida</span><span><i style="border-color:#7d858a;border-top-style:dashed"></i>Esperada según cada especie</span></div>
-    </div>
-    <div class="sec"><div class="tit">Interacciones ahora<span>encuentros / conexiones</span></div><div class="filas" id="tb-tipos"></div></div>
-    <div class="sec"><div class="tit">Grupos<span>ritmo de 24 h · despiertos</span></div><div class="filas" id="tb-grupos"></div></div>
-    <div class="sec"><div class="tit">Hábitats<span>despiertos / individuos</span></div><div class="filas" id="tb-habs"></div></div>
-    <div class="sec"><div class="tit">Bitácora<span>toca para ir al lugar</span></div><div class="bit" id="tb-feed"><div class="vacio">Esperando encuentros…</div></div></div>
-    <div class="nota">Calculado en vivo sobre los ${num(AG.length)} agentes no humanos de la simulación y la Red de Interacciones Bióticas de Kennedy. El ritmo de 24 horas de cada especie es un supuesto de modelación [SUP]: aves con coro del alba y pico de la tarde, polinizadores y reptiles con el sol, fauna nocturna. Encuentro: dos agentes relacionados a menos de ${CERCA} m.</div>
+    <div class="chips" id="tb-chips">${TIPOS.map(t => `<button class="chip" data-t="${t.id}" title="${esc(t.n)}: mostrar u ocultar en el territorio"><i style="background:${t.c}"></i>${CORTO[t.id] || esc(t.n)} <b id="tb-c${t.id}">0</b></button>`).join('')}</div>
+    <div class="gr"><h3>Quién interactúa con quién<span>ahora</span></h3><canvas id="tb-cuerda" aria-label="Diagrama de cuerdas de las interacciones que están ocurriendo"></canvas><div class="pie" id="tb-pie1">Pasa o toca una especie para ver con quién está interactuando.</div></div>
+    <div class="gr"><h3>Interacciones durante el día<span id="tb-ld">encuentros por tipo</span></h3><canvas id="tb-flujo" aria-label="Encuentros por tipo de relación durante el día"></canvas><div class="ejes"><span>0 h</span><span>6</span><span>12</span><span>18</span><span>24</span></div><div class="pie" id="tb-pie2">Arrastra sobre la gráfica para cambiar la hora de la simulación.</div></div>
+    <div class="gr"><h3>Pulso<span>cada punto es un encuentro nuevo · últimos 90 s</span></h3><canvas id="tb-pulso" aria-label="Encuentros nuevos por tipo en los últimos 90 segundos"></canvas><div class="pie" id="tb-pie3">Pasa o toca un punto para ver qué ocurrió.</div></div>
   </div>`;
   document.body.appendChild(tb);
   const $ = (id) => tb.querySelector('#' + id);
 
   // botón en la barra inferior (antes de JUGAR)
   const hud = document.getElementById('hud-c'), pj = document.getElementById('b-pajaro');
-  const btn = document.createElement('button'); btn.id = 'b-tablero'; btn.title = 'Tablero de las relaciones bióticas, en vivo';
+  const btn = document.createElement('button'); btn.id = 'b-tablero'; btn.title = 'Tablero de las interacciones bióticas, en vivo';
   btn.innerHTML = '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="m7 15 4-5 3 3 5-7"/></svg>Tablero';
   if (hud) { if (pj && pj.parentElement === hud) hud.insertBefore(btn, pj); else hud.appendChild(btn); } else { btn.style.cssText = 'position:fixed;z-index:12;right:14px;bottom:20px'; document.body.appendChild(btn); }
-  const abrir = (on) => { document.body.classList.toggle('tb-abierto', on); btn.classList.toggle('on', on); if (on) pintar(); };
-  btn.onclick = () => abrir(!document.body.classList.contains('tb-abierto'));
+  const abierto = () => document.body.classList.contains('tb-abierto');
+  const abrir = (on) => { document.body.classList.toggle('tb-abierto', on); btn.classList.toggle('on', on); if (on) { pintarTexto(); cancelAnimationFrame(raf); tPrev = performance.now(); raf = requestAnimationFrame(cuadro); } };
+  btn.onclick = () => abrir(!abierto());
   tb.querySelector('.x').onclick = () => abrir(false);
-
-  // gráfica del día: la curva esperada es fija; arrastrar sobre ella mueve el reloj; pasar el puntero lee los valores
-  $('tb-pmod').setAttribute('d', MOD.map((v, i) => (i ? 'L' : 'M') + X(i, 96).toFixed(1) + ' ' + Y(v).toFixed(1)).join(''));
-  const graf = $('tb-graf'), lect = $('tb-lect'); let arr = false;
-  const enGraf = (e) => { const r = graf.getBoundingClientRect(); return Math.max(0, Math.min(0.9999, (e.clientX - r.left) / r.width)); };
-  const leer = (f) => { const i = Math.round(f * 95); lect.textContent = `${hhmm(i * 15)} · medida ${MED[i] === null ? '–' : pct(MED[i]) + ' %'} · esperada ${pct(MOD[i])} %`; };
-  graf.addEventListener('pointerdown', (e) => { arr = true; graf.setPointerCapture(e.pointerId); mover(e); });
-  graf.addEventListener('pointermove', (e) => { if (arr) mover(e); else leer(enGraf(e)); });
-  const soltar = () => { arr = false; }; graf.addEventListener('pointerup', soltar); graf.addEventListener('pointercancel', soltar);
-  graf.addEventListener('pointerleave', () => { if (!arr) lect.textContent = 'arrastra para cambiar la hora'; });
-  function mover(e) { const f = enGraf(e), r = T3.reloj; if (r) { r.t = Math.round(f * 1440 / 5) * 5; tick(); pintar(); } leer(f); }
-
-  // interacciones por tipo: tocar una prende o apaga ese tipo en el 3D (igual que en el panel de la red biótica)
-  const tipos = $('tb-tipos');
-  tipos.innerHTML = TIPOS.map(t => `<button class="fila" data-t="${t.id}" title="Mostrar u ocultar en el territorio"><span class="n"><i style="background:${t.c}"></i>${esc(t.n)}</span><span class="barra"><i class="t" style="width:0"></i><i class="e" style="width:0"></i></span><span class="v">0</span></button>`).join('');
-  tipos.querySelectorAll('.fila').forEach(b => b.onclick = () => {
+  tb.querySelectorAll('.chip').forEach(b => b.onclick = () => {
     const t = +b.dataset.t; if (ESTADO.tipos.has(t)) ESTADO.tipos.delete(t); else ESTADO.tipos.add(t);
     const off = !ESTADO.tipos.has(t); b.classList.toggle('off', off); const o = document.querySelector(`#bt-pan .bt-tipo[data-t="${t}"]`); if (o) o.classList.toggle('off', off);
   });
-
-  // grupos: la curva de 24 h de cada grupo (esperada) con la hora actual marcada
-  const SW = 120, SH = 20, sy = (v) => SH - 2 - v * (SH - 4);
-  $('tb-grupos').innerHTML = GR.map(c => `<div class="fila grupo"><span class="n">${esc(nomGr(c))}</span>
-    <svg viewBox="0 0 ${SW} ${SH}" preserveAspectRatio="none" aria-hidden="true"><path d="${MODG[c].map((v, i) => (i ? 'L' : 'M') + (i / 47 * SW).toFixed(1) + ' ' + sy(v).toFixed(1)).join('')}" fill="none" stroke="#7d858a" stroke-width="1" vector-effect="non-scaling-stroke"/>
-    <line id="tb-gl${c}" y1="0" y2="${SH}" stroke="rgba(255,255,255,.18)" vector-effect="non-scaling-stroke"/><circle id="tb-gp${c}" r="2.2" fill="#e2a55b"/></svg>
-    <span class="v" id="tb-gv${c}">0 %</span></div>`).join('');
-
-  // hábitats
-  const NH = HABS.length;
-  $('tb-habs').innerHTML = HABS.map((h, i) => `<div class="fila"><span class="n">${esc(h.n)}</span><span class="barra"><i class="e" id="tb-hb${i}" style="width:0"></i></span><span class="v" id="tb-h${i}">0</span></div>`).join('');
+  const activo = (t) => ESTADO.tipos.has(t);
 
   /* ---------- toma de datos (siempre, dos veces por segundo) ---------- */
   const nombreDe = (o, L) => o.id !== undefined ? ESP[o.e].n : ((L && flora[L.f] && flora[L.f].n) || o.n || 'árbol');
-  const VERBO = { 0: 'caza a', 1: 'se alimenta de', 2: 'dispersa semillas de', 3: 'coopera con', 4: 'se refugia en', 5: 'visita las flores de', 6: 'anida en', 7: 'parasita el nido de', 8: 'compite con' };
+  let tFl = 0;
   function tick() {
-    const r = T3.reloj, t = r && r.t >= 0 ? r.t : 540, dia = r ? r.dia : 1, h = (t / 60) % 24;
-    if (dia !== diaAct) { diaAct = dia; MED.fill(null); }
-    let mov = 0, ale = 0, rep = 0; const gr = {}; for (const c of GR) gr[c] = [0, 0];
-    for (const a of AG) {
-      const g = gr[ESP[a.e].cat]; g[1]++;
-      if (a.duerme) { rep++; continue; }
-      g[0]++;
-      if (a.vel > 0.02 || a.st === 'liba' || a.salto || a.st === 'vuelo') mov++; else ale++;
-    }
-    const hab = HABS.map(x => { let n = 0; for (const a of x.ag) if (!a.duerme) n++; return n; });
-    const act = (mov + ale) / AG.length; MED[Math.floor(t / 15) % 96] = act;
-    let con = 0, enc = 0; for (let i = 0; i < CUENTA.length; i++) { con += CUENTA[i]; enc += ENC[i]; }
-    // encuentros nuevos para la bitácora (una pareja vuelve a contar solo si pasaron 60 s reales desde su último encuentro)
-    const nuevos = [], ahora = performance.now();
+    const r = T3.reloj, t = r && r.t >= 0 ? r.t : 540, dia = r ? r.dia : 1;
+    if (dia !== diaAct) { diaAct = dia; for (const s of DIA) { s.n = 0; s.s.fill(0); } }
+    const sl = DIA[Math.floor(t / 15) % 96]; sl.n++; for (let i = 0; i < NT; i++) sl.s[i] += (ENC[i] - sl.s[i]) / Math.min(sl.n, 8); // promedio móvil del cuarto de hora
+    // encuentros ocurriendo ahora: pares (especie -> especie o árbol, tipo)
+    for (const p of PAR.values()) p.obj = 0;
+    const ahora = performance.now(); let n = 0;
     for (const L of LINKS.values()) {
       if (L.al < 0.3 || Math.hypot(L.b.x - L.a.x, L.b.z - L.a.z) >= CERCA) continue;
-      const k = L.a.id + '|' + (L.b.id !== undefined ? 'a' + L.b.id : 'f' + Math.round(L.b.x) + ',' + Math.round(L.b.z)), u0 = VISTO.get(k);
-      if (primado && (u0 === undefined || ahora - u0 > 60000)) nuevos.push(L);
-      VISTO.set(k, ahora);
+      n++;
+      const s = 'e:' + L.a.e; let d;
+      if (L.b.id !== undefined) d = 'e:' + L.b.e; else { const f = L.f || '?'; ACUF.set(f, (ACUF.get(f) || 0) + 1); d = nodoFlora(f); }
+      const k = s + '|' + d + '|' + L.t; let p = PAR.get(k); if (!p) PAR.set(k, p = { s, d, t: L.t, v: 0, obj: 0 }); p.obj++;
+      // pulso: encuentro nuevo (la misma pareja vuelve a contar solo después de 60 s reales)
+      const kv = L.a.id + '|' + (L.b.id !== undefined ? 'a' + L.b.id : 'f' + Math.round(L.b.x) + ',' + Math.round(L.b.z)), u0 = VISTO.get(kv);
+      if (primado && (u0 === undefined || ahora - u0 > 60000)) EV.push({ tr: ahora + Math.random() * 500, t: L.t, txt: `${nombreDe(L.a)} ${VERBO[L.t] || '→'} ${nombreDe(L.b, L).toLowerCase()}`, hab: L.a.h.n, y: Math.random() });
+      VISTO.set(kv, ahora);
     }
+    ahoraEnc = n; primado = true;
+    while (EV.length && ahora - EV[0].tr > 92000) EV.shift(); if (EV.length > 1500) EV.splice(0, EV.length - 1500);
     if (VISTO.size > 20000) for (const [k, u0] of VISTO) if (ahora - u0 > 60000) VISTO.delete(k);
-    primado = true;
-    if (nuevos.length && ahora > tFeed) {
-      const L = nuevos[Math.floor(Math.random() * nuevos.length)]; tFeed = ahora + 2500;
-      FEED.unshift({ t, a: L.a, txt: `${nombreDe(L.a)} ${VERBO[L.t] || '→'} ${nombreDe(L.b, L).toLowerCase()}`, tipo: L.t, hab: L.a.h.n }); if (FEED.length > 5) FEED.pop(); ult.feedNuevo = true;
+    // cada 10 s: qué árboles tienen nodo propio (los más visitados del día)
+    if (ahora > tFl) {
+      tFl = ahora + 10000; const top = [...ACUF.entries()].filter(([f]) => flora[f]).sort((p, q) => q[1] - p[1]).slice(0, MAXF).map(([f]) => f);
+      const nuevo = new Set(top); if ([...nuevo].some(f => !FLSET.has(f)) || nuevo.size !== FLSET.size) {
+        FLSET = nuevo; for (const f of top) if (!NODO.has('f:' + f)) NODO.set('f:' + f, { n: flora[f].n, c: CAT[0].c, v: 0 });
+        for (const p of [...PAR.values()]) if (p.d.startsWith('f:')) { p.obj = 0; } // los pares de árboles se reacomodan en el siguiente cuadro
+      }
     }
-    Object.assign(ult, { t, h, dia, mov, ale, rep, act, gr, hab, con, enc });
+    for (const [k, p] of PAR) if (p.obj === 0 && p.v < 0.02) PAR.delete(k);
+    ult.t = t; ult.dia = dia;
+  }
+  const ult = { t: 0, dia: 1 };
+
+  /* ---------- lienzos ---------- */
+  const lienzo = (id, alto) => { const c = $(id), g = c.getContext('2d'); const o = { c, g, w: 0, h: 0, dpr: 1, alto };
+    o.medir = () => { const w = c.clientWidth || 400, h = typeof alto === 'function' ? alto(w) : alto, dpr = Math.min(2, devicePixelRatio || 1); if (w !== o.w || h !== o.h || dpr !== o.dpr) { o.w = w; o.h = h; o.dpr = dpr; c.width = w * dpr; c.height = h * dpr; c.style.height = h + 'px'; } g.setTransform(dpr, 0, 0, dpr, 0, 0); };
+    return o; };
+  const CU = lienzo('tb-cuerda', (w) => Math.min(w, 430)), FL = lienzo('tb-flujo', 150), PU = lienzo('tb-pulso', 9 * 18 + 10);
+
+  /* ---------- 1. cuerda ---------- */
+  let hoverN = null, geo = null;
+  function dibujarCuerda(dt) {
+    CU.medir(); const { g, w, h } = CU; g.clearRect(0, 0, w, h);
+    const k = Math.min(1, dt * 2.5);
+    for (const p of PAR.values()) p.v += ((activo(p.t) ? p.obj : 0) - p.v) * k;
+    for (const N of NODO.values()) N.obj = 0;
+    for (const p of PAR.values()) { const a = NODO.get(p.s), b = NODO.get(p.d); if (a) a.obj += p.v; if (b && b !== a) b.obj += p.v; else if (b) b.obj += p.v; }
+    for (const N of NODO.values()) N.v = N.obj;
+    const orden = [...NODO.entries()].filter(([, N]) => N.v > 0.04);
+    const cx = w / 2, cy = h / 2, R = Math.min(w, h) / 2 - 92, GAP = orden.length > 1 ? 0.022 : 0;
+    const tot = orden.reduce((s, [, N]) => s + N.v, 0);
+    if (tot < 0.05) { g.fillStyle = '#646c71'; g.font = '12px Inter,system-ui,sans-serif'; g.textAlign = 'center'; g.fillText('Sin encuentros en este momento', cx, cy); geo = null; return; }
+    const disp = TAU - GAP * orden.length; let a = -Math.PI / 2; const ARC = new Map();
+    for (const [id, N] of orden) { const da = N.v / tot * disp; ARC.set(id, { a0: a, a1: a + da, cur: a, N }); a += da + GAP; }
+    geo = { cx, cy, R, ARC };
+    // cintas
+    const foco = hoverN && ARC.has(hoverN) ? hoverN : null;
+    // una cinta por pareja de nodos (suma de todos sus tipos), del color del tipo que más pesa
+    const M = new Map(); for (const p of PAR.values()) { if (p.v <= 0.02 || !ARC.has(p.s) || !ARC.has(p.d)) continue; const k = p.s + '|' + p.d; let m = M.get(k); if (!m) M.set(k, m = { s: p.s, d: p.d, v: 0, t: p.t, tv: 0 }); m.v += p.v; if (p.v > m.tv) { m.tv = p.v; m.t = p.t; } }
+    const pares = [...M.values()].sort((p, q) => p.t - q.t || q.v - p.v);
+    const r = R - 3, P = (ang, rr = r) => [cx + Math.cos(ang) * rr, cy + Math.sin(ang) * rr];
+    for (const p of pares) {
+      const A = ARC.get(p.s), B = ARC.get(p.d), wa = p.v / tot * disp;
+      const s0 = A.cur, s1 = s0 + wa; A.cur = s1; let d0, d1;
+      if (p.s === p.d) { d0 = s0; d1 = s1; } else { d0 = B.cur; d1 = d0 + wa; B.cur = d1; }
+      const on = !foco || foco === p.s || foco === p.d, col = TIPOS[p.t].c;
+      g.beginPath(); const [x0, y0] = P(s0); g.moveTo(x0, y0); g.arc(cx, cy, r, s0, s1);
+      const [x2, y2] = P(d0); g.quadraticCurveTo(cx, cy, x2, y2); g.arc(cx, cy, r, d0, d1);
+      g.quadraticCurveTo(cx, cy, x0, y0); g.closePath();
+      g.fillStyle = rgba(col, on ? (foco ? 0.78 : 0.5) : 0.06); g.fill(); g.strokeStyle = rgba(col, on ? 0.9 : 0.08); g.lineWidth = 0.6; g.stroke();
+    }
+    // arcos de los nodos y nombres
+    for (const [id, A] of ARC) {
+      const on = !foco || foco === id || pares.some(p => (p.s === foco && p.d === id) || (p.d === foco && p.s === id));
+      g.beginPath(); g.arc(cx, cy, R + 4, A.a0, A.a1); g.lineWidth = 7; g.strokeStyle = rgba(A.N.c, on ? 0.95 : 0.25); g.lineCap = 'butt'; g.stroke();
+      if (A.a1 - A.a0 > 0.045 || foco === id) {
+        const m = (A.a0 + A.a1) / 2, [lx, ly] = P(m, R + 14), der = Math.cos(m) >= 0;
+        g.save(); g.translate(lx, ly); g.rotate(der ? m : m + Math.PI); g.textAlign = der ? 'left' : 'right'; g.textBaseline = 'middle';
+        g.font = (foco === id ? '500 ' : '400 ') + '10.5px Inter,system-ui,sans-serif'; g.fillStyle = on ? (A.N.fauna ? '#e9ebec' : '#a9bfae') : '#4b5257';
+        const nn = A.N.n.split(',')[0].replace(/ \(.*\)/, ''), txt = nn.length > 15 ? nn.slice(0, 14) + '…' : nn; g.fillText(txt, 0, 0); g.restore();
+      }
+    }
+  }
+  const nodoEn = (e) => { if (!geo) return null; const r = CU.c.getBoundingClientRect(), x = e.clientX - r.left - geo.cx, y = e.clientY - r.top - geo.cy, d = Math.hypot(x, y); if (d < geo.R - 40 || d > geo.R + 90) return null; let ang = Math.atan2(y, x); for (const [id, A] of geo.ARC) { for (const k of [0, TAU, -TAU]) if (ang + k >= A.a0 - 0.01 && ang + k <= A.a1 + 0.01) return id; } return null; };
+  function textoNodo(id) {
+    const N = NODO.get(id); if (!N) return; const L = [...PAR.values()].filter(p => p.v > 0.3 && (p.s === id || p.d === id)).sort((p, q) => q.v - p.v).slice(0, 4);
+    const tot = Math.round(L.reduce((s, p) => s + p.v, 0));
+    $('tb-pie1').innerHTML = `<b>${esc(N.n)}</b> · ${tot} ${tot === 1 ? 'interacción' : 'interacciones'} ahora${L.length ? ': ' + L.map(p => { const o = NODO.get(p.s === id ? p.d : p.s); return `${p.s === id ? esc(VERBO[p.t] || '') : esc(CORTO[p.t]).toLowerCase() + ' con'} <b>${esc(o ? o.n.toLowerCase() : '')}</b> (${Math.round(p.v)})`; }).join(', ') : ''}`;
+  }
+  CU.c.addEventListener('pointermove', (e) => { const id = nodoEn(e); if (id !== hoverN) { hoverN = id; if (id) textoNodo(id); else $('tb-pie1').textContent = 'Pasa o toca una especie para ver con quién está interactuando.'; } });
+  CU.c.addEventListener('pointerleave', () => { hoverN = null; $('tb-pie1').textContent = 'Pasa o toca una especie para ver con quién está interactuando.'; });
+  CU.c.addEventListener('pointerdown', (e) => { const id = nodoEn(e); hoverN = id; if (id) textoNodo(id); });
+
+  /* ---------- 2. flujo del día (gráfica de corriente, centrada) ---------- */
+  let hovSlot = -1;
+  function dibujarFlujo() {
+    FL.medir(); const { g, w, h } = FL; g.clearRect(0, 0, w, h);
+    const X = (i) => (i + 0.5) / 96 * w, mid = h / 2;
+    // noche
+    g.fillStyle = 'rgba(0,0,0,.2)'; g.fillRect(0, 0, 5.75 / 24 * w, h); g.fillRect(18.75 / 24 * w, 0, w - 18.75 / 24 * w, h);
+    g.strokeStyle = 'rgba(255,255,255,.05)'; g.lineWidth = 1; for (const hh of [6, 12, 18]) { const x = Math.round(hh / 24 * w) + 0.5; g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); }
+    const tipos = TIPOS.map(t => t.id).filter(activo);
+    const tot = DIA.map(s => s.n ? tipos.reduce((a, t) => a + s.s[t], 0) : 0), max = Math.max(10, ...tot);
+    const esc_ = (h - 14) / max;
+    // suavizado: promedio con los vecinos para que la corriente fluya
+    const val = (i, t) => { let s = 0, n = 0; for (let k = -1; k <= 1; k++) { const S = DIA[i + k]; if (S && S.n) { s += S.s[t] * (k ? 1 : 2); n += k ? 1 : 2; } } return DIA[i].n ? s / n : 0; };
+    const base = DIA.map((_, i) => -tipos.reduce((a, t) => a + val(i, t), 0) * esc_ / 2);
+    const acum = new Float32Array(96);
+    for (const t of tipos) {
+      const y0 = [], y1 = [];
+      for (let i = 0; i < 96; i++) { const v = val(i, t) * esc_; y0.push(mid + base[i] + acum[i]); y1.push(mid + base[i] + acum[i] + v); acum[i] += v; }
+      g.beginPath(); curva(g, X, y1, false); curva(g, X, y0, true); g.closePath();
+      const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, rgba(TIPOS[t].c, 0.95)); gr.addColorStop(1, rgba(TIPOS[t].c, 0.7));
+      g.fillStyle = gr; g.fill(); g.strokeStyle = 'rgba(13,15,18,.55)'; g.lineWidth = 0.75; g.stroke();
+    }
+    // hora actual y lectura
+    const cx = ult.t / 1440 * w; g.strokeStyle = 'rgba(233,235,236,.85)'; g.lineWidth = 1; g.beginPath(); g.moveTo(cx, 0); g.lineTo(cx, h); g.stroke();
+    g.fillStyle = '#e9ebec'; g.font = '500 10px Inter,system-ui,sans-serif'; g.textAlign = cx > w - 40 ? 'right' : 'left'; g.fillText(hhmm(ult.t), cx + (cx > w - 40 ? -5 : 5), 11);
+    if (hovSlot >= 0) { const x = X(hovSlot); g.strokeStyle = 'rgba(255,255,255,.4)'; g.setLineDash([2, 3]); g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); g.setLineDash([]); }
+  }
+  function curva(g, X, Y, rev) { // curva suave (puntos medios) de ida o de vuelta
+    const n = Y.length, idx = rev ? [...Array(n).keys()].reverse() : [...Array(n).keys()];
+    idx.forEach((i, k) => { const x = X(i), y = Y[i]; if (k === 0) { if (rev) g.lineTo(x, y); else g.moveTo(x, y); return; } const j = idx[k - 1], px = X(j), py = Y[j]; g.quadraticCurveTo(px, py, (px + x) / 2, (py + y) / 2); if (k === n - 1) g.lineTo(x, y); });
+  }
+  const slotEn = (e) => { const r = FL.c.getBoundingClientRect(); return Math.max(0, Math.min(95, Math.floor((e.clientX - r.left) / r.width * 96))); };
+  const textoSlot = (i) => { const S = DIA[i]; if (!S.n) { $('tb-pie2').innerHTML = `<b>${hhmm(i * 15)}</b> · todavía sin datos a esta hora`; return; } const L = TIPOS.map(t => [t, S.s[t.id]]).filter(([t, v]) => activo(t.id) && v >= 0.5).sort((p, q) => q[1] - p[1]).slice(0, 4); $('tb-pie2').innerHTML = `<b>${hhmm(i * 15)}</b> · ${L.map(([t, v]) => `${CORTO[t.id].toLowerCase()} <b>${num(v)}</b>`).join(' · ') || 'casi sin encuentros'}`; };
+  let arrF = false;
+  const moverHora = (e) => { const r = FL.c.getBoundingClientRect(), f = Math.max(0, Math.min(0.9999, (e.clientX - r.left) / r.width)); if (T3.reloj) { T3.reloj.t = Math.round(f * 1440 / 5) * 5; ult.t = T3.reloj.t; pintarTexto(); } };
+  FL.c.addEventListener('pointerdown', (e) => { arrF = true; FL.c.setPointerCapture(e.pointerId); moverHora(e); });
+  FL.c.addEventListener('pointermove', (e) => { hovSlot = slotEn(e); textoSlot(hovSlot); if (arrF) moverHora(e); });
+  const soltarF = () => { arrF = false; }; FL.c.addEventListener('pointerup', soltarF); FL.c.addEventListener('pointercancel', soltarF);
+  FL.c.addEventListener('pointerleave', () => { hovSlot = -1; $('tb-pie2').textContent = 'Arrastra sobre la gráfica para cambiar la hora de la simulación.'; });
+
+  /* ---------- 3. pulso ---------- */
+  const LW = 84, FILA = 18, VENT = 90000; let hovEv = null;
+  function dibujarPulso() {
+    PU.medir(); const { g, w, h } = PU; g.clearRect(0, 0, w, h);
+    const ahora = performance.now(), x0 = LW, ancho = w - LW - 6;
+    g.font = '400 10px Inter,system-ui,sans-serif'; g.textBaseline = 'middle'; g.textAlign = 'left';
+    TIPOS.forEach((t, i) => { const y = 5 + i * FILA + FILA / 2; g.fillStyle = activo(t.id) ? '#9aa2a7' : '#4b5257'; g.fillText(CORTO[t.id], 0, y); g.strokeStyle = 'rgba(255,255,255,.045)'; g.beginPath(); g.moveTo(x0, y + 0.5); g.lineTo(w, y + 0.5); g.stroke(); });
+    for (const s of [30, 60]) { const x = x0 + ancho - s / 90 * ancho; g.fillStyle = 'rgba(255,255,255,.04)'; g.fillRect(Math.round(x), 0, 1, h); }
+    for (const ev of EV) {
+      const edad = ahora - ev.tr; if (edad < 0 || edad > VENT || !activo(ev.t)) continue;
+      const x = x0 + ancho * (1 - edad / VENT), y = 5 + ev.t * FILA + FILA / 2 + (ev.y - 0.5) * 12, col = TIPOS[ev.t].c, a = 1 - edad / VENT * 0.75;
+      if (edad < 1400) { const k = edad / 1400; g.beginPath(); g.arc(x, y, 3 + k * 9, 0, TAU); g.strokeStyle = rgba(col, (1 - k) * 0.7); g.lineWidth = 1.2; g.stroke(); }
+      g.beginPath(); g.arc(x, y, ev === hovEv ? 4.2 : 2, 0, TAU); g.fillStyle = rgba(col, a * 0.7); g.fill();
+    }
+    g.fillStyle = '#646c71'; g.textAlign = 'right'; g.fillText('ahora', w - 2, h - 3);
+  }
+  const evEn = (e) => { const r = PU.c.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top, ahora = performance.now(), ancho = PU.w - LW - 6; let best = null, bd = 10; for (const ev of EV) { const edad = ahora - ev.tr; if (edad < 0 || edad > VENT || !activo(ev.t)) continue; const x = LW + ancho * (1 - edad / VENT), y = 5 + ev.t * FILA + FILA / 2 + (ev.y - 0.5) * 12, d = Math.hypot(x - mx, y - my); if (d < bd) { bd = d; best = ev; } } return best; };
+  const textoEv = (ev) => { $('tb-pie3').innerHTML = ev ? `<b>${esc(ev.txt)}</b> · ${esc(TIPOS[ev.t].n)} · ${esc(ev.hab)}` : 'Pasa o toca un punto para ver qué ocurrió.'; };
+  PU.c.addEventListener('pointermove', (e) => { hovEv = evEn(e); textoEv(hovEv); });
+  PU.c.addEventListener('pointerdown', (e) => { hovEv = evEn(e); textoEv(hovEv); });
+  PU.c.addEventListener('pointerleave', () => { hovEv = null; textoEv(null); });
+
+  /* ---------- texto de cabecera ---------- */
+  const fase = (h) => h < 4.75 ? 'noche' : h < 5.67 ? 'madrugada' : h < 9 ? 'amanecer' : h < 11.5 ? 'mañana' : h < 14.5 ? 'mediodía' : h < 17 ? 'tarde' : h < 18.6 ? 'atardecer' : h < 20 ? 'anochecer' : 'noche';
+  function pintarTexto() {
+    if (!abierto()) return;
+    const r = T3.reloj; $('tb-n').textContent = num(ahoraEnc);
+    $('tb-h').textContent = `${hhmm(ult.t)} · ${fase((ult.t / 60) % 24)} · día ${ult.dia}${r && r.play === false ? ' · en pausa' : ''}`;
+    TIPOS.forEach(t => { const el = $('tb-c' + t.id); if (el) el.textContent = ENC[t.id]; tb.querySelector(`.chip[data-t="${t.id}"]`).classList.toggle('off', !activo(t.id)); });
+    if (hoverN) textoNodo(hoverN);
   }
 
-  /* ---------- dibujo (solo con el tablero abierto) ---------- */
-  const fase = (h) => h < 4.75 ? 'Noche, fauna nocturna activa' : h < 5.67 ? 'Madrugada' : h < 9 ? 'Amanecer, coro del alba' : h < 11.5 ? 'Mañana, forrajeo' : h < 14.5 ? 'Mediodía, polinizadores y reptiles al sol' : h < 17 ? 'Tarde, forrajeo' : h < 18.6 ? 'Atardecer, regreso a los dormideros' : h < 20 ? 'Anochecer, relevo nocturno' : 'Noche, fauna nocturna activa';
-  function pintar() {
-    if (!document.body.classList.contains('tb-abierto')) return;
-    const u = ult, r = T3.reloj;
-    $('tb-hora').textContent = hhmm(u.t);
-    $('tb-fase').innerHTML = `${fase(u.h)}<br>Día ${u.dia}${r && r.play === false ? ', en pausa' : ''}`;
-    $('tb-k1').textContent = pct(u.act) + ' %'; $('tb-k2').textContent = num(u.con); $('tb-k3').textContent = num(u.enc);
-    // curva medida (tramos continuos)
-    let d = '', area = '', tr = [];
-    const cerrar = () => { if (tr.length > 1) { const p = tr.map(([i, v], k) => (k ? 'L' : 'M') + X(i, 96).toFixed(1) + ' ' + Y(v).toFixed(1)).join(''); d += p; area += p + `L${X(tr[tr.length - 1][0], 96).toFixed(1)} ${Y0}L${X(tr[0][0], 96).toFixed(1)} ${Y0}Z`; } tr = []; };
-    for (let i = 0; i < 96; i++) { if (MED[i] === null) cerrar(); else tr.push([i, MED[i]]); } cerrar();
-    $('tb-pmed').setAttribute('d', d); $('tb-parea').setAttribute('d', area);
-    const cx = (u.t / 1440 * W).toFixed(1); $('tb-cur').setAttribute('x1', cx); $('tb-cur').setAttribute('x2', cx);
-    // tipos
-    const maxT = Math.max(1, ...CUENTA);
-    tipos.querySelectorAll('.fila').forEach(b => { const t = +b.dataset.t; b.querySelector('.t').style.width = (CUENTA[t] / maxT * 100).toFixed(1) + '%'; b.querySelector('.e').style.width = (ENC[t] / maxT * 100).toFixed(1) + '%'; b.querySelector('.v').innerHTML = `<b>${ENC[t]}</b> / ${CUENTA[t]}`; b.classList.toggle('off', !ESTADO.tipos.has(t)); });
-    // grupos
-    const gx = (u.h / 24 * SW).toFixed(1);
-    for (const c of GR) { const g = u.gr[c] || [0, 1], v = g[1] ? g[0] / g[1] : 0; $('tb-gv' + c).textContent = pct(v) + ' %'; const l = $('tb-gl' + c); l.setAttribute('x1', gx); l.setAttribute('x2', gx); const p = $('tb-gp' + c); p.setAttribute('cx', gx); p.setAttribute('cy', sy(MODG[c][Math.round(u.h * 2) % 48]).toFixed(1)); }
-    // hábitats
-    for (let i = 0; i < NH; i++) { $('tb-h' + i).innerHTML = `<b>${u.hab[i]}</b> / ${HABS[i].ag.length}`; $('tb-hb' + i).style.width = (u.hab[i] / HABS[i].ag.length * 100).toFixed(1) + '%'; }
-    // bitácora
-    if (ult.feedNuevo) {
-      ult.feedNuevo = false;
-      $('tb-feed').innerHTML = FEED.map((f, i) => `<div class="ev" data-i="${i}"><time>${hhmm(f.t)}</time><div><span>${esc(f.txt)}</span><small>${esc(TIPOS[f.tipo].n)} · ${esc(f.hab)}</small></div></div>`).join('');
-      $('tb-feed').querySelectorAll('.ev').forEach(el => el.onclick = () => { const f = FEED[+el.dataset.i]; if (f && f.a && bio.seleccionar) bio.seleccionar(f.a, true); });
-    }
+  let raf = 0, tPrev = performance.now(), tFlujo = 0;
+  function cuadro() {
+    if (!abierto()) return;
+    const ahora = performance.now(), dt = Math.min(0.1, (ahora - tPrev) / 1000); tPrev = ahora;
+    dibujarCuerda(dt); dibujarPulso(); if ((tFlujo -= dt) <= 0) { tFlujo = 0.5; dibujarFlujo(); }
+    raf = requestAnimationFrame(cuadro);
   }
-
-  tick(); setInterval(() => { tick(); pintar(); }, 500);
+  tick(); setInterval(() => { tick(); pintarTexto(); }, 500);
   return { abrir, tb };
 }
