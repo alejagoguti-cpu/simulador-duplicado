@@ -45,6 +45,7 @@ body.tb-abierto #dock{display:none}
 #tb .x{align-self:flex-start;width:26px;height:26px;border:0;border-radius:6px;background:none;color:var(--ui-tx2,#9aa2a7);font:300 18px/1 var(--ui-sans,sans-serif);cursor:pointer}
 #tb .x:hover{background:rgba(255,255,255,.06);color:var(--ui-tx,#e9ebec)}
 #tb .cuerpo{overflow:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent;padding-bottom:6px}
+#tb .tabs{display:flex;gap:2px;margin:0 16px 10px;border-bottom:1px solid var(--ui-bd,rgba(255,255,255,.075))}#tb .tabs button{flex:1;height:34px;border:0;border-bottom:2px solid transparent;background:none;color:var(--ui-tx2,#9aa2a7);font:500 12px var(--ui-sans,sans-serif);cursor:pointer;margin-bottom:-1px}#tb .tabs button.on{color:var(--ui-tx,#e9ebec);border-bottom-color:#e2a55b}#tb [data-tab]:not(.vis){display:none!important}#tb .gr.vis.prim{border-top:0;padding-top:4px}
 #tb .chips{display:flex;flex-wrap:wrap;gap:4px;padding:0 16px 12px}
 #tb .esc{display:flex;gap:3px;margin:0 16px 12px;padding:3px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06)}
 #tb .esc button{flex:1;height:32px;border:0;border-radius:7px;background:transparent;color:var(--ui-tx2,#9aa2a7);font:500 12px var(--ui-sans,sans-serif);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px}
@@ -120,28 +121,29 @@ body.tb-abierto #dock{display:none}
   tb.innerHTML = `
   <div class="cab"><div class="big" id="tb-n">0</div><div class="lbl"><b>interacciones ocurriendo</b><span id="tb-h">00:00</span></div><button class="x" aria-label="Cerrar">×</button></div>
   <div class="cuerpo">
+    <div class="tabs" id="tb-tabs" role="tablist"><button data-k="bio" class="on">Relaciones bióticas</button><button data-k="esc">Hoy vs. proyecto</button><button data-k="tra">Tráfico y sintaxis</button></div>
     <div class="esc" id="tb-esc" role="tablist" aria-label="Escenario"><button data-e="hoy" class="on"><i style="background:${CHOY}"></i>Kennedy hoy</button><button data-e="proyecto"><i style="background:${CPRO}"></i>Con el proyecto</button></div>
-    <div class="gr" style="border-top:0;padding-top:0"><h3>Hoy vs. proyecto<span id="tb-per">mismos lugares, misma hora</span></h3>
+    <div class="gr" data-tab="esc"><h3>Hoy vs. proyecto<span id="tb-per">mismos lugares, misma hora</span></h3>
       <div class="ley2"><span><i style="background:${CHOY}"></i>Kennedy hoy</span><span><i style="background:${CPRO}"></i>Con el proyecto</span></div>
       <canvas id="tb-arana" aria-label="Gráfico de araña: indicadores de los dos escenarios"></canvas>
       <div class="cmp" id="tb-cmp"><div class="vacio">Cargando indicadores…</div></div>
       <div class="nota2" id="tb-nota2"></div>
       <button class="tour" id="tb-tour">Ver cómo se implanta el proyecto, paso a paso</button></div>
-    <div class="gr"><h3>Carga: ¿alivia o desplaza?<span>camiones por hora que cambian</span></h3>
+    <div class="gr" data-tab="tra"><h3>Carga: ¿alivia o desplaza?<span>camiones por hora que cambian</span></h3>
       <div class="kp2"><div><b id="tb-kmA">–</b><small>km de calles con menos camiones</small></div><div><b id="tb-kmC">–</b><small>km de calles con más camiones</small></div><div><b id="tb-desp">–</b><small>camiones/h hacia los mercados</small></div></div>
       <div class="calles" id="tb-calles"></div>
       <div class="fila2"><button id="tb-vcarga" class="on">Ver en el mapa</button><button id="tb-ircarga">Ir a Corabastos y los mercados</button></div>
       <div class="nota2" id="tb-nota3"></div></div>
-    <div class="gr"><h3>Carros y sintaxis espacial<span id="tb-rho">¿la forma de la red explica el tráfico?</span></h3>
+    <div class="gr" data-tab="tra"><h3>Carros y sintaxis espacial<span id="tb-rho">¿la forma de la red explica el tráfico?</span></h3>
       <canvas id="tb-sx" aria-label="Flujo de carros de cada calle según su elección angular"></canvas>
       <div class="ejes"><span>elección baja</span><span>elección (sintaxis espacial, percentil)</span><span>alta</span></div>
       <div class="sx2"><div><h5>Más carros de lo que la red explica</h5><div id="tb-sxM"></div></div><div><h5>Menos carros de lo que la red explica</h5><div id="tb-sxm"></div></div></div>
       <div class="fila2"><button id="tb-sxver">Ver la elección en el mapa</button></div>
       <div class="nota2" id="tb-nota4"></div></div>
-    <div class="chips" id="tb-chips">${TIPOS.map(t => `<button class="chip" data-t="${t.id}" title="${esc(t.n)}: mostrar u ocultar en el territorio"><i style="background:${t.c}"></i>${CORTO[t.id] || esc(t.n)} <b id="tb-c${t.id}">0</b></button>`).join('')}</div>
-    <div class="gr"><h3>Quién interactúa con quién<span>ahora</span></h3><canvas id="tb-cuerda" aria-label="Diagrama de cuerdas de las interacciones que están ocurriendo"></canvas><div class="pie" id="tb-pie1">Pasa o toca una especie para ver con quién está interactuando.</div></div>
-    <div class="gr"><h3>Interacciones durante el día<span id="tb-ld">encuentros por tipo</span></h3><canvas id="tb-flujo" aria-label="Encuentros por tipo de relación durante el día"></canvas><div class="ejes"><span>0 h</span><span>6</span><span>12</span><span>18</span><span>24</span></div><div class="pie" id="tb-pie2">Arrastra sobre la gráfica para cambiar la hora de la simulación.</div></div>
-    <div class="gr"><h3>Pulso<span>cada punto es un encuentro nuevo · últimos 90 s</span></h3><canvas id="tb-pulso" aria-label="Encuentros nuevos por tipo en los últimos 90 segundos"></canvas><div class="pie" id="tb-pie3">Pasa o toca un punto para ver qué ocurrió.</div></div>
+    <div class="chips" data-tab="bio" id="tb-chips">${TIPOS.map(t => `<button class="chip" data-t="${t.id}" title="${esc(t.n)}: mostrar u ocultar en el territorio"><i style="background:${t.c}"></i>${CORTO[t.id] || esc(t.n)} <b id="tb-c${t.id}">0</b></button>`).join('')}</div>
+    <div class="gr" data-tab="bio"><h3>Quién interactúa con quién<span>ahora</span></h3><canvas id="tb-cuerda" aria-label="Diagrama de cuerdas de las interacciones que están ocurriendo"></canvas><div class="pie" id="tb-pie1">Pasa o toca una especie para ver con quién está interactuando.</div></div>
+    <div class="gr" data-tab="bio"><h3>Interacciones durante el día<span id="tb-ld">encuentros por tipo</span></h3><canvas id="tb-flujo" aria-label="Encuentros por tipo de relación durante el día"></canvas><div class="ejes"><span>0 h</span><span>6</span><span>12</span><span>18</span><span>24</span></div><div class="pie" id="tb-pie2">Arrastra sobre la gráfica para cambiar la hora de la simulación.</div></div>
+    <div class="gr" data-tab="bio"><h3>Pulso<span>cada punto es un encuentro nuevo · últimos 90 s</span></h3><canvas id="tb-pulso" aria-label="Encuentros nuevos por tipo en los últimos 90 segundos"></canvas><div class="pie" id="tb-pie3">Pasa o toca un punto para ver qué ocurrió.</div></div>
   </div>`;
   document.body.appendChild(tb);
   const $ = (id) => tb.querySelector('#' + id);
@@ -155,6 +157,16 @@ body.tb-abierto #dock{display:none}
   const abrir = (on) => { document.body.classList.toggle('tb-abierto', on); btn.classList.toggle('on', on); if (on) { pintarTexto(); setTimeout(dibujarSintaxis, 60); cancelAnimationFrame(raf); tPrev = performance.now(); raf = requestAnimationFrame(cuadro); } };
   btn.onclick = () => abrir(!abierto());
   tb.querySelector('.x').onclick = () => abrir(false);
+  // pestañas: Relaciones bióticas (lo primero) · Hoy vs. proyecto · Tráfico y sintaxis; el selector de escenario queda en todas
+  let pest = 'bio';
+  const verPestana = (k) => {
+    pest = k; tb.querySelectorAll('#tb-tabs button').forEach(b => b.classList.toggle('on', b.dataset.k === k));
+    let prim = true; tb.querySelectorAll('[data-tab]').forEach(el => { const v = el.dataset.tab === k; el.classList.toggle('vis', v); el.classList.toggle('prim', v && prim && el.classList.contains('gr')); if (v && el.classList.contains('gr')) prim = false; });
+    tb.querySelector('.cuerpo').scrollTop = 0;
+    setTimeout(() => { if (k === 'esc' && typeof pintarComparacion === 'function') pintarComparacion(); if (k === 'tra' && typeof dibujarSintaxis === 'function') dibujarSintaxis(); }, 30);
+  };
+  tb.querySelectorAll('#tb-tabs button').forEach(b => b.onclick = () => verPestana(b.dataset.k));
+  verPestana('bio');
   tb.querySelectorAll('.chip').forEach(b => b.onclick = () => {
     const t = +b.dataset.t; if (ESTADO.tipos.has(t)) ESTADO.tipos.delete(t); else ESTADO.tipos.add(t);
     const off = !ESTADO.tipos.has(t); b.classList.toggle('off', off); const o = document.querySelector(`#bt-pan .bt-tipo[data-t="${t}"]`); if (o) o.classList.toggle('off', off);
