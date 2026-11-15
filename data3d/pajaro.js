@@ -194,7 +194,7 @@ export function crearPajaro(ctx) {
   const div = (id, html, cls) => { const e = document.createElement('div'); e.id = id; if (cls) e.className = cls; e.innerHTML = html || ''; document.body.appendChild(e); return e; };
   const tarjeta = (a) => `<button class="ave" data-ave="${a.id}" style="--c:${a.color}"><span class="in"><span class="foto"><img class="ph" src="data3d/aves/${a.foto}" alt="${a.nombre}" loading="lazy" decoding="async"><canvas class="m3d" aria-label="Modelo 3D de ${a.nombre}"></canvas></span><span class="txt"><h3>${a.nombre}</h3><em class="rol">${a.rol}</em><p>${a.corto}</p><span class="dif">Dificultad <span>${[1, 2, 3].map(k => `<i class="${k <= a.stats[3][1] ? 'o' : ''}"></i>`).join('')}</span></span></span></span></button>`;
   const menu = div('pjMenu', `<div class="wrap">
-    <header><span class="marca">REN3D</span><button class="x" data-m="cerrar">Cerrar</button></header>
+    <header><span class="marca">SIMULADOR</span><button class="x" data-m="cerrar">Cerrar</button></header>
     <h1>Elige tu <span>ave</span></h1>
     <div class="aves">${Object.values(AVES_JUEGO).map(tarjeta).join('')}</div>
     <div class="pie">
