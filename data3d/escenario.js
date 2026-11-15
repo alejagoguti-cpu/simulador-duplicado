@@ -42,7 +42,9 @@ body .gs-est, body .gs-sub:has(+ .gs-est), body #gs-cv-b, body #vi-btn{display:n
 body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
 @media(max-width:1100px){#esc{width:min(380px,calc(100vw - 32px));top:auto;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 70px)}}
 @media(max-width:760px){#esc{min-width:0;width:calc(100vw - 16px);padding:4px}#esc .sw button{height:36px;font-size:12px}#esc .ley{font-size:10.5px;gap:4px 10px}
-  body.tb-abierto #esc{display:none}}
+  body.tb-abierto #esc{display:none}
+  body #hid-red{bottom:calc(max(12px,env(safe-area-inset-bottom)) + 196px)!important}}
+@media(min-width:761px) and (max-width:1100px){body #hid-red{bottom:calc(max(12px,env(safe-area-inset-bottom)) + 180px)!important}}
 @media(prefers-reduced-motion:reduce){#esc .sw i{transition:none}}`;
   document.head.appendChild(css);
   const el = document.createElement('section'); el.id = 'esc'; el.setAttribute('aria-label', 'Escenario del territorio'); el.dataset.e = 'hoy';
@@ -92,13 +94,14 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
     const vuela = () => { const k = Math.min(1, (performance.now() - ini) / 1400), e2 = k * k * (3 - 2 * k); T3.camera.position.lerpVectors(p0, p1, e2); o.target.lerpVectors(t0, t1, e2); o.update(); if (k < 1) requestAnimationFrame(vuela); };
     vuela(); });
 
-  /* ---------- apagar todo lo de la propuesta anterior ---------- */
+  /* ---------- apagar lo de la propuesta anterior; las HUERTAS (techos, balcones y Bavaria) sí van con la propuesta ---------- */
   function limpiarAnterior() {
+    const pro = T3.escenario === 'proyecto';
     const b = document.getElementById('gs-cv-b'); if (b && b.classList.contains('on')) b.click(); // estrategias E1-E9 (polígonos, conexiones, red de huertas)
-    const EST = T3.EST; if (EST && EST.hidroponia) EST.hidroponia(false); T3.conHidro = false;
-    if (T3.huertas && T3.huertas.grupo) T3.huertas.grupo.visible = false;
-    if (T3.torres && T3.torres.huertas) T3.torres.huertas(false);
-    const bv = T3.bavaria; if (bv && bv.userData && bv.userData.mallasHuerta) bv.userData.mallasHuerta.forEach(m => { m.visible = false; });
+    const EST = T3.EST; if (EST && EST.hidroponia) EST.hidroponia(pro); T3.conHidro = pro && !!EST; // huertas hidropónicas en techos y balcones con sus polinizadores
+    if (T3.huertas && T3.huertas.grupo) T3.huertas.grupo.visible = pro && !EST; // camas de tierra en terrazas solo si no hay hidroponía
+    if (T3.torres && T3.torres.huertas) T3.torres.huertas(pro);
+    const bv = T3.bavaria; if (bv && bv.userData && bv.userData.mallasHuerta) bv.userData.mallasHuerta.forEach(m => { m.visible = pro; });
     const co = T3.scene && T3.scene.getObjectByName('corabastos'); if (co && co.userData.quitadas) co.userData.quitadas.visible = true;
     if (T3.bio && T3.bio.ESTADO) T3.bio.ESTADO.escenario = 'hoy';
     if (T3.sintaxisEscenario) T3.sintaxisEscenario();
