@@ -28,6 +28,10 @@ export function crearRuidoCierre({ THREE, T3, LC }) {
   const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const g = cv.getContext('2d', { willReadFrequently: true });
   const RAD = Math.max(2, 55 * sx), sp = document.createElement('canvas'); sp.width = sp.height = Math.ceil(RAD * 2);
   { const s = sp.getContext('2d'), gr = s.createRadialGradient(RAD, RAD, 0, RAD, RAD, RAD); gr.addColorStop(0, 'rgba(255,255,255,0.075)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); s.fillStyle = gr; s.fillRect(0, 0, sp.width, sp.height); }
+  /* un camión pesa W_CAM carros [SUP: conservador; con CoRTN a 30 km/h un pesado suena como ~17 livianos]. Con la propuesta parte de
+     los camiones pasa a furgonetas de reparto (index.html, TRAF.vis.cam), por eso el mapa cambia entre escenarios. */
+  const W_CAM = 4, spC = document.createElement('canvas'); spC.width = spC.height = sp.width;
+  { const s = spC.getContext('2d'), gr = s.createRadialGradient(RAD, RAD, 0, RAD, RAD, RAD); gr.addColorStop(0, `rgba(255,255,255,${0.075 * W_CAM})`); gr.addColorStop(1, 'rgba(255,255,255,0)'); s.fillStyle = gr; s.fillRect(0, 0, spC.width, spC.height); }
   const out = document.createElement('canvas'); out.width = W; out.height = H; const go = out.getContext('2d');
   const tex = new THREE.CanvasTexture(out); tex.colorSpace = THREE.SRGBColorSpace; tex.minFilter = THREE.LinearFilter;
   const [wx0, wz0] = lw(bx0, by1), [wx1, wz1] = lw(bx1, by0);
@@ -38,7 +42,7 @@ export function crearRuidoCierre({ THREE, T3, LC }) {
   function pintarRuido() {
     const TR = T3.TRAF; if (!TR || !TR.vis) return;
     const V = TR.vis; g.globalCompositeOperation = 'source-over'; g.clearRect(0, 0, W, H); g.globalCompositeOperation = 'lighter';
-    for (let i = 0; i < V.n; i++) { const X = V.x[i] + LC.x, Y = LC.y - V.z[i]; g.drawImage(sp, (X - bx0) * sx - RAD, H - (Y - by0) * sy - RAD); }
+    for (let i = 0; i < V.n; i++) { const X = V.x[i] + LC.x, Y = LC.y - V.z[i]; g.drawImage(V.cam && V.cam[i] ? spC : sp, (X - bx0) * sx - RAD, H - (Y - by0) * sy - RAD); }
     const img = g.getImageData(0, 0, W, H), d = img.data;
     for (let p = 0; p < d.length; p += 4) { const v = d[p + 3]; /* el lienzo guarda la suma en el alfa (RGB sale siempre blanco) */ if (v < 3) { d[p + 3] = 0; continue; } const t = Math.min(255, Math.pow(v / 160, 0.8) * 255) | 0; d[p] = LUT[t * 3]; d[p + 1] = LUT[t * 3 + 1]; d[p + 2] = LUT[t * 3 + 2]; d[p + 3] = 70 + (t * 0.55 | 0); }
     go.putImageData(img, 0, 0); tex.needsUpdate = true;
@@ -119,7 +123,8 @@ export function panelRuido(on) {
   if (!on) { if (el) el.remove(); return; }
   if (!el) { el = document.createElement('div'); el.id = 'ruido-panel'; document.body.appendChild(el); }
   el.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:96px;z-index:40;background:rgba(17,24,33,.94);border:1px solid rgba(148,163,184,.22);border-radius:10px;padding:8px 12px;color:#e5e7eb;font:11px/1.3 Inter,system-ui,sans-serif;width:min(300px,calc(100vw - 32px))';
-  el.innerHTML = '<div style="letter-spacing:.14em;font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:5px">RUIDO DE LOS CARROS · EN VIVO</div><div style="height:8px;border-radius:4px;background:linear-gradient(90deg,#fff7b3,#ffe04c,#ffb34d,#f57c00,#e64a19,#d32f2f)"></div><div style="display:flex;justify-content:space-between;margin-top:3px;color:#94a3b8"><span>bajo</span><span>alto</span></div>';
+  el.innerHTML = '<div style="letter-spacing:.14em;font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:5px">RUIDO DE LOS CARROS · EN VIVO · <span id="ruido-esc"></span></div><div style="height:8px;border-radius:4px;background:linear-gradient(90deg,#fff7b3,#ffe04c,#ffb34d,#f57c00,#e64a19,#d32f2f)"></div><div style="display:flex;justify-content:space-between;margin-top:3px;color:#94a3b8"><span>bajo</span><span>alto</span></div>';
+  const e = el.querySelector('#ruido-esc'); e.textContent = window.KEN_ESC ? window.KEN_ESC.nombre() : '';
 }
 export function panelCierre(api, on) {
   let el = document.getElementById('cierre-panel');

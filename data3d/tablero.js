@@ -104,6 +104,8 @@ body.tb-abierto #dock{display:none}
 #tb .pie b{color:var(--ui-tx,#e9ebec);font-weight:500}
 #tb .ejes{display:flex;justify-content:space-between;font-size:10px;color:var(--ui-tx3,#646c71);margin-top:2px}
 #b-tablero svg{opacity:.8}
+#tb .escb{display:inline-block;margin-left:8px;padding:1px 7px;border-radius:5px;font:500 9.5px var(--ui-mono,monospace);letter-spacing:.08em;text-transform:uppercase;color:${CHOY};border:1px solid rgba(143,176,201,.4)}
+#tb[data-esc="proyecto"] .escb{color:${CPRO};border-color:rgba(226,165,91,.45)}
 @media(max-width:760px){
   #tb .ind{grid-template-columns:1fr}#tb .ind .v{grid-template-columns:1fr 1fr 92px}
   #tb{left:8px;right:8px;width:auto;top:auto;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 64px);height:min(76vh,760px);z-index:26}
@@ -119,7 +121,7 @@ body.tb-abierto #dock{display:none}
 
   const tb = document.createElement('section'); tb.id = 'tb'; tb.setAttribute('aria-label', 'Tablero de interacciones bióticas');
   tb.innerHTML = `
-  <div class="cab"><div class="big" id="tb-n">0</div><div class="lbl"><b>interacciones ocurriendo</b><span id="tb-h">00:00</span></div><button class="x" aria-label="Cerrar">×</button></div>
+  <div class="cab"><div class="big" id="tb-n">0</div><div class="lbl"><b>interacciones ocurriendo</b><span id="tb-h">00:00</span><span class="escb" id="tb-escb">Kennedy hoy</span></div><button class="x" aria-label="Cerrar">×</button></div>
   <div class="cuerpo">
     <div class="tabs" id="tb-tabs" role="tablist"><button data-k="bio" class="on">Relaciones bióticas</button><button data-k="esc">Hoy vs. proyecto</button><button data-k="tra">Tráfico y sintaxis</button></div>
     <div class="esc" id="tb-esc" role="tablist" aria-label="Escenario"><button data-e="hoy" class="on"><i style="background:${CHOY}"></i>Kennedy hoy</button><button data-e="proyecto"><i style="background:${CPRO}"></i>Con el proyecto</button></div>
@@ -178,17 +180,20 @@ body.tb-abierto #dock{display:none}
      Indicadores (mismos lugares, mismo periodo): tráfico y ruido en el borde de Corabastos, sintaxis espacial de Bavaria y hábitat de
      polinizadores (data3d/escenarios.json, tools/escenarios_build.js), e interacciones bióticas medidas en vivo en cada escenario
      a las mismas horas del día. */
-  let ESC = null, escAct = 'hoy', tCambio = performance.now(); // tras cambiar de escenario se esperan 10 s (la fauna aparece o se va) antes de medir
+  let ESC = null, escAct = T3.escenario || 'hoy', tCambio = performance.now(); // tras cambiar de escenario se esperan 10 s (la fauna aparece o se va) antes de medir
   const VIVO = { hoy: new Array(96).fill(null), proyecto: new Array(96).fill(null) }; // promedio de encuentros por cuarto de hora en cada escenario
-  ESTADO.escenario = 'hoy';
+  ESTADO.escenario = escAct;
   fetch('data3d/escenarios.json?v=1').then(r => r.json()).then(d => { ESC = d; pintarComparacion(); }).catch(e => { console.warn('escenarios:', e); $('tb-cmp').innerHTML = '<div class="vacio">No se pudieron cargar los indicadores.</div>'; });
-  function ponerEscenario(e) {
-    escAct = e; ESTADO.escenario = e; T3.escenario = e; tCambio = performance.now();
+  // el escenario lo manda el selector general (data3d/escenario.js): territorio, huertas, sintaxis, ruido y fauna; aquí solo el tablero
+  function aplicarEsc(e) {
+    if (e !== escAct) tCambio = performance.now(); escAct = e; ESTADO.escenario = e;
     tb.querySelectorAll('#tb-esc button').forEach(b => b.classList.toggle('on', b.dataset.e === e));
-    const b = document.getElementById('gs-cv-b'); if (b && b.classList.contains('on') !== (e === 'proyecto')) b.click(); // prende o apaga todas las estrategias en el 3D
+    tb.dataset.esc = e; const eb = $('tb-escb'); if (eb) eb.textContent = e === 'proyecto' ? 'Con la propuesta' : 'Kennedy hoy';
     if (CAPA) CAPA.ver(e === 'proyecto' && verCarga); // capa de carga desplazada (data3d/carga.js)
     pintarComparacion();
   }
+  function ponerEscenario(e) { if (window.KEN_ESC) window.KEN_ESC.poner(e); else { T3.escenario = e; aplicarEsc(e); } }
+  window.addEventListener('escenario', (ev) => aplicarEsc(ev.detail));
   tb.querySelectorAll('#tb-esc button').forEach(b => b.onclick = () => ponerEscenario(b.dataset.e));
   const energia = (L) => { let s = 0, q = 0; for (const a of L) { s += a.flujoH * 10 ** (a.dB / 10); q += a.flujoH; } return 10 * Math.log10(s / Math.max(1, q)); }; // ruido promedio ponderado por flujo
   function indicadores() {
@@ -504,5 +509,6 @@ body.tb-abierto #dock{display:none}
     raf = requestAnimationFrame(cuadro);
   }
   let nT = 0; tick(); setInterval(() => { tick(); pintarTexto(); if (++nT % 8 === 0 && abierto()) pintarComparacion(); }, 500);
-  return { abrir, tb };
+  aplicarEsc(T3.escenario || 'hoy');
+  return { abrir, tb, verPestana };
 }

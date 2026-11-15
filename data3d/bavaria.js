@@ -176,6 +176,7 @@ export function construirBavaria({ THREE, T3, lw, D, liviano }) {
       const mP = new THREE.InstancedMesh(plano, matH, PL.length), mB = new THREE.InstancedMesh(caja, matBorde, PL.length);
       PL.forEach(([x, z], i) => { o3.position.set(x, 0.55, z); o3.rotation.set(0, 0, 0); o3.updateMatrix(); mP.setMatrixAt(i, o3.matrix); o3.position.y = 0.2; o3.updateMatrix(); mB.setMatrixAt(i, o3.matrix); });
       mP.receiveShadow = mB.receiveShadow = true; grupo.add(mB, mP);
+      grupo.userData.mallasHuerta = [mB, mP]; mB.visible = mP.visible = T3.escenario === 'proyecto'; // las huertas son de la propuesta (data3d/escenario.js)
     }
     grupo.userData.huertas = PL.length;
   }

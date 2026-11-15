@@ -458,7 +458,27 @@ export async function iniciarSimulacion(cfg = {}) {
     geo.setAttribute('color', new THREE.BufferAttribute(COLS.i.slice(), 3)); geo.setIndex(idx);
     CINTAS = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.22, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -16 }));
     CINTAS.renderOrder = 2; CINTAS.frustumCulled = false; T3.scene.add(CINTAS); CINTAS.visible = !!st0.capa; /* abre apagada: vista limpia */
-    capa3D = () => { if (!st0.capa) { CINTAS.visible = false; return; } CINTAS.visible = true; geo.attributes.color.array.set(COLS[st0.capa]); geo.attributes.color.needsUpdate = true; };
+    /* escenario «con la propuesta» (T3.escenario): las calles toman la sintaxis después de abrir los pasajes de Bavaria Común y los
+       pasajes aparecen como calles nuevas (data3d/sintaxis_proyecto.json, tools/sintaxis_proyecto_build.js) */
+    let NUEVAS = null;
+    fetch('data3d/sintaxis_proyecto.json?v=1').then(r => r.json()).then(SP => {
+      const pI = COLS.i.slice(), pC = COLS.c.slice(), donde = new Map(RANGO.map(([si, b, n]) => [si, [b, n]]));
+      for (const [si, iP, cP] of SP.cambios) { const r = donde.get(si); if (!r) continue; const a = rgb(iP), c = rgb(cP); for (let k = 0; k < r[1] * 2; k++) { pI.set(a, (r[0] + k) * 3); pC.set(c, (r[0] + k) * 3); } }
+      COLS.iP = pI; COLS.cP = pC;
+      const P = [], CI = [], CC = [], X = [];
+      for (const s of SP.nuevos) { const b = P.length / 3, n = s.p.length, ci = rgb(s.i), cc = rgb(s.c);
+        for (let k = 0; k < n; k++) { const a = s.p[Math.max(0, k - 1)], q = s.p[Math.min(n - 1, k + 1)]; let dx = q[0] - a[0], dy = q[1] - a[1]; const l = Math.hypot(dx, dy) || 1; dx /= l; dy /= l;
+          const x = s.p[k][0] + OX, z = s.p[k][1] + OZ, y = Y0 + 0.06 + (T3.alzaVia ? T3.alzaVia(x, z) : 0); P.push(x - dy * 2.2, y, z + dx * 2.2, x + dy * 2.2, y, z - dx * 2.2); CI.push(...ci, ...ci); CC.push(...cc, ...cc);
+          if (k < n - 1) { const v = b + k * 2; X.push(v, v + 1, v + 2, v + 1, v + 3, v + 2); } } }
+      const g2 = new THREE.BufferGeometry(); g2.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g2.setAttribute('color', new THREE.BufferAttribute(new Float32Array(CI), 3)); g2.setIndex(X);
+      NUEVAS = new THREE.Mesh(g2, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.85, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -5, polygonOffsetUnits: -20 }));
+      NUEVAS.renderOrder = 3; NUEVAS.frustumCulled = false; NUEVAS.visible = false; NUEVAS.userData.C = { i: new Float32Array(CI), c: new Float32Array(CC) }; T3.scene.add(NUEVAS); capa3D();
+    }).catch(e => console.warn('sintaxis con la propuesta:', e));
+    capa3D = () => { const pro = T3.escenario === 'proyecto';
+      if (NUEVAS) { NUEVAS.visible = !!st0.capa && pro; if (NUEVAS.visible) { NUEVAS.geometry.attributes.color.array.set(NUEVAS.userData.C[st0.capa]); NUEVAS.geometry.attributes.color.needsUpdate = true; } }
+      if (!st0.capa) { CINTAS.visible = false; return; } CINTAS.visible = true; geo.attributes.color.array.set(COLS[st0.capa + (pro && COLS.iP ? 'P' : '')]); geo.attributes.color.needsUpdate = true; };
+    T3.sintaxisEscenario = () => capa3D(); // lo llama el selector de escenario (data3d/escenario.js)
+    T3.sintaxisCapa = (c) => { const b = izq.querySelector(`#gs-capa button[data-c="${c}"]`); if (b) b.click(); };
     // convenciones: borde de cuidado de los humedales, biofábrica, cocinas y huertas pintados en el suelo
     ZONAS3D = new THREE.Group(); T3.scene.add(ZONAS3D); ZONAS3D.visible = !SINP; // con estrategias no se pintan las zonas de las P
     const matZ = (c, o) => new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: o, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -24 });

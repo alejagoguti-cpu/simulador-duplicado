@@ -207,8 +207,10 @@ export function crearTorres(THREE, T3, opt = {}) {
   const grupo = new THREE.Group(); grupo.name = 'torresBalcones'; T3.scene.add(grupo);
   const cercanas = [], CERCA = 360;
   const api = { grupo, torres: 0, balcones: 0 };
-  const polinizadores = []; api.polinizadores = polinizadores;
-  api.actualizar = (cam) => { for (const c of cercanas) { const v = Math.hypot(c.x - cam.position.x, c.z - cam.position.z, c.y - cam.position.y) < CERCA + 120; if (c.m.visible !== v) c.m.visible = v; }
+  const polinizadores = [], HIDRO = []; api.polinizadores = polinizadores;
+  let conHuerta = true; // escenario «hoy» (data3d/escenario.js): las torres existen, la huerta hidropónica de los balcones es propuesta
+  api.huertas = (on) => { conHuerta = on; for (const m of HIDRO) m.visible = on; if (!on) { for (const c of cercanas) c.m.visible = false; for (const P of polinizadores) P.actualizar(false); } };
+  api.actualizar = (cam) => { if (!conHuerta) return; for (const c of cercanas) { const v = Math.hypot(c.x - cam.position.x, c.z - cam.position.z, c.y - cam.position.y) < CERCA + 120; if (c.m.visible !== v) c.m.visible = v; }
     for (const P of polinizadores) P.actualizar(Math.hypot(P.centro.x - cam.position.x, P.centro.z - cam.position.z, P.centro.y - cam.position.y) < CERCA + 120); };
 
   api.agregar = (lista) => {
@@ -276,7 +278,8 @@ export function crearTorres(THREE, T3, opt = {}) {
         g.setAttribute('position', new THREE.Float32BufferAttribute([A[0], h - 0.45, A[1], A[0], h, A[1], Bq[0], h, Bq[1], A[0], h - 0.45, A[1], Bq[0], h, Bq[1], Bq[0], h - 0.45, Bq[1], A[0], h, A[1], a[0], h, a[1], b[0], h, b[1], A[0], h, A[1], b[0], h, b[1], Bq[0], h, Bq[1]], 3)); g.computeVertexNormals(); B.concreto.push(prep(g, [0.62, 0.62, 0.62])); }
       if (PL.length && !LIV) { const m = new THREE.Mesh(mergeGeometries(PL), M.plantas); m.visible = false; m.receiveShadow = true; grupo.add(m); cercanas.push({ m, x: cx, y: h / 2, z: cz }); }
     }
-    for (const [k, L] of Object.entries(B)) { if (!L.length) continue; const m = new THREE.Mesh(mergeGeometries(L), M[k]); m.castShadow = !LIV; m.receiveShadow = !LIV; grupo.add(m); }
+    for (const [k, L] of Object.entries(B)) { if (!L.length) continue; const m = new THREE.Mesh(mergeGeometries(L), M[k]); m.castShadow = !LIV; m.receiveShadow = !LIV; grupo.add(m);
+      if (k === 'blanco' || k === 'tanque' || k === 'led') { HIDRO.push(m); m.visible = conHuerta; } } // torres hidropónicas de los balcones
     // plantas de las torres hidropónicas (instanciadas): se dibujan con la cámara cerca del conjunto
     for (const T of lista) for (const p of T.W) { sx += p[0]; sz += p[1]; sn++; }
     const centro = new THREE.Vector3(sx / sn, 15, sz / sn);
