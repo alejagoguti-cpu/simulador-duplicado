@@ -186,10 +186,14 @@ body.tb-abierto #dock{display:none}
   fetch('data3d/escenarios.json?v=1').then(r => r.json()).then(d => { ESC = d; pintarComparacion(); }).catch(e => { console.warn('escenarios:', e); $('tb-cmp').innerHTML = '<div class="vacio">No se pudieron cargar los indicadores.</div>'; });
   // el escenario lo manda el selector general (data3d/escenario.js): territorio, huertas, sintaxis, ruido y fauna; aquí solo el tablero
   function aplicarEsc(e) {
-    if (e !== escAct) tCambio = performance.now(); escAct = e; ESTADO.escenario = e;
+    if (e !== escAct) tCambio = performance.now(); escAct = e; ESTADO.escenario = T3.PROP && T3.PROP.fauna ? e : 'hoy'; // propuesta en revisión: sin la fauna de las huertas
+    const viejo = T3.PROP && !T3.PROP.comparar; // los indicadores «hoy vs. proyecto» y la carga desplazada eran de la propuesta anterior
+    const tp = tb.querySelector('#tb-tabs button[data-k="esc"]'); if (tp) tp.style.display = viejo ? 'none' : '';
+    const gc = $('tb-calles') && $('tb-calles').closest('.gr'); if (gc) gc.style.display = viejo ? 'none' : '';
+    if (viejo && pest === 'esc') verPestana('bio');
     tb.querySelectorAll('#tb-esc button').forEach(b => b.classList.toggle('on', b.dataset.e === e));
     tb.dataset.esc = e; const eb = $('tb-escb'); if (eb) eb.textContent = e === 'proyecto' ? 'Con la propuesta' : 'Kennedy hoy';
-    if (CAPA) CAPA.ver(e === 'proyecto' && verCarga); // capa de carga desplazada (data3d/carga.js)
+    if (CAPA) CAPA.ver(e === 'proyecto' && verCarga && !(T3.PROP && !T3.PROP.carga)); // capa de carga desplazada (data3d/carga.js)
     pintarComparacion();
   }
   function ponerEscenario(e) { if (window.KEN_ESC) window.KEN_ESC.poner(e); else { T3.escenario = e; aplicarEsc(e); } }
@@ -423,7 +427,7 @@ body.tb-abierto #dock{display:none}
     const V = T3.THREE.Vector3, cam = T3.camera, tg = T3.orbit.target, c1 = new V(x, 0, z), dir = cam.position.clone().sub(tg); dir.y = 0; if (dir.lengthSq() < 1) dir.set(0, 0, 1); dir.normalize();
     const p1 = c1.clone().addScaledVector(dir, dist * 0.45); p1.y = dist * 1.05; // casi en planta: se leen las calles if (T3.seguidor) T3.seguidor.soltar(); T3.anim = { t: 0, dur: 2.4, p0: cam.position.clone(), p1, c0: tg.clone(), c1 };
   };
-  if (lwM) import('./carga.js?v=3').then(m => m.crearCapaCarga({ THREE: T3.THREE, T3, lw: lwM }).then(c => { CAPA = c; CAPA.COL = [m.COL_MAS, m.COL_MENOS]; pintarCarga(); pintarSintaxis(); CAPA.ver(escAct === 'proyecto' && verCarga); })).catch(e => console.warn('carga:', e));
+  if (lwM) import('./carga.js?v=3').then(m => m.crearCapaCarga({ THREE: T3.THREE, T3, lw: lwM }).then(c => { CAPA = c; CAPA.COL = [m.COL_MAS, m.COL_MENOS]; pintarCarga(); pintarSintaxis(); CAPA.ver(escAct === 'proyecto' && verCarga && !(T3.PROP && !T3.PROP.carga)); })).catch(e => console.warn('carga:', e));
   function pintarCarga() {
     if (!CAPA) return; const D = CAPA.datos, [MAS, MENOS] = CAPA.COL, f = (v, d = 1) => v.toLocaleString('es-CO', { maximumFractionDigits: d });
     $('tb-kmA').textContent = f(D.kmAlivia); $('tb-kmC').textContent = f(D.kmCarga); $('tb-desp').textContent = f(D.desplazadosH);
