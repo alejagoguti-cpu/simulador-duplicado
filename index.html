@@ -3382,12 +3382,9 @@ function todoNight(on) {
     if (T3.skyU) { T3.skyU.top.value.set(DIA.top); T3.skyU.mid.value.set(DIA.mid); T3.skyU.bot.value.set(DIA.bot); T3.skyU.uCloud.value = DIA.nubes; T3.skyU.uGlow.value = 1.0; }
   }
 }
-// botón de abajo: cambia entre la vista fotorrealista (malla de Google completa) y la maqueta propia
+// botón de abajo «Maqueta» (vista fotorrealista <-> maqueta propia): retirado de la barra; la maqueta sigue disponible con ?maqueta=1
 {
-  const b = $('b-todo'), ic = b.querySelector('svg').outerHTML;
-  b.innerHTML = ic + (REALISTA ? 'Maqueta' : 'Fotorreal'); b.classList.remove('on');
-  b.title = REALISTA ? 'Ver la maqueta propia (edificios, vías y árboles del modelo)' : 'Ver Kennedy fotorrealista (malla 3D de Google)';
-  b.onclick = () => { const u = new URL(location.href); if (REALISTA) u.searchParams.set('maqueta', '1'); else u.searchParams.delete('maqueta'); location.href = u.toString(); };
+  const b = $('b-todo'); b.classList.remove('on'); b.style.setProperty('display', 'none', 'important'); b.setAttribute('aria-hidden', 'true'); b.tabIndex = -1;
 }
 
 /* ============ MODO PÁJARO · juego de vuelo + realidad virtual (data3d/pajaro.js) ============ */
