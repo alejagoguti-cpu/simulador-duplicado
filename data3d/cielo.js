@@ -16,8 +16,8 @@ const K = [
   { e: -4, top: 0x1a3368, mid: 0x4f62a0, bot: 0xc28a86, fog: 0x7c7690, dens: 1.25, hemi: 0x7486bd, suelo: 0x2a2626, hi: 0.5, sol: 0xc99ab0, si: 0.25, exp: 0.92, malla: 0.42, nubL: 0xb07c8e, nubD: 0x3a3550, est: 0.12, glow: 0.35, hor: 0xe08a6a, hora: 0.85, tinte: [0.95, 0.88, 1.0] },
   { e: 0, top: 0x33609e, mid: 0xd29a86, bot: 0xffaa62, fog: 0xd6a184, dens: 1.2, hemi: 0xb3a2bd, suelo: 0x5a4636, hi: 0.8, sol: 0xff8f45, si: 0.9, exp: 0.98, malla: 0.66, nubL: 0xffa06e, nubD: 0x6e5468, est: 0, glow: 1, hor: 0xff9248, hora: 1, tinte: [1.08, 0.9, 0.78] },
   { e: 5, top: 0x447bbd, mid: 0x9fbcd6, bot: 0xf2c896, fog: 0xe3cdb4, dens: 1.05, hemi: 0xc1cfe8, suelo: 0x7a6650, hi: 1.12, sol: 0xffc27a, si: 1.8, exp: 1.02, malla: 0.86, nubL: 0xffdcb4, nubD: 0x9a8a94, est: 0, glow: 1, hor: 0xffc58a, hora: 0.55, tinte: [1.06, 0.97, 0.86] },
-  { e: 18, top: 0x2f72c2, mid: 0x7cb2e2, bot: 0xc0d2e0, fog: 0xa7b9c6, dens: 1.0, hemi: 0xcfe2ff, suelo: 0x9a8f72, hi: 1.4, sol: 0xfff0d6, si: 2.6, exp: 1.05, malla: 1, nubL: 0xffffff, nubD: 0xa9b3c2, est: 0, glow: 1, hor: 0xfff1dc, hora: 0.15, tinte: [1.04, 1.0, 0.93] },
-  { e: 90, top: 0x2a6cc0, mid: 0x74afe3, bot: 0xbccfdd, fog: 0xa7b9c6, dens: 1.0, hemi: 0xcfe2ff, suelo: 0x9a8f72, hi: 1.45, sol: 0xfff4e2, si: 2.7, exp: 1.05, malla: 1, nubL: 0xffffff, nubD: 0xb2bccb, est: 0, glow: 1, hor: 0xfff1dc, hora: 0.1, tinte: [1.04, 1.0, 0.93] }
+  { e: 18, top: 0x2266c8, mid: 0x6eaeee, bot: 0xb2d2f2, fog: 0xa8c6e4, dens: 0.8, hemi: 0xcfe2ff, suelo: 0x9a8f72, hi: 1.4, sol: 0xfff0d6, si: 2.6, exp: 1.1, malla: 1, nubL: 0xffffff, nubD: 0xc8d2de, est: 0, glow: 1, hor: 0xfff1dc, hora: 0.15, tinte: [1.04, 1.0, 0.93] },
+  { e: 90, top: 0x2064c6, mid: 0x6aacee, bot: 0xb0d0f2, fog: 0xa8c6e4, dens: 0.8, hemi: 0xcfe2ff, suelo: 0x9a8f72, hi: 1.45, sol: 0xfff4e2, si: 2.7, exp: 1.1, malla: 1, nubL: 0xffffff, nubD: 0xccd5e0, est: 0, glow: 1, hor: 0xfff1dc, hora: 0.1, tinte: [1.04, 1.0, 0.93] }
 ];
 
 export function iniciarCielo({ THREE, T3, luzMalla }) {
@@ -96,7 +96,7 @@ export function iniciarCielo({ THREE, T3, luzMalla }) {
 
   /* ---------- clima: cobertura de nubes que cambia por días y crece en las tardes ---------- */
   const ruido = (x) => { const i = Math.floor(x), f = x - i, h = (n) => { const s = Math.sin(n * 127.1) * 43758.5453; return s - Math.floor(s); }, u = f * f * (3 - 2 * f); return h(i) * (1 - u) + h(i + 1) * u; };
-  const nubes = (dia, hora) => { const base = 0.12 + 0.3 * ruido(dia * 0.9 + 3.1) + 0.1 * ruido(dia * 3.7 + hora / 5); const tarde = Math.exp(-Math.pow((hora - 15.5) / 3.2, 2)) * 0.18; return Math.max(0.08, Math.min(0.62, base + tarde)); };
+  const nubes = (dia, hora) => { const base = 0.08 + 0.18 * ruido(dia * 0.9 + 3.1) + 0.06 * ruido(dia * 3.7 + hora / 5); const tarde = Math.exp(-Math.pow((hora - 15.5) / 3.2, 2)) * 0.12; return Math.max(0.06, Math.min(0.38, base + tarde)); /* cielo más despejado y azul (antes hasta 62 % de nubes grises) */ };
 
   const baseDens = T3.scene.fog ? T3.scene.fog.density : 0.000075;
   let ultMalla = -1, tMalla = 0;
