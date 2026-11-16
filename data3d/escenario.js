@@ -55,6 +55,28 @@ body.esc-solo-col #hid-red{display:none!important}
 #esc .ley span.on{color:#fff;background:color-mix(in srgb,var(--c) 18%,transparent);border-color:color-mix(in srgb,var(--c) 65%,transparent);box-shadow:0 0 14px color-mix(in srgb,var(--c) 25%,transparent)}
 #esc .ley span:focus-visible{outline:2px solid var(--ui-acc,#e2a55b);outline-offset:2px}
 #esc .ley em{font-style:normal;font:500 10px var(--ui-mono,'JetBrains Mono',ui-monospace,monospace);color:var(--ui-tx3,#8e979d);padding:1px 5px;border-radius:6px;background:rgba(255,255,255,.06)}
+@property --escAng{syntax:'<angle>';inherits:false;initial-value:0deg}
+#esc{--escC:#8fb0c9;isolation:isolate}
+#esc[data-e="proyecto"]{--escC:#e2a55b}
+#esc::before{content:'';position:absolute;inset:-1px;border-radius:17px;padding:1px;pointer-events:none;z-index:2;
+  background:conic-gradient(from var(--escAng),transparent 0 62%,color-mix(in srgb,var(--escC) 90%,#fff) 78%,transparent 92%);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;animation:escGira 6s linear infinite;opacity:.85}
+@keyframes escGira{to{--escAng:360deg}}
+#esc::after{content:'';position:absolute;inset:0;border-radius:16px;pointer-events:none;z-index:3;opacity:0;
+  background:linear-gradient(105deg,transparent 35%,color-mix(in srgb,var(--escC) 30%,transparent) 48%,rgba(255,255,255,.14) 50%,transparent 62%);background-size:250% 100%}
+#esc.barre::after{animation:escBarre .9s cubic-bezier(.3,.7,.2,1)}
+@keyframes escBarre{0%{opacity:1;background-position:120% 0}100%{opacity:0;background-position:-40% 0}}
+#esc .cab{display:flex;justify-content:space-between;align-items:center;padding:3px 8px 7px;font:500 9.5px var(--ui-mono,'JetBrains Mono',monospace);letter-spacing:.16em;text-transform:uppercase;color:var(--ui-tx3,#646c71)}
+#esc .cab .st{display:inline-flex;align-items:center;gap:7px;letter-spacing:.08em;color:var(--escC);transition:color .4s}
+#esc .cab .st i{width:6px;height:6px;border-radius:50%;background:var(--escC);box-shadow:0 0 8px var(--escC);animation:escLate 1.8s ease-in-out infinite}
+@keyframes escLate{50%{opacity:.35}}
+#esc .sw button kbd{margin-left:auto;font:500 9.5px var(--ui-mono,'JetBrains Mono',monospace);color:var(--ui-tx3,#646c71);padding:2px 5px;border-radius:4px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04)}
+#esc .sw button[aria-pressed="true"] kbd{color:var(--escC);border-color:color-mix(in srgb,var(--escC) 50%,transparent)}
+#esc .sw button:active{transform:scale(.98)}
+#esc .ley span:hover{transform:translateY(-1px);box-shadow:0 6px 16px color-mix(in srgb,var(--c) 22%,transparent)}
+#esc .ley span:hover i{box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 30%,transparent),0 0 10px var(--c)}
+@media(max-width:760px){#esc .sw button kbd{display:none}#esc .cab{padding:2px 6px 5px}}
+@media(prefers-reduced-motion:reduce){#esc::before,#esc .cab .st i{animation:none}#esc.barre::after{animation:none}}
 /* la propuesta anterior no se ofrece mientras se redefine: botón y lista de estrategias del panel, y la Visión */
 body .gs-est, body .gs-sub:has(+ .gs-est), body #gs-cv-b, body #vi-btn{display:none!important}
 body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
@@ -66,9 +88,9 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
 @media(prefers-reduced-motion:reduce){#esc .sw i{transition:none}#esc[data-e="proyecto"] .ley{animation:none}.esc-pt.col i{animation:none}}`;
   document.head.appendChild(css);
   const el = document.createElement('section'); el.id = 'esc'; el.setAttribute('aria-label', 'Escenario del territorio'); el.dataset.e = 'hoy';
-  el.innerHTML = `<div class="sw" role="group" aria-label="Escenario"><i aria-hidden="true"></i>
-      <button type="button" data-e="hoy" aria-pressed="true"><b style="background:${CHOY}"></b><span>Kennedy hoy<small>el territorio actual</small></span></button>
-      <button type="button" data-e="proyecto" aria-pressed="false"><b style="background:${CPRO}"></b><span>Con la propuesta<small>las 5 estrategias</small></span></button></div>
+  el.innerHTML = `<div class="cab"><span>Escenario</span><span class="st"><i></i><em id="esc-st" style="font-style:normal">Kennedy hoy</em></span></div><div class="sw" role="group" aria-label="Escenario"><i aria-hidden="true"></i>
+      <button type="button" data-e="hoy" aria-pressed="true"><b style="background:${CHOY}"></b><span>Kennedy hoy<small>el territorio actual</small></span><kbd>H</kbd></button>
+      <button type="button" data-e="proyecto" aria-pressed="false"><b style="background:${CPRO}"></b><span>Con la propuesta<small>las 5 estrategias</small></span><kbd>P</kbd></button></div>
     <div class="ley" id="esc-ley"></div>`;
   document.body.appendChild(el);
 
@@ -197,15 +219,16 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
     if (CALI) CALI.ver(pro && !solo); // Av. Ciudad de Cali con menos tráfico (se oculta al mirar una sola estrategia)
   }
   function aplicar(e) {
-    T3.escenario = e; el.dataset.e = e;
+    T3.escenario = e; el.dataset.e = e; const st = el.querySelector('#esc-st'); if (st) st.textContent = e === 'proyecto' ? 'Con la propuesta' : 'Kennedy hoy';
     el.querySelectorAll('.sw button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.e === e)));
     limpiarAnterior(); verPuntos(e === 'proyecto'); resaltarColegios();
     const re = document.getElementById('ruido-esc'); if (re) re.textContent = nombre();
     window.dispatchEvent(new CustomEvent('escenario', { detail: e }));
   }
   const nombre = () => T3.escenario === 'proyecto' ? 'CON LA PROPUESTA' : 'KENNEDY HOY';
-  function cambiar(e) { if (e === T3.escenario) return; aplicar(e); say(e === 'proyecto' ? 'Con la propuesta: las 5 estrategias' : 'Kennedy hoy: el territorio como es', 3000); }
+  function cambiar(e) { if (e === T3.escenario) return; el.classList.remove('barre'); void el.offsetWidth; el.classList.add('barre'); aplicar(e); say(e === 'proyecto' ? 'Con la propuesta: las 5 estrategias' : 'Kennedy hoy: el territorio como es', 3000); }
   el.querySelectorAll('.sw button').forEach(b => b.onclick = () => cambiar(b.dataset.e));
+  addEventListener('keydown', (ev) => { if (ev.ctrlKey || ev.metaKey || ev.altKey || /INPUT|TEXTAREA|SELECT/.test(document.activeElement && document.activeElement.tagName || '')) return; const k = ev.key.toLowerCase(); if (k === 'h') cambiar('hoy'); else if (k === 'p') cambiar('proyecto'); }); // atajos: H = hoy, P = propuesta
   window.KEN_ESC = { poner: cambiar, nombre, get e() { return T3.escenario; } };
   // arranque en «hoy»; los módulos que terminan de cargar después se vuelven a apagar
   aplicar('hoy');

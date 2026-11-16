@@ -214,7 +214,7 @@ function sombraCopa(g, m, alto, ancho) {
 function realzarMaterial(m, env, hoja) {
   ajustarMat(m, env, { roughness: realzarMaterial.ken ? 1.0 : 0.9, tinte: hoja ? (realzarMaterial.ken ? 1.0 : 1.25) : 1.0, env: realzarMaterial.ken ? 0.12 : 0.4 }); /* Kennedy: hojas mate, sin reflejo del cielo (se veían brillantes) */
   // las caras que no miran al sol no se ven negras: la textura aporta un poco de luz propia
-  if (m.map) { m.emissiveMap = m.map; m.emissive = new THREE.Color(1, 1, 1); m.emissiveIntensity = hoja ? (realzarMaterial.ken ? 0.27 : 0.42) : (realzarMaterial.ken ? 0.26 : 0.18); } // simulador: luz de relleno en la copa (sin el interior negro): árboles suaves
+  if (m.map) { m.emissiveMap = m.map; m.emissive = new THREE.Color(1, 1, 1); m.emissiveIntensity = hoja ? (realzarMaterial.ken ? 0.15 : 0.42) /* menos luz propia: las copas se veían planas; ahora la luz viene del sol que las atraviesa (balanceo) */ : (realzarMaterial.ken ? 0.26 : 0.18); } // simulador: luz de relleno en la copa (sin el interior negro): árboles suaves
   m.needsUpdate = true; return m;
 }
 function dibujarSiluetas(T3, partes, alto, ancho) {
@@ -279,8 +279,16 @@ function balanceo(mat, alto, T3) {
         transformed.x += (sin(uTime * 1.3 + ph) * 0.018 + sin(uTime * 2.9 + ph * 1.7) * 0.007) * ${alto.toFixed(2)} * hh;
         transformed.z += cos(uTime * 1.1 + ph * 1.3) * 0.014 * ${alto.toFixed(2)} * hh;
       #endif`);
+    // hojas realistas: TRASLUCIDEZ (el sol atraviesa la hoja cuando está detrás: verde-amarillo luminoso) y un poco de luz que rebota del cielo
+    sh.fragmentShader = sh.fragmentShader.replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
+      #if NUM_DIR_LIGHTS > 0
+        { float tr = max(dot(-geometryViewDir, directionalLights[0].direction), 0.0); tr = pow(tr, 3.0);
+          float lado = 0.35 + 0.65 * (1.0 - abs(dot(geometryNormal, geometryViewDir)));
+          reflectedLight.directDiffuse += diffuseColor.rgb * vec3(1.05, 1.15, 0.55) * directionalLights[0].color * tr * lado * 0.55; }
+      #endif
+      reflectedLight.indirectDiffuse += diffuseColor.rgb * vec3(0.55, 0.7, 0.85) * 0.08 * (0.5 + 0.5 * geometryNormal.y);`);
   };
-  mat.customProgramCacheKey = () => 'balanceo' + alto.toFixed(1);
+  mat.customProgramCacheKey = () => 'balanceo2' + alto.toFixed(1);
 }
 // material del árbol lejano: color por vértice (más oscuro abajo y adentro) + moteado de follaje procedural + balanceo
 function materialArbolBajo(T3) {
@@ -410,8 +418,8 @@ export async function buildTrees(T3, T, W, lw, env, Pq, Net) {
   }
   // L0 modelo real completo (cerca) · L1 modelo real reducido (medio) · L2 arbol 3D de bajos poligonos (lejos) · siluetas sólo más allá de R2 o si se llena el cupo
   // la versión ligera (gafas VR, celulares: T3.liviano) usa menos árboles detallados y copas más simples; la completa muestra más modelos reales
-  const KA = !!T3.kenArboles, LV = !!T3.liviano, CAP2 = LV ? 5000 : 10000, R0 = MV ? 0 : LV ? 40 : KA ? 150 : 100, R1 = MV ? (KA ? 380 : 260) : LV ? 400 : KA ? 450 : 1000, OSC = KA ? 0.74 : 1, /* Kennedy: reales hasta 900 m, más oscuros (igual de cerca y de lejos) */ /* Kennedy: reales hasta 420 m (más oscuros); más lejos, copas tipo splat (arboles_splat.js) */ R2 = LV ? 1200 : 2200, d = new THREE.Object3D(), col = new THREE.Color();
-  const CAP0S = especies.map(e => MV ? 1 : e.base === 'arbolpeq' ? (LV ? 4 : 10) : (LV ? 10 : KA ? 48 : 32)); // el arbolpeq tiene 83.000 triángulos en el nivel 0
+  const KA = !!T3.kenArboles, LV = !!T3.liviano, CAP2 = LV ? 5000 : 10000, R0 = MV ? 0 : LV ? 40 : KA ? 220 : 100, R1 = MV ? (KA ? 380 : 260) : LV ? 400 : KA ? 450 : 1000, OSC = KA ? 0.74 : 1, /* Kennedy: reales hasta 900 m, más oscuros (igual de cerca y de lejos) */ /* Kennedy: reales hasta 420 m (más oscuros); más lejos, copas tipo splat (arboles_splat.js) */ R2 = LV ? 1200 : 2200, d = new THREE.Object3D(), col = new THREE.Color();
+  const CAP0S = especies.map(e => MV ? 1 : e.base === 'arbolpeq' ? (LV ? 4 : 10) : (LV ? 10 : KA ? 64 : 32)); // el arbolpeq tiene 83.000 triángulos en el nivel 0
   const CAP1S = especies.map(e => MV ? (e.base === 'arbolpeq' ? 25 : 90) : e.base === 'arbolpeq' ? (LV ? 40 : KA ? 80 : 200) : (LV ? 240 : KA ? 600 : 1100)); // el arbolpeq tiene 14.000 triángulos en el nivel 1: menos copias
   const TIPO_BAJO = especies.map(e => (e.base === 'arbolpeq' || e.base === 'island_tree_02') ? 1 : 0);
   const matBajo = materialArbolBajo(T3), REF = [0.17, 0.255, 0.0875]; // REF = verde medio del degradado de vértices

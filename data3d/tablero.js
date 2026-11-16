@@ -166,10 +166,6 @@ body.tb-abierto #dock{display:none}
       <div class="sx2"><div><h5>Más carros de lo que la red explica</h5><div id="tb-sxM"></div></div><div><h5>Menos carros de lo que la red explica</h5><div id="tb-sxm"></div></div></div>
       <div class="fila2"><button id="tb-sxver">Ver la elección en el mapa</button></div>
       <div class="nota2" id="tb-nota4"></div></div>
-    <div class="gr solo-pro" data-tab="bio"><h3>Interacciones que fomenta la propuesta<span>huertas, parques-huerta y Bavaria Común</span></h3>
-      <div class="kp2"><div><b id="tb-fPol">–</b><small>polinizaciones ahora · hoy <span id="tb-fPolH">–</span></small></div><div><b id="tb-fDep">–</b><small>depredación (control de plagas) · hoy <span id="tb-fDepH">–</span></small></div><div><b id="tb-fTot">–</b><small>interacciones · hoy <span id="tb-fHoy">–</span></small></div></div>
-      <div class="fom" id="tb-fom"></div>
-      <div class="fila2"><button id="tb-fver">Ver el distrito Bavaria Común</button><button id="tb-fcol">Ver la red de colegios</button></div></div>
     <div class="chips" data-tab="bio" id="tb-chips">${TIPOS.map(t => `<button class="chip" data-t="${t.id}" title="${esc(t.n)}: mostrar u ocultar en el territorio"><i style="background:${t.c}"></i>${CORTO[t.id] || esc(t.n)} <b id="tb-c${t.id}">0</b></button>`).join('')}</div>
     <div class="gr" data-tab="bio"><h3>Quién interactúa con quién<span>ahora</span></h3><canvas id="tb-cuerda" aria-label="Diagrama de cuerdas de las interacciones que están ocurriendo"></canvas><div class="pie" id="tb-pie1">Pasa o toca una especie para ver con quién está interactuando.</div></div>
     <div class="gr" data-tab="bio"><h3>Interacciones durante el día<span id="tb-ld">encuentros por tipo</span></h3><canvas id="tb-flujo" aria-label="Encuentros por tipo de relación durante el día"></canvas><div class="ejes"><span>0 h</span><span>6</span><span>12</span><span>18</span><span>24</span></div><div class="pie" id="tb-pie2">Arrastra sobre la gráfica para cambiar la hora de la simulación.</div></div>
@@ -561,11 +557,11 @@ body.tb-abierto #dock{display:none}
     ['Murciélagos', 'comen polillas y mosquitos', 'Refugios de murciélagos', 0, '#a78bfa'], ['Rana sabanera y libélulas', 'comen mosquitos', 'Charca didáctica', 0, '#60a5fa'],
     ['Mariquitas', 'comen pulgones', 'Hoteles de insectos', 0, '#ef4444'], ['Lombrices', 'vuelven el compost suelo', 'Compostaje del distrito', -1, '#b87c8c']
   ];
-  $('tb-fom').innerHTML = FOM.map(([n, q, m, t, c]) => `<div class="f"><i style="background:${c}"></i><div><b>${esc(n)}</b><small>${esc(q)} · ${esc(m)}</small></div><em style="color:${TIPOS[t] ? TIPOS[t].c : '#9aa2a7'};background:${rgba(TIPOS[t] ? TIPOS[t].c : '#9aa2a7', 0.12)}">${esc(CORTO[t] || 'Suelo vivo')}</em></div>`).join('');
-  $('tb-fver').onclick = () => { if (escAct !== 'proyecto') ponerEscenario('proyecto'); const s = document.querySelector('#esc-ley [data-s="bav"]'); if (s && !s.classList.contains('on')) s.click(); if (innerWidth <= 760) abrir(false); };
-  $('tb-fcol').onclick = () => { if (escAct !== 'proyecto') ponerEscenario('proyecto'); const s = document.querySelector('#esc-ley [data-s="col"]'); if (s && !s.classList.contains('on')) s.click(); if (innerWidth <= 760) abrir(false); };
+  if ($('tb-fom')) $('tb-fom').innerHTML = FOM.map(([n, q, m, t, c]) => `<div class="f"><i style="background:${c}"></i><div><b>${esc(n)}</b><small>${esc(q)} · ${esc(m)}</small></div><em style="color:${TIPOS[t] ? TIPOS[t].c : '#9aa2a7'};background:${rgba(TIPOS[t] ? TIPOS[t].c : '#9aa2a7', 0.12)}">${esc(CORTO[t] || 'Suelo vivo')}</em></div>`).join('');
+  if ($('tb-fver')) $('tb-fver').onclick = () => { if (escAct !== 'proyecto') ponerEscenario('proyecto'); const s = document.querySelector('#esc-ley [data-s="bav"]'); if (s && !s.classList.contains('on')) s.click(); if (innerWidth <= 760) abrir(false); };
+  if ($('tb-fcol')) $('tb-fcol').onclick = () => { if (escAct !== 'proyecto') ponerEscenario('proyecto'); const s = document.querySelector('#esc-ley [data-s="col"]'); if (s && !s.classList.contains('on')) s.click(); if (innerWidth <= 760) abrir(false); };
   function pintarFomento() {
-    if (!abierto() || escAct !== 'proyecto' || pest !== 'bio') return;
+    if (!$('tb-fPol') || !abierto() || escAct !== 'proyecto' || pest !== 'bio') return; // (bloque quitado: el tablero es igual en los dos escenarios)
     $('tb-fPol').textContent = num(ENC[5] || 0); $('tb-fDep').textContent = num(ENC[0] || 0);
     $('tb-fTot').textContent = num(ahoraEnc);
     let h = 0, n = 0; for (const s of VIVO.hoy) if (s) { h += s.v; n++; } $('tb-fHoy').textContent = n ? num(h / n) : '–';

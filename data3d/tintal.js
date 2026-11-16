@@ -174,7 +174,17 @@ export async function iniciarTintal({ THREE, T3, OX, OZ, Y0 = 0, movil = false }
   mC.forEach((par, vk) => par.forEach(m => { m.count = nC[vk]; }));
   for (const m of [mT, mP, ...mC.flat()]) { m.castShadow = !movil; m.receiveShadow = !movil; m.frustumCulled = false; grupo.add(m); }
   let semH = 31; const rnd = () => ((semH = (semH * 16807) % 2147483647) / 2147483647);
-  // (la foto satelital que se ponía encima del suelo de la plaza se quitó: se veía rara, sobre todo de noche; queda la aerofoto base)
+  // ---------- suelo de la plaza: foto satelital de la zona (tapa la base gris que dejaba el recorte de los árboles de Google) ----------
+  if (D.suelo && D.zona_giro) {
+    const [sx0, sy0, sx1, sy1] = D.suelo, sh = new THREE.Shape(D.zona_giro.map(p => new THREE.Vector2(p[0], p[1])));
+    const g = new THREE.ShapeGeometry(sh, 4), p = g.attributes.position, uv = g.attributes.uv;
+    for (let i = 0; i < p.count; i++) { const X = p.getX(i), Y = p.getY(i); uv.setXY(i, (X - sx0) / (sx1 - sx0), 1 - (Y - sy0) / (sy1 - sy0)); p.setXYZ(i, X + OX, Y0 + 0.12, Y + OZ); }
+    g.computeVertexNormals(); if (g.attributes.normal.getY(0) < 0) g.index.array.reverse();
+    const tex = new THREE.TextureLoader().load('data3d/tintal_suelo.jpg'); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = ANIS;
+    const m = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ map: tex, color: new THREE.Color(1.75, 1.75, 1.75), side: THREE.DoubleSide, /* con luz: de noche se oscurece como el resto (antes brillaba igual) */ polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 }));
+    m.receiveShadow = !movil; m.renderOrder = 1; m.name = 'tintal-suelo'; grupo.add(m);
+  }
+
   // ---------- HUERTA DEL PRADO CIRCULAR (data3d/huerta_circular.js): es de la propuesta, no existe en «Kennedy hoy» ----------
   if (D.huerta) {
     const { crearHuertaCircular } = await import('./huerta_circular.js?v=1');
