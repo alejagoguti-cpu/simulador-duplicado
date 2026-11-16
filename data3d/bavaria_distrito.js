@@ -531,7 +531,7 @@ body.bd-on #dock,body.bd-on #hid-red{display:none!important}
       <div class="kp"><div><b>12</b><span>edificios con programa NBIC</span></div><div><b>${HA.toFixed(1).replace('.', ',')} ha</b><span>de huertas</span></div><div><b>${INTER.length}</b><span>interacciones bióticas</span></div><div><b>${PAS.length}</b><span>pasajes nuevos</span></div></div></header>
     <nav class="tabs" role="tablist">${[['dist', 'Distrito NBIC'], ['sx', 'Sintaxis'], ['fauna', 'Fauna'], ['huerta', 'Huertas'], ['ciclo', 'Compost y energía']].map(([k, n], i) => `<button type="button" role="tab" data-t="${k}" aria-selected="${!i}">${n}</button>`).join('')}</nav>
     <div class="cuerpo" role="tabpanel"></div>
-    <div class="pie"><button type="button" class="go" id="bd-go"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 1l7 4-7 4z" fill="currentColor"/></svg>Seguir una cosecha</button><button type="button" class="sec2" id="bd-ver">Vista general</button></div>`;
+    <div class="pie"><button type="button" class="go" id="bd-go"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 1l7 4-7 4z" fill="currentColor"/></svg>Seguir una cosecha</button><a class="sec2" id="bd-pts" href="bavaria_puntos.html" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none">En puntos</a><a class="sec2" id="bd-dentro" href="bavaria_interior.html?e=bio" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none">Por dentro</a><button type="button" class="sec2" id="bd-ver">Vista general</button></div>`;
   document.body.appendChild(pan);
   const cuerpo = pan.querySelector('.cuerpo');
   let sxObj = 1, focoFauna = null;
@@ -563,7 +563,7 @@ body.bd-on #dock,body.bd-on #hid-red{display:none!important}
   function general() { const c = M(9335, 3020), sm = MOV ? 1.5 : 1, t = new THREE.Vector3(c[0], 0, c[1]), p1 = new THREE.Vector3(c[0] + 170 * sm, 250 * sm, c[1] + 330 * sm); desplaza(p1, t, 330 * sm); volar(p1, t); }
   function vistaSx() { const c = M(9319, 2943), sm = MOV ? 1.4 : 1, t = new THREE.Vector3(c[0], 0, c[1]), p1 = new THREE.Vector3(c[0] + 300 * sm, 1250 * sm, c[1] + 700 * sm); desplaza(p1, t, 900 * sm); return [p1, t, 1800]; }
   function resaltar(k) { SHELL.forEach(s => { s.dim = !!k && s.k !== k; }); Object.entries(LBP).forEach(([kk, o]) => { o.d.classList.toggle('act', kk === k); o.d.classList.toggle('dim', !!k && kk !== k); }); }
-  function enfocar(k, desdePanel) {
+  function enfocar(k, desdePanel) { { const pd = document.getElementById('bd-dentro'); if (pd && ['inst', 'bio', 'nano', 'datos', 'cogn', 'foro', 'poli', 'pos', 'mer', 'inc', 'alim', 'torre'].includes(k)) { pd.href = 'bavaria_interior.html?e=' + k; pd.textContent = 'Entrar: ' + (PK[k] ? PK[k].n.split(' ')[0] : 'edificio'); } }
     resaltar(k); const ps = POS[k]; if (!ps) return;
     const dist = { inst: 190, bio: 220, nano: 140, datos: 190, cogn: 180, foro: 260, poli: 150, pos: 150, mer: 140, inc: 140, alim: 140, torre: 160, campo: 260, comp: 60, sol: 70 }[k] || 160;
     volarA([ps[0], ps[2]], dist);
