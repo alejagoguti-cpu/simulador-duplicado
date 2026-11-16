@@ -190,7 +190,7 @@ const ED = {
 const ORDEN = ['bio', 'nano', 'datos', 'cogn', 'inst', 'foro', 'poli', 'pos', 'mer', 'inc', 'alim', 'torre'];
 const k0 = new URLSearchParams(location.search).get('e'), K = ED[k0] ? k0 : 'bio', E0 = ED[K];
 $('edif').innerHTML = ORDEN.map(k => `<button style="--c:${ED[k].c}" class="${k === K ? 'on' : ''}" data-k="${k}">${esc(ED[k].n)}</button>`).join('');
-$('edif').onclick = (e) => { const b = e.target.closest('[data-k]'); if (b) location.search = '?e=' + b.dataset.k; };
+$('edif').onclick = (e) => { const b = e.target.closest('[data-k]'); if (b) { if (b.dataset.k === 'poli') { location.href = 'polinizadores.html'; } else { location.search = '?e=' + b.dataset.k; } } };
 document.title = E0.n + ' por dentro · Bavaria Común';
 $('ey').textContent = 'Bavaria Común · por dentro'; $('tit').textContent = E0.n; $('des').textContent = E0.d;
 $('kp').innerHTML = E0.kp.map(([b, s]) => `<div><b>${esc(b)}</b><span>${esc(s)}</span></div>`).join('');
