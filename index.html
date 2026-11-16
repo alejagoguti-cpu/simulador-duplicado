@@ -1501,12 +1501,12 @@ async function crearPostproceso(T) {
         vec3 c = texture2D(tDiffuse, vUv).rgb;
         c = mix(c, c * c * (3.0 - 2.0 * c), 0.3);                          // contraste en S suave
         float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
-        c = mix(vec3(l), c, 0.98 - 0.22 * uNoche);                          // color (de día casi pleno: el cielo se veía gris)
+        c = mix(vec3(l), c, 0.86 - 0.14 * uNoche);                          // color contenido (no saturado)
         c *= mix(vec3(0.9, 0.96, 1.06), vec3(1.05, 1.0, 0.91), smoothstep(0.06, 0.62, l)); // sombras frías, luces cálidas
         float luz = smoothstep(0.42, 0.85, l);                               // ventanas y faroles
         c = mix(c, c * mix(vec3(0.70, 0.80, 1.12), vec3(1.25, 1.02, 0.72), luz), uNoche); // de noche: azul, con las luces cálidas
-        c = c / (1.0 + 0.06 * c);                                           // hombro: las luces no se queman
-        vec2 q = vUv - 0.5; c *= 1.0 - (0.12 + 0.3 * uNoche) * dot(q, q) * 1.6; // viñeta suave de día (oscurecía el cielo)
+        c = c / (1.0 + 0.12 * c);                                           // hombro: las luces no se queman
+        vec2 q = vUv - 0.5; c *= 1.0 - (0.3 + 0.18 * uNoche) * dot(q, q) * 1.6; // viñeta
         gl_FragColor = vec4(clamp(c, 0.0, 1.0), 1.0);
       }`
   }));
@@ -3657,7 +3657,7 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
         b.onclick = async () => { b.disabled = true; try { if (!pV) pV = import('./data3d/vision.js?v=4').then(m => m.crearVision({ THREE: T3.THREE, T3, lw, OX: 2095.67, OZ: -109.06, movil: MOVIL })); V = await pV; const on = !V.on; V.ver(on); b.classList.toggle('on', on); b.textContent = on ? '✦ Salir de la visión' : '✦ Visión'; } catch (e) { console.warn('visión:', e); say('⚠️ No cargó la visión', 5000); } b.disabled = false; };
         (fb || ag.parentElement).insertAdjacentElement('afterend', b);
       }
-      return import('./data3d/cielo.js?v=9');
+      return import('./data3d/cielo.js?v=8');
     }).then(m => { T3.cielo = m.iniciarCielo({ THREE: T3.THREE, T3, luzMalla }); }) // cielo y luz de 24 horas con el reloj de la simulación
     .then(() => import('./data3d/biotica.js?v=20')).then(m => m.iniciarBiotica({ THREE: T3.THREE, T3, lw, OX: 2095.67, OZ: -109.06, Y0: 2.0, movil: MOVIL, huertas: EST ? EST.sitios() : null }))
     .then(bio => { T3.bio = bio; import('./data3d/tablero.js?v=18').then(m => { T3.tablero = m.iniciarTablero({ T3, bio }); }).catch(e => console.warn('tablero:', e)); import('./data3d/seguir.js?v=3').then(m => m.iniciarSeguir({ THREE: T3.THREE, T3, say })).catch(e => console.warn('seguir:', e)); }) // tablero en vivo de las relaciones bióticas
