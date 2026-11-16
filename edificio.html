@@ -6,117 +6,220 @@
 <title id="ptit">Edificio · Bavaria Común</title>
 <meta name="description" content="Recorrido por dentro de cada edificio del distrito Bavaria Común.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#f4f1ea;--tx:#1a1d1b;--tx2:#4a524d;--tx3:#7a847e;--acc:#1f6f4a;--mono:'JetBrains Mono',ui-monospace,monospace;--sans:Inter,system-ui,sans-serif;--cond:'Barlow Condensed',Inter,sans-serif}
-*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--tx);font-family:var(--sans);scroll-behavior:smooth}
-a{color:var(--tx);text-decoration:none}
-.top{position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 28px;background:rgba(244,241,234,.9);backdrop-filter:blur(10px);border-bottom:1px solid rgba(0,0,0,.06);flex-wrap:wrap}
-.top .brand{font:700 15px var(--cond);letter-spacing:.06em;text-transform:uppercase}
-.top nav{display:flex;gap:6px;flex-wrap:wrap}
-.top nav a{font:500 11px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--tx2);padding:6px 10px;border-radius:6px}
-.top nav a:hover{color:var(--tx);background:rgba(0,0,0,.04)}
-.top nav a.on{color:#fff;background:var(--acc)}
-.hero{padding:12vh 6vw 8vh;max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center}
-.hero .ey{font:500 11px var(--mono);letter-spacing:.18em;color:var(--acc);text-transform:uppercase}
-.hero h1{margin:14px 0 16px;font:700 78px/0.9 var(--cond);text-transform:uppercase;letter-spacing:-.01em}
-.hero p{margin:0 0 24px;font-size:17px;line-height:1.6;color:var(--tx2);max-width:560px}
-.btn{display:inline-block;padding:14px 26px;border-radius:8px;background:var(--acc);color:#fff;font:600 12px var(--mono);letter-spacing:.12em;text-transform:uppercase}
-.btn:hover{filter:brightness(1.08)}
-.hero .img{width:100%;aspect-ratio:4/3;border-radius:12px;overflow:hidden;background:#ddd}
+*{box-sizing:border-box;margin:0;padding:0}html,body{background:#0a0a0a;color:#f2f2f2;font-family:Inter,system-ui,sans-serif;scroll-behavior:smooth}
+a{color:#f2f2f2;text-decoration:none}
+.wrap{max-width:1280px;margin:0 auto;padding:0 32px}
+.top{position:sticky;top:0;z-index:30;background:#0a0a0a;border-bottom:1px solid #222;display:flex;align-items:center;justify-content:space-between;padding:14px 32px;gap:16px;flex-wrap:wrap}
+.top .brand{display:flex;align-items:center;gap:10px;font:800 15px Inter;letter-spacing:.02em;color:#fff}
+.top .brand .dot{width:28px;height:28px;border-radius:50%;background:#fff}
+.top nav{display:flex;gap:22px;font:500 13px Inter;flex-wrap:wrap}
+.top nav a{color:#aaa}
+.top nav a:hover{color:#fff}
+.top .right{display:flex;align-items:center;gap:16px;font:500 13px Inter}
+.top .right a{color:#aaa}
+.top .right .sub{background:#fff;color:#000;padding:8px 14px;border-radius:6px;font:600 12px Inter}
+.hero{padding:80px 32px 60px;max-width:1280px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center}
+.hero h1{font:900 88px/0.92 Inter;letter-spacing:-.03em;margin-bottom:8px;color:#fff}
+.hero h1 .sub{display:block;font:400 34px/1.1 Inter;color:#aaa;margin-top:12px;letter-spacing:-.01em}
+.hero .cta{margin-top:32px;font:600 15px Inter}
+.hero .cta a{color:#fff;border-bottom:2px solid #fff;padding-bottom:4px}
+.hero .img{width:100%;aspect-ratio:1/1;background:#1a1a1a;border-radius:8px;overflow:hidden}
 .hero .img img{width:100%;height:100%;object-fit:cover;display:block}
-.section{padding:10vh 6vw;max-width:1200px;margin:0 auto}
-.section .ey{font:500 11px var(--mono);letter-spacing:.18em;color:var(--acc);text-transform:uppercase}
-.section h2{margin:12px 0 18px;font:700 58px/0.95 var(--cond);text-transform:uppercase;max-width:760px}
-.section p{font-size:16px;line-height:1.65;color:var(--tx2);max-width:720px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px;margin-top:36px}
-.card{padding:24px;border-radius:10px;background:#fff;border:1px solid rgba(0,0,0,.06);box-shadow:0 8px 30px rgba(0,0,0,.04)}
-.card h3{margin:0 0 6px;font:600 18px var(--sans)}
-.card .med{font:500 11px var(--mono);color:var(--tx3);margin-bottom:10px;letter-spacing:.04em}
-.card p{font-size:13.5px;line-height:1.55;color:var(--tx2);margin:0}
-.split{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center;padding:10vh 6vw;max-width:1200px;margin:0 auto}
-.split .img{width:100%;aspect-ratio:4/3;border-radius:12px;overflow:hidden;background:#ddd}
-.split .img img{width:100%;height:100%;object-fit:cover;display:block}
-.split h2{margin:12px 0 18px;font:700 52px/0.95 var(--cond);text-transform:uppercase}
-.split p{font-size:16px;line-height:1.65;color:var(--tx2);max-width:520px}
-.kp{display:flex;gap:40px;margin-top:28px;flex-wrap:wrap}
-.kp div b{display:block;font:700 44px var(--cond)}
-.kp div span{font:500 10px var(--mono);letter-spacing:.12em;color:var(--tx3);text-transform:uppercase}
-.cta{padding:10vh 6vw;text-align:center;background:#fff;margin:4vh 0}
-.cta h2{margin:0 0 16px;font:700 48px/1 var(--cond);text-transform:uppercase}
-.cta p{margin:0 0 24px;font-size:16px;color:var(--tx2)}
-.finale{padding:6vh 6vw;max-width:1200px;margin:0 auto}
-.finale h2{margin:0 0 16px;font:700 44px/1 var(--cond);text-transform:uppercase}
-.finale .frame{width:100%;height:70vh;border-radius:12px;overflow:hidden;border:1px solid rgba(0,0,0,.08);background:#000}
+.feat{padding:100px 32px;max-width:1280px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center}
+.feat .left h2{font:900 64px/0.95 Inter;letter-spacing:-.02em;margin-bottom:18px;color:#fff}
+.feat .left .ey{font:600 13px Inter;letter-spacing:.12em;text-transform:uppercase;color:#888;margin-bottom:12px}
+.feat .left p{font:400 17px/1.6 Inter;color:#bbb;max-width:460px;margin-bottom:24px}
+.feat .left a{font:600 15px Inter;color:#fff;border-bottom:2px solid #fff;padding-bottom:4px}
+.feat .img{width:100%;aspect-ratio:4/3;background:#1a1a1a;border-radius:8px;overflow:hidden}
+.feat .img img{width:100%;height:100%;object-fit:cover;display:block}
+.band{background:#141414;padding:100px 32px}
+.band .inner{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center}
+.band h2{font:900 64px/0.95 Inter;letter-spacing:-.02em;margin-bottom:18px;color:#fff}
+.band p{font:400 17px/1.6 Inter;color:#bbb;max-width:460px;margin-bottom:24px}
+.band a{font:600 15px Inter;color:#fff;border-bottom:2px solid #fff;padding-bottom:4px}
+.band .img{width:100%;aspect-ratio:4/3;background:#1a1a1a;border-radius:8px;overflow:hidden}
+.band .img img{width:100%;height:100%;object-fit:cover;display:block}
+.career{padding:100px 32px;max-width:1280px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center}
+.career h2{font:900 64px/0.95 Inter;letter-spacing:-.02em;margin-bottom:18px;color:#fff}
+.career p{font:400 17px/1.6 Inter;color:#bbb;max-width:460px;margin-bottom:24px}
+.career a{font:600 15px Inter;color:#fff;border-bottom:2px solid #fff;padding-bottom:4px}
+.career .img{width:100%;aspect-ratio:4/3;background:#1a1a1a;border-radius:8px;overflow:hidden}
+.career .img img{width:100%;height:100%;object-fit:cover;display:block}
+.contact{padding:80px 32px;text-align:center;border-top:1px solid #222}
+.contact h2{font:900 56px/1 Inter;letter-spacing:-.02em;margin-bottom:16px;color:#fff}
+.contact p{font:400 16px Inter;color:#bbb;margin-bottom:24px}
+.contact a{font:600 15px Inter;color:#fff;border-bottom:2px solid #fff;padding-bottom:4px}
+.finale{padding:6vh 6vw;max-width:1280px;margin:0 auto}
+.finale h2{margin:0 0 16px;font:900 44px/1 Inter;letter-spacing:-.02em;color:#fff}
+.finale .frame{width:100%;height:70vh;border-radius:12px;overflow:hidden;border:1px solid #222;background:#000}
 .finale iframe{width:100%;height:100%;border:0;display:block}
-footer{padding:6vh 6vw;background:#1a1d1b;color:#c9c9c9;font-size:13px;display:grid;grid-template-columns:2fr 1fr 1fr;gap:30px}
-footer h4{margin:0 0 10px;font:600 12px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:#fff}
-footer a{color:#c9c9c9;display:block;margin:4px 0}
-footer a:hover{color:#fff}
-footer .copy{grid-column:1/-1;border-top:1px solid rgba(255,255,255,.1);padding-top:16px;margin-top:8px;font-size:11px;color:#8a8a8a;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
-@media(max-width:860px){.hero{grid-template-columns:1fr}.split{grid-template-columns:1fr}.hero h1{font-size:52px}.section h2{font-size:40px}footer{grid-template-columns:1fr}}
+.footer{background:#000;color:#ccc;padding:60px 32px 30px;border-top:1px solid #222}
+.footer .inner{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:40px}
+.footer h4{font:700 12px Inter;letter-spacing:.12em;text-transform:uppercase;color:#fff;margin-bottom:14px}
+.footer a{color:#ccc;display:block;margin:6px 0;font:400 14px Inter}
+.footer a:hover{color:#fff}
+.footer p{font:400 14px/1.6 Inter;color:#ccc;max-width:360px}
+.footer .copy{max-width:1280px;margin:40px auto 0;padding-top:20px;border-top:1px solid #222;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;font:400 12px Inter;color:#888}
+.footer .iso{display:flex;gap:12px;margin-top:16px}
+.footer .iso div{width:48px;height:48px;background:#1a1a1a;border-radius:4px}
+.card{padding:20px;border-radius:10px;background:#141414;border:1px solid #222}
+.card h3{margin:0 0 6px;font:600 17px Inter;color:#fff}
+.card .med{font:500 11px Inter;color:#888;margin-bottom:10px;letter-spacing:.04em}
+.card p{font-size:13.5px;line-height:1.55;color:#bbb;margin:0}
+.kp{display:flex;gap:40px;margin-top:28px;flex-wrap:wrap}
+.kp div b{display:block;font:700 44px Inter;color:#fff}
+.kp div span{font:500 10px Inter;letter-spacing:.12em;color:#888;text-transform:uppercase}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px;margin-top:36px}
+@media(max-width:860px){.hero,.feat,.band .inner,.career{grid-template-columns:1fr}.hero h1{font-size:56px}.feat .left h2,.band h2,.career h2{font-size:44px}.footer .inner{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
-<header class="top"><a class="brand" href="index.html">Bavaria Común</a><nav id="nav"></nav></header>
-<section class="hero"><div><div class="ey" id="ey">Bavaria Común · por dentro</div><h1 id="tit"></h1><p id="des"></p><a class="btn" href="#elementos">Ver elementos →</a></div><div class="img"><img id="heroimg" alt=""></div></section>
-<section class="section" id="quees"><div class="ey">Qué es</div><h2 id="qtit"></h2><p id="qdes"></p><div class="kp" id="kp"></div></section>
-<section class="section" id="elementos"><div class="ey">Elementos necesarios</div><h2>Para hacer este espacio</h2><p>Equipos y medidas típicos de cada espacio, para discutir con el grupo.</p><div class="grid" id="grid"></div></section>
-<div class="split"><div><div class="ey">Misión</div><h2 id="mtit"></h2><p id="mdes"></p></div><div class="img"><img id="splitimg" alt=""></div></div>
-<section class="cta"><h2>¿Quieres verlo en 3D?</h2><p>Recorre el espacio de forma interactiva, toca un equipo para ver su ficha.</p><a class="btn" href="#modelo">Abrir modelo 3D →</a></section>
-<section class="finale" id="modelo"><h2>Modelo 3D interactivo</h2><div class="frame"><iframe id="ifr" src="" title="Modelo 3D" loading="lazy"></iframe></div></section>
-<footer><div><h4>Bavaria Común</h4><p style="margin:0;color:#c9c9c9;font-size:13px;line-height:1.6">Distribución propuesta según el programa del distrito (áreas y puestos); equipos y medidas típicos de cada espacio, para discutir con el grupo.</p></div><div><h4>Navegación</h4><a href="index.html">Simulador</a><a href="bavaria_puntos.html">Bavaria en puntos</a><a href="modelo3d.html">Modelo 3D</a></div><div><h4>Contacto</h4><a href="mailto:info@bavariacomun.org">info@bavariacomun.org</a></div><div class="copy"><span>© 2026 Bavaria Común</span><span>Diseño inspirado en Bright Biotech</span></div></footer>
+<header class="top">
+  <a class="brand" href="index.html"><span class="dot"></span> Bavaria Común</a>
+  <nav id="nav"></nav>
+  <div class="right"><a href="#contacto">Contact</a><a class="sub" href="#subscribe">Subscribe for Updates</a></div>
+</header>
+
+<section class="hero">
+  <div>
+    <div style="font:600 13px Inter;letter-spacing:.12em;text-transform:uppercase;color:#888;margin-bottom:14px" id="ey">Bavaria Común · por dentro</div>
+    <h1 id="tit"></h1>
+    <div class="cta" id="herocta"><a href="#elementos">Technology & Products →</a></div>
+  </div>
+  <div class="img"><img id="heroimg" alt=""></div>
+</section>
+
+<section class="feat" id="quees">
+  <div class="left">
+    <div class="ey" id="qey">Qué es</div>
+    <h2 id="qtit"></h2>
+    <p id="qdes"></p>
+    <div class="kp" id="kp"></div>
+    <div style="margin-top:24px"><a href="#elementos">Technology & Products →</a></div>
+  </div>
+  <div class="img"><img id="featimg" alt=""></div>
+</section>
+
+<section class="band">
+  <div class="inner">
+    <div>
+      <h2 id="bandh"></h2>
+      <p id="bandp"></p>
+      <a href="#mission">Mission & Team →</a>
+    </div>
+    <div class="img"><img id="bandimg" alt=""></div>
+  </div>
+</section>
+
+<section class="career" id="elementos">
+  <div>
+    <h2>Elementos necesarios</h2>
+    <p>Equipos y medidas típicos de cada espacio, para discutir con el grupo.</p>
+    <div class="grid" id="grid"></div>
+    <div style="margin-top:24px"><a href="#modelo">Ver modelo 3D →</a></div>
+  </div>
+  <div class="img"><img id="careerimg" alt=""></div>
+</section>
+
+<section class="contact" id="contacto">
+  <h2>Want to know more?</h2>
+  <p>Escríbenos y conversemos sobre el distrito.</p>
+  <a href="mailto:info@bavariacomun.org">Contact us →</a>
+</section>
+
+<section class="feat" id="modelo">
+  <div class="left">
+    <div class="ey">Modelo 3D</div>
+    <h2>Recorre el espacio</h2>
+    <p>Modelo interactivo en puntos. Toca un equipo para ver su ficha.</p>
+    <a href="modelo3d.html?e=poli" target="_blank">Abrir en pantalla completa →</a>
+  </div>
+  <div class="img" style="aspect-ratio:16/9"><iframe id="ifr" src="" title="Modelo 3D" loading="lazy" style="width:100%;height:100%;border:0;display:block"></iframe></div>
+</section>
+
+<footer class="footer">
+  <div class="inner">
+    <div>
+      <h4>Bavaria Común</h4>
+      <p>Distribución propuesta según el programa del distrito (áreas y puestos); equipos y medidas típicos de cada espacio, para discutir con el grupo.</p>
+      <div class="iso"><div></div><div></div></div>
+    </div>
+    <div>
+      <h4>Navegación</h4>
+      <a href="index.html">Simulador</a>
+      <a href="bavaria_puntos.html">Bavaria en puntos</a>
+      <a href="modelo3d.html">Modelo 3D</a>
+    </div>
+    <div>
+      <h4>Legal</h4>
+      <a href="#">Your Data</a>
+      <a href="#">Terms and Conditions</a>
+    </div>
+    <div>
+      <h4>Contacto</h4>
+      <a href="mailto:info@bavariacomun.org">info@bavariacomun.org</a>
+    </div>
+  </div>
+  <div class="copy">
+    <span>© 2026 Bavaria Común</span>
+    <span>Design inspired by Bright Biotech</span>
+  </div>
+</footer>
+
 <script>
-const C = {};
 const ED = {
-  bio: { n:'Hub de biotecnología', c:'#34d399', d:'Biotecnología vegetal, microbiología del suelo y ADN ambiental. Bioinsumos y banco de semillas; sale directo a los invernaderos.', kp:[['60 m²','laboratorio'],['12','estudiantes'],['6','mesas en parejas']], m:'Estudiar el suelo y las plantas', md:'Biotecnología vegetal, microbiología del suelo y ADN ambiental para generar bioinsumos y banco de semillas.' },
-  nano: { n:'Centro de nanotecnología y sensores', c:'#c084fc', d:'Materiales y nanosensores: indicadores de humedad para empaques y los sensores de colmenas, suelo y agua del distrito.', kp:[['60 m²','laboratorio'],['6','puestos'],['1','universidad aliada']], m:'Materiales y nanosensores', md:'Indicadores de humedad para empaques y los sensores de colmenas, suelo y agua del distrito.' },
-  datos: { n:'Centro de datos e IA · gemelo digital', c:'#38bdf8', d:'Recibe los datos de todo el distrito: cosechas, energía, compost, pedidos y fauna. IA que cuenta polinizadores y reconoce cantos de aves y murciélagos.', kp:[['60 m²','sala'],['12','estaciones'],['1','gemelo digital']], m:'El gemelo digital del distrito', md:'Recibe los datos de todo el distrito y la IA que cuenta polinizadores y reconoce cantos.' },
-  cogn: { n:'Ciencias cognitivas y diseño', c:'#f472b6', d:'Cómo entienden las personas las etiquetas, alertas y datos del distrito; diseño de la divulgación para colegios y vecinos.', kp:[['30 m²','laboratorio'],['1','mesa de prueba'],['2','puestos de observación']], m:'Entender a las personas', md:'Cómo entienden las personas las etiquetas, alertas y datos del distrito.' },
-  inst: { n:'Instituto de enseñanza', c:'#60a5fa', d:'Aquí empieza la jornada: los grupos reciben el ensayo del día y salen por la cara interior de la L hacia laboratorios y cultivos.', kp:[['290 m²','instituto'],['96','estudiantes por jornada'],['2','aulas de 60 m²']], m:'El punto de partida', md:'Los grupos reciben el ensayo del día y salen hacia laboratorios y cultivos.' },
-  foro: { n:'Foro y nave de innovación', c:'#e7e5e4', d:'Punto de encuentro antes de recorrer el predio, fab lab y exhibición de ensayos, cosechas y resultados de energía, agua, compost y fauna.', kp:[['120 m²','iniciales'],['60','personas en gradas'],['1','fab lab']], m:'Punto de encuentro', md:'Fab lab y exhibición de ensayos, cosechas y resultados.' },
-  poli: { n:'Laboratorio vivo de polinizadores', c:'#fb923c', d:'Mariposario e invernadero de cría de polinizadores dentro de la estructura de la antigua nave: se estudian abejas, abejorros y mariposas.', kp:[['160 m²','mariposario'],['5','cámaras con IA'],['3','especies estudiadas']], m:'Estudiar polinizadores', md:'Se estudian abejas, abejorros y mariposas: cría, visita a flores nativas y conteo con IA.' },
-  pos: { n:'Planta docente de poscosecha', c:'#f59e0b', d:'Se recibe lo cosechado, se pesa, se selecciona, se empaca con los sensores del laboratorio y se despacha a los mercados de Kennedy.', kp:[['190 m²','planta'],['20 m²','cámara fría'],['7','zonas']], m:'De la cosecha al mercado', md:'Se recibe, pesa, selecciona, empaca y despacha a los mercados de Kennedy.' },
-  mer: { n:'Mercado experimental', c:'#fb7185', d:'Los productores venden, los estudiantes registran qué llega y qué se vende, y los compradores participan voluntariamente en pruebas.', kp:[['315 m²','mercado'],['12','puestos de 9 m²'],['1','puerta barrial']], m:'El mercado del distrito', md:'Los productores venden y los estudiantes registran qué llega y qué se vende.' },
-  inc: { n:'Incubadora agrotech', c:'#a3e635', d:'Emprendimientos de vecinos y egresados que llevan a los mercados lo que funcionó en los ensayos: bioinsumos, empaques, sensores.', kp:[['96 m²','propuestos'],['8','puestos de cotrabajo'],['1','sala de prototipos']], m:'Emprendimiento local', md:'Vecinos y egresados llevan a los mercados lo que funcionó en los ensayos.' },
-  alim: { n:'Laboratorio de alimentos', c:'#fde047', d:'Conservación y vida útil: prueba los empaques con nanosensores y aprovecha lo que el mercado no vende.', kp:[['96 m²','propuestos'],['5','cabinas sensoriales'],['1','cocina de proceso']], m:'Conservación y vida útil', md:'Prueba empaques con nanosensores y aprovecha lo que el mercado no vende.' },
-  torre: { n:'Torre de monitoreo ambiental', c:'#22d3ee', d:'Los silos se vuelven torre de sensores (clima, aire, ruido) y mirador. Arriba, la caja nido de la lechuza que controla roedores.', kp:[['16 m','de alto'],['1','estación meteorológica'],['1','caja nido con cámara']], m:'Sensores y mirador', md:'Torre de sensores (clima, aire, ruido) y mirador con caja nido de lechuza.' }
+  bio: { n:'Hub de biotecnología', d:'Biotecnología vegetal, microbiología del suelo y ADN ambiental. Bioinsumos y banco de semillas; sale directo a los invernaderos.', kp:[['60 m²','laboratorio'],['12','estudiantes'],['6','mesas en parejas']], m:'Ultra Scalable, Sustainable, and Safe', md:'Biotecnología vegetal, microbiología del suelo y ADN ambiental para generar bioinsumos y banco de semillas.', img:'https://picsum.photos/seed/bio-lab/900/700' },
+  nano: { n:'Centro de nanotecnología y sensores', d:'Materiales y nanosensores: indicadores de humedad para empaques y los sensores de colmenas, suelo y agua del distrito.', kp:[['60 m²','laboratorio'],['6','puestos'],['1','universidad aliada']], m:'Ultra Scalable, Sustainable, and Safe', md:'Materiales y nanosensores: indicadores de humedad para empaques y sensores del distrito.', img:'https://picsum.photos/seed/nano-sensors/900/700' },
+  datos: { n:'Centro de datos e IA · gemelo digital', d:'Recibe los datos de todo el distrito: cosechas, energía, compost, pedidos y fauna. IA que cuenta polinizadores y reconoce cantos de aves y murciélagos.', kp:[['60 m²','sala'],['12','estaciones'],['1','gemelo digital']], m:'Ultra Scalable, Sustainable, and Safe', md:'Recibe los datos del distrito y la IA que cuenta polinizadores y reconoce cantos.', img:'https://picsum.photos/seed/data-center/900/700' },
+  cogn: { n:'Ciencias cognitivas y diseño', d:'Cómo entienden las personas las etiquetas, alertas y datos del distrito; diseño de la divulgación para colegios y vecinos.', kp:[['30 m²','laboratorio'],['1','mesa de prueba'],['2','puestos de observación']], m:'Ultra Scalable, Sustainable, and Safe', md:'Cómo entienden las personas las etiquetas, alertas y datos del distrito.', img:'https://picsum.photos/seed/cognitive-design/900/700' },
+  inst: { n:'Instituto de enseñanza', d:'Aquí empieza la jornada: los grupos reciben el ensayo del día y salen por la cara interior de la L hacia laboratorios y cultivos.', kp:[['290 m²','instituto'],['96','estudiantes por jornada'],['2','aulas de 60 m²']], m:'Ultra Scalable, Sustainable, and Safe', md:'Los grupos reciben el ensayo del día y salen hacia laboratorios y cultivos.', img:'https://picsum.photos/seed/institute-class/900/700' },
+  foro: { n:'Foro y nave de innovación', d:'Punto de encuentro antes de recorrer el predio, fab lab y exhibición de ensayos, cosechas y resultados de energía, agua, compost y fauna.', kp:[['120 m²','iniciales'],['60','personas en gradas'],['1','fab lab']], m:'Ultra Scalable, Sustainable, and Safe', md:'Fab lab y exhibición de ensayos, cosechas y resultados.', img:'https://picsum.photos/seed/innovation-forum/900/700' },
+  poli: { n:'Laboratorio vivo de polinizadores', d:'Mariposario e invernadero de cría de polinizadores dentro de la estructura de la antigua nave: se estudian abejas, abejorros y mariposas.', kp:[['160 m²','mariposario'],['5','cámaras con IA'],['3','especies estudiadas']], m:'Ultra Scalable, Sustainable, and Safe', md:'Se estudian abejas, abejorros y mariposas: cría, visita a flores nativas y conteo con IA.', img:'https://picsum.photos/seed/butterfly-pollinator/900/700' },
+  pos: { n:'Planta docente de poscosecha', d:'Se recibe lo cosechado, se pesa, se selecciona, se empaca con los sensores del laboratorio y se despacha a los mercados de Kennedy.', kp:[['190 m²','planta'],['20 m²','cámara fría'],['7','zonas']], m:'Ultra Scalable, Sustainable, and Safe', md:'Se recibe, pesa, selecciona, empaca y despacha a los mercados de Kennedy.', img:'https://picsum.photos/seed/postharvest/900/700' },
+  mer: { n:'Mercado experimental', d:'Los productores venden, los estudiantes registran qué llega y qué se vende, y los compradores participan voluntariamente en pruebas.', kp:[['315 m²','mercado'],['12','puestos de 9 m²'],['1','puerta barrial']], m:'Ultra Scalable, Sustainable, and Safe', md:'Los productores venden y los estudiantes registran qué llega y qué se vende.', img:'https://picsum.photos/seed/market-experimental/900/700' },
+  inc: { n:'Incubadora agrotech', d:'Emprendimientos de vecinos y egresados que llevan a los mercados lo que funcionó en los ensayos: bioinsumos, empaques, sensores.', kp:[['96 m²','propuestos'],['8','puestos de cotrabajo'],['1','sala de prototipos']], m:'Ultra Scalable, Sustainable, and Safe', md:'Vecinos y egresados llevan a los mercados lo que funcionó en los ensayos.', img:'https://picsum.photos/seed/agrotech-incubator/900/700' },
+  alim: { n:'Laboratorio de alimentos', d:'Conservación y vida útil: prueba los empaques con nanosensores y aprovecha lo que el mercado no vende.', kp:[['96 m²','propuestos'],['5','cabinas sensoriales'],['1','cocina de proceso']], m:'Ultra Scalable, Sustainable, and Safe', md:'Prueba empaques con nanosensores y aprovecha lo que el mercado no vende.', img:'https://picsum.photos/seed/food-lab/900/700' },
+  torre: { n:'Torre de monitoreo ambiental', d:'Los silos se vuelven torre de sensores (clima, aire, ruido) y mirador. Arriba, la caja nido de la lechuza que controla roedores.', kp:[['16 m','de alto'],['1','estación meteorológica'],['1','caja nido con cámara']], m:'Ultra Scalable, Sustainable, and Safe', md:'Torre de sensores (clima, aire, ruido) y mirador con caja nido de lechuza.', img:'https://picsum.photos/seed/monitoring-tower/900/700' }
 };
 const ORDEN = ['bio','nano','datos','cogn','inst','foro','poli','pos','mer','inc','alim','torre'];
 const esc = (s) => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const k0 = new URLSearchParams(location.search).get('e'), K = ED[k0] ? k0 : 'bio', E0 = ED[K];
 const EQS = {
- bio: [['Campana de flujo laminar','1,3 × 0,8 m','Trabajo estéril con cultivos.'],['Autoclave vertical 50 L','Ø 0,6 × 1,0 m','Esteriliza medios y material.'],['Incubadora 150 L','0,7 × 1,8 m','Mantiene 25–37 °C.'],['Refrigerador y congelador','4 °C / −20 °C','Guarda muestras.'],['Termociclador PCR','0,45 × 0,35 m','Amplifica ADN ambiental.'],['Microscopios','en mesa','Observación de hongos y esporas.'],['Mesones de laboratorio','6 × 1,8 × 0,75 m','Seis mesas en parejas.'],['Cámara de germinación LED','4 niveles','Ensayos de germinación.'],['Banco de semillas','estantería','Semillas nativas.'],['Lavado y ducha de emergencia','1,6 m','Seguridad del laboratorio.']],
- nano: [['Banco de electrónica','osciloscopio, fuente, soldadura','Arma y calibra sensores.'],['Campana de extracción','1,3 m','Síntesis de nanomateriales.'],['Cámaras climáticas','−10 a 60 °C','Envejecen empaques.'],['Impresoras 3D','0,5 m','Carcasas de sensores.'],['Seis puestos de trabajo','con computador','Diseño y programación.'],['Mesa de ensayo de empaques','1,8 m','Compara indicadores.']],
- datos: [['Gemelo digital del distrito','pantalla 4,4 × 2,0 m','Tablero real del distrito.'],['Doce estaciones de trabajo','1,4 × 0,7 m','Análisis de datos y IA.'],['Servidores','2 racks de 42U','Guardan grabaciones.'],['Mesa de reunión','2,2 m','Revisión semanal.']],
- cogn: [['Mesa de prueba','2,4 × 1,0 m','Lectura de etiquetas y alertas.'],['Sala de observación','vidrio','Observación sin interrumpir.'],['Muestras de etiquetas','estantería','Versiones de etiquetas.'],['Pantalla de divulgación','2,2 m','Prototipos para colegios.']],
- inst: [['Aula 1 · 60 m²','24 estudiantes','Recibe el ensayo del día.'],['Aula 2 · 60 m²','24 estudiantes','Cuatro grupos por jornada.'],['Casilleros','35 m²','Botas y batas.'],['Recepción','35 m²','Llegada de colegios.'],['Sala docente','30 m²','Planeación.']],
- foro: [['Gradas móviles','60 personas','Encuentro del barrio.'],['Pantalla de resultados','5 × 2,8 m','Energía, agua, compost.'],['Fab lab','láser e impresoras 3D','Prototipos.'],['Vitrinas de ensayos','cosechas y empaques','Exhibición.']],
- poli: [['Estaciones de flores nativas','jardineras 2,8 m','Néctar y polen todo el año.'],['Cámaras de conteo con IA','5 postes','Visitas por especie y hora.'],['Cría de mariposas','4 jaulas','Huevos y orugas.'],['Colmena de observación','con vidrio','Panal por dentro.']],
- pos: [['Recepción y pesaje','báscula de plataforma','Primer dato de trazabilidad.'],['Selección y lavado','mesas de acero','Lo que va a mercado.'],['Empaque con sensores','mesas de 2,4 m','Empaques con indicador.'],['Cámara fría','4 × 5 m','Vida útil.'],['Despacho','estibas','Salida a Kennedy.'],['Orgánicos','canecas','Al compostaje.']],
- mer: [['Doce puestos','3 × 3 m','Productores de Kennedy.'],['Pasillo de compradores','120 m²','Pruebas de etiquetas.'],['Demostración','45 m²','Cocina y degustación.'],['Pesaje','18 m²','Lo que llega y sobra.']],
- inc: [['Puestos de cotrabajo','8','Vecinos y egresados.'],['Vitrina de productos','bioinsumos, empaques','Lo que funcionó.'],['Banco de prototipos','1,8 m','Ajustes finales.'],['Sala de reuniones','2,4 m','Asesoría.']],
- alim: [['Cocina de proceso','acero inoxidable','Conservas y deshidratados.'],['Envasado','mesas de acero','Empaques con nanosensores.'],['Cámara de vida útil','temperatura y humedad','Días que dura.'],['Análisis sensorial','5 cabinas','Prueban y califican.']],
- torre: [['Escalera al mirador','16 m','Sube al mirador.'],['Gabinetes de sensores','clima, aire, ruido','Red de sensores.'],['Caja nido de la lechuza','con cámara','Controla roedores.']]
+ bio: [['Campana de flujo laminar','1,3 × 0,8 m','Trabajo estéril con cultivos.'],['Autoclave vertical 50 L','Ø 0,6 × 1,0 m','Esteriliza medios.'],['Incubadora 150 L','0,7 × 1,8 m','Mantiene 25–37 °C.'],['Refrigerador','4 °C / −20 °C','Guarda muestras.'],['Termociclador PCR','0,45 × 0,35 m','Amplifica ADN.'],['Microscopios','en mesa','Observación.'],['Mesones','6 × 1,8 × 0,75 m','Seis mesas.'],['Cámara de germinación','4 niveles','Ensayos.'],['Banco de semillas','estantería','Semillas nativas.'],['Lavado','1,6 m','Seguridad.']],
+ nano: [['Banco de electrónica','osciloscopio, fuente','Arma sensores.'],['Campana','1,3 m','Síntesis.'],['Cámaras climáticas','−10 a 60 °C','Envejecen empaques.'],['Impresoras 3D','0,5 m','Carcasas.'],['Puestos','con computador','Diseño.'],['Mesa de ensayo','1,8 m','Compara.']],
+ datos: [['Gemelo digital','pantalla 4,4 × 2,0 m','Tablero real.'],['Estaciones','1,4 × 0,7 m','Análisis.'],['Servidores','2 racks 42U','Grabaciones.'],['Mesa de reunión','2,2 m','Revisión.']],
+ cogn: [['Mesa de prueba','2,4 × 1,0 m','Lectura.'],['Sala de observación','vidrio','Observación.'],['Muestras','estantería','Versiones.'],['Pantalla','2,2 m','Prototipos.']],
+ inst: [['Aula 1','60 m² · 24 est.','Ensayo del día.'],['Aula 2','60 m² · 24 est.','Cuatro grupos.'],['Casilleros','35 m²','Botas.'],['Recepción','35 m²','Colegios.'],['Sala docente','30 m²','Planeación.']],
+ foro: [['Gradas','60 personas','Encuentro.'],['Pantalla','5 × 2,8 m','Resultados.'],['Fab lab','láser e impresoras','Prototipos.'],['Vitrinas','cosechas','Exhibición.']],
+ poli: [['Flores nativas','jardineras 2,8 m','Néctar y polen.'],['Cámaras IA','5 postes','Visitas.'],['Cría mariposas','4 jaulas','Huevos.'],['Colmena','con vidrio','Panal.']],
+ pos: [['Pesaje','báscula','Trazabilidad.'],['Selección','mesas acero','Mercado.'],['Empaque','mesas 2,4 m','Indicador.'],['Cámara fría','4 × 5 m','Vida útil.'],['Despacho','estibas','Kennedy.'],['Orgánicos','canecas','Compost.']],
+ mer: [['Puestos','3 × 3 m','Productores.'],['Pasillo','120 m²','Pruebas.'],['Demostración','45 m²','Degustación.'],['Pesaje','18 m²','Sobras.']],
+ inc: [['Cotrabajo','8 puestos','Emprendedores.'],['Vitrina','productos','Mercado.'],['Prototipos','1,8 m','Ajustes.'],['Reuniones','2,4 m','Asesoría.']],
+ alim: [['Cocina','acero','Conservas.'],['Envasado','mesas','Nanosensores.'],['Vida útil','temp/hum','Días.'],['Sensorial','5 cabinas','Pruebas.']],
+ torre: [['Escalera','16 m','Mirador.'],['Sensores','clima/aire/ruido','Red.'],['Caja nido','con cámara','Roedores.']]
 };
 const EQ = EQS[K] || [];
 const IMGS = { bio:'https://picsum.photos/seed/bio-lab/900/700', nano:'https://picsum.photos/seed/nano-sensors/900/700', datos:'https://picsum.photos/seed/data-center/900/700', cogn:'https://picsum.photos/seed/cognitive-design/900/700', inst:'https://picsum.photos/seed/institute-class/900/700', foro:'https://picsum.photos/seed/innovation-forum/900/700', poli:'https://picsum.photos/seed/butterfly-pollinator/900/700', pos:'https://picsum.photos/seed/postharvest/900/700', mer:'https://picsum.photos/seed/market-experimental/900/700', inc:'https://picsum.photos/seed/agrotech-incubator/900/700', alim:'https://picsum.photos/seed/food-lab/900/700', torre:'https://picsum.photos/seed/monitoring-tower/900/700' };
-document.documentElement.style.setProperty('--acc', E0.c);
 document.title = E0.n + ' · Bavaria Común';
-document.getElementById('nav').innerHTML = ORDEN.map(k => `<a href="edificio.html?e=${k}" class="${k===K?'on':''}">${esc(ED[k].n)}</a>`).join('');
+document.getElementById('nav').innerHTML = ORDEN.map(k => `<a href="edificio.html?e=${k}">${esc(ED[k].n)}</a>`).join('');
 document.getElementById('ey').textContent = 'Bavaria Común · por dentro';
-document.getElementById('tit').textContent = E0.n;
-document.getElementById('des').textContent = E0.d;
+document.getElementById('tit').innerHTML = E0.n.split(' ').slice(0,2).join(' ') + '<span class="sub">' + E0.n.split(' ').slice(2).join(' ') + '</span>';
+document.getElementById('herocta').innerHTML = '<a href="#elementos">Technology & Products →</a>';
 document.getElementById('heroimg').src = IMGS[K];
 document.getElementById('heroimg').alt = E0.n;
+document.getElementById('qey').textContent = 'Qué es';
 document.getElementById('qtit').textContent = E0.n;
 document.getElementById('qdes').textContent = E0.d;
 document.getElementById('kp').innerHTML = E0.kp.map(([b,s]) => `<div><b>${esc(b)}</b><span>${esc(s)}</span></div>`).join('');
+document.getElementById('bandh').textContent = E0.m;
+document.getElementById('bandp').textContent = E0.md;
+document.getElementById('bandimg').src = IMGS[K];
+document.getElementById('bandimg').alt = E0.n;
 document.getElementById('grid').innerHTML = EQ.map(([n,med,txt]) => `<div class="card"><h3>${esc(n)}</h3><div class="med">${esc(med)}</div><p>${esc(txt)}</p></div>`).join('');
-document.getElementById('mtit').textContent = E0.m;
-document.getElementById('mdes').textContent = E0.md;
-document.getElementById('splitimg').src = IMGS[K];
-document.getElementById('splitimg').alt = E0.n;
+document.getElementById('careerimg').src = IMGS[K];
+document.getElementById('careerimg').alt = E0.n;
 document.getElementById('ifr').src = 'modelo3d.html?e=' + K;
 </script>
 </body>
