@@ -180,9 +180,12 @@ export async function iniciarTintal({ THREE, T3, OX, OZ, Y0 = 0, movil = false }
     const g = new THREE.ShapeGeometry(sh, 4), p = g.attributes.position, uv = g.attributes.uv;
     for (let i = 0; i < p.count; i++) { const X = p.getX(i), Y = p.getY(i); uv.setXY(i, (X - sx0) / (sx1 - sx0), 1 - (Y - sy0) / (sy1 - sy0)); p.setXYZ(i, X + OX, Y0 + 0.12, Y + OZ); }
     g.computeVertexNormals(); if (g.attributes.normal.getY(0) < 0) g.index.array.reverse();
-    const tex = new THREE.TextureLoader().load('data3d/tintal_suelo.jpg'); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = ANIS;
-    const m = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ map: tex, color: new THREE.Color(1.75, 1.75, 1.75), side: THREE.DoubleSide, /* con luz: de noche se oscurece como el resto (antes brillaba igual) */ polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 }));
-    m.receiveShadow = !movil; m.renderOrder = 1; m.name = 'tintal-suelo'; grupo.add(m);
+    /* igual que la foto de Google del resto de la ciudad: sin luz ni sombras propias (no salen cuadros oscuros al acercarse) y con el
+       mismo brillo según la hora (T3.tilesLuz, que pone el cielo de 24 h); se muestra solo cuando la foto ya cargó (no se ve negro) */
+    const mat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 });
+    const m = new THREE.Mesh(g, mat); m.visible = false; m.renderOrder = 1; m.name = 'tintal-suelo'; grupo.add(m);
+    new THREE.TextureLoader().load('data3d/tintal_suelo.jpg', (tex) => { tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = ANIS; mat.map = tex; mat.needsUpdate = true; m.visible = true; });
+    setInterval(() => { const k = T3.tilesLuz != null ? T3.tilesLuz : 1; if (Math.abs(mat.color.r - k) > 0.005) mat.color.setScalar(k); }, 400);
   }
 
   // ---------- HUERTA DEL PRADO CIRCULAR (data3d/huerta_circular.js): es de la propuesta, no existe en «Kennedy hoy» ----------
