@@ -500,7 +500,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
   let np = 0;
   function pintar(C, A, Bv, t, pulso, tiempo) {
     if (C.n >= MAXL) return; ancla(A, P0); ancla(Bv, P1);
-    const d = Math.hypot(P1[0] - P0[0], P1[2] - P0[2]), h = Math.min(4, 0.8 + d * 0.15), c = COLT[t]; // arco bajo (antes hasta 45 m: parecían fuegos artificiales)
+    const d = Math.hypot(P1[0] - P0[0], P1[2] - P0[2]), h = Math.min(14, 1.5 + d * 0.2), c = COLT[t]; // arco más bajo (antes hasta 45 m: parecían fuegos artificiales)
     const pt = (u, o) => { o[0] = P0[0] + (P1[0] - P0[0]) * u; o[1] = P0[1] + (P1[1] - P0[1]) * u + Math.sin(Math.PI * u) * h; o[2] = P0[2] + (P1[2] - P0[2]) * u; return o; };
     const P = C.p.array, K = C.c.array;
     for (let s = 0; s < SEG; s++) {
@@ -519,9 +519,9 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
       CUENTA[L.t]++; if (enc) ENC[L.t]++; if (!ESTADO.tipos.has(L.t)) continue;
       const delSel = sel && (L.a === sel || L.b === sel);
       // solo se dibujan los encuentros (la interacción está ocurriendo) y solo con la propuesta; las conexiones a distancia, solo del animal elegido
-      if (delSel) { pintar(FUERTE, L.a, L.b, L.t, true, tiempo); continue; }
-      if (!enc || T3.escenario !== 'proyecto') continue;
-      pintar(FUERTE, L.a, L.b, L.t, true, tiempo);
+      // como antes: encuentro = trazo grueso con pulso; conexión a distancia = trazo fino. Sin las conexiones muy lejanas (> 120 m), que eran los «fuegos artificiales»
+      if (!enc && !delSel && d > 120) continue;
+      pintar(enc || delSel ? FUERTE : TENUE, L.a, L.b, L.t, enc || delSel || (!sel && L.a.id % 3 === 0), tiempo);
     }
     // red potencial del agente elegido: hasta el individuo o árbol más cercano de cada especie con la que tiene relación
     if (sel && ESTADO.pot) for (const p of ESTADO.pot) pintar(FUERTE, sel, p.b, p.t, true, tiempo);
