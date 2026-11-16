@@ -13,7 +13,7 @@
 canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}canvas#c:active{cursor:grabbing}
 .top{position:fixed;left:0;right:0;top:0;z-index:6;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 22px 22px;font-size:12px;color:var(--tx2);background:linear-gradient(rgba(6,8,7,.95),rgba(6,8,7,.6) 60%,transparent)}
 body::before{content:'';position:fixed;left:0;top:0;bottom:0;width:min(560px,60vw);z-index:2;pointer-events:none;background:linear-gradient(90deg,rgba(6,8,7,.82),rgba(6,8,7,.5) 55%,transparent)}
-.top,.hero,.ctl,.ayuda,.nota{opacity:0;transition:opacity .9s ease .2s}
+.top,.hero,.ctl,.ayuda,.nota{opacity:1}
 body.ready .top,body.ready .hero,body.ready .ctl,body.ready .ayuda,body.ready .nota{opacity:1}
 @media(prefers-reduced-motion:reduce){.top,.hero,.ctl,.ayuda,.nota{opacity:1;transition:none}}
 @media(max-width:760px){body::before{width:100%;bottom:auto;height:260px;background:linear-gradient(rgba(6,8,7,.85),transparent)}}
@@ -30,6 +30,7 @@ body.ready .top,body.ready .hero,body.ready .ctl,body.ready .ayuda,body.ready .n
 .bf svg{width:100%;height:100%;animation:flap .35s ease-in-out infinite alternate}
 @keyframes bfly{0%{transform:translate(-10vw,30vh) rotate(0deg);opacity:0}10%{opacity:.85}50%{transform:translate(50vw,10vh) rotate(20deg);opacity:.85}90%{opacity:.85}100%{transform:translate(110vw,40vh) rotate(-10deg);opacity:0}}
 @keyframes flap{from{transform:scaleX(1)}to{transform:scaleX(.4)}}
+.lb{position:fixed;left:0;top:0;z-index:3;display:none;flex-direction:column;align-items:center;cursor:pointer;text-align:center;white-space:nowrap}
 body.ready .lb{opacity:1}
 .lb b{font:600 10.5px var(--sans);letter-spacing:.08em;text-transform:uppercase;text-shadow:0 1px 4px #000,0 0 10px rgba(0,0,0,.8)}
 .lb i{font:400 10px var(--mono);color:var(--tx2);font-style:normal;text-shadow:0 1px 4px #000}
@@ -270,7 +271,7 @@ function tam() { R.setSize(innerWidth, innerHeight, false); cam.aspect = innerWi
 addEventListener('resize', tam); tam();
 const V = new THREE.Vector3(); let t0 = performance.now(), tp = t0;
 function cuadro(t) {
-  requestAnimationFrame(cuadro); const dt = Math.min(0.05, (t - tp) / 1000); tp = t; const tt = (t - t0) / 1000; U.uT.value = tt; U.uIn.value = RMQ ? 1 : Math.min(1, tt / 2.6);
+  requestAnimationFrame(cuadro); const dt = Math.min(0.05, (t - tp) / 1000); tp = t; const tt = (t - t0) / 1000; U.uT.value = tt; U.uIn.value = RMQ ? 1 : Math.min(1, tt / 1.5);
   if (!RMQ && U.uIn.value >= 0.99 && !document.body.classList.contains('ready')) document.body.classList.add('ready');
   if (RMQ && !document.body.classList.contains('ready')) document.body.classList.add('ready');
   let ava = mant.ava, lat = 0, gir = mant.gir;
