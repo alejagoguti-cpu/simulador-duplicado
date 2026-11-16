@@ -104,12 +104,21 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
   addEventListener('bav-cerrar', () => { const sp = $ley().querySelector('[data-s="bav"]'); if (solo === 'bav' && sp) sp.click(); }); // la × del panel vuelve a todas las estrategias
   function distritoBavaria() {
     const on = T3.escenario === 'proyecto' && solo === 'bav';
-    if (on && !DIST && !pDist) pDist = Promise.all([import('./bavaria_distrito.js?v=9'), cj('data3d/bavaria.json?v=3'), cj('data3d/bavaria_arboles.json?v=3').then(j => j.arboles.filter(q => q[4] === 1)).catch(() => []), cj('data3d/bavaria_distrito_sx.json?v=1').catch(() => null)])
+    if (on && !DIST && !pDist) pDist = Promise.all([import('./bavaria_distrito.js?v=10'), cj('data3d/bavaria.json?v=3'), cj('data3d/bavaria_arboles.json?v=3').then(j => j.arboles.filter(q => q[4] === 1)).catch(() => []), cj('data3d/bavaria_distrito_sx.json?v=1').catch(() => null)])
       .then(([m, D, ARB, SX]) => { DIST = m.crearDistritoBavaria({ T3, lw, D, ARB, SX }); /* ARB: bosque denso (las huertas no lo tocan) */ window.KEN_BAV = DIST; distritoBavaria(); }).catch(e => console.warn('distrito Bavaria:', e));
     if (DIST) DIST.ver(on);
   }
+  /* ---------- red de colegios: enlaces entre colegios, parques-huerta de dos pisos y visitas a Bavaria Común (data3d/colegios_red.js) ---------- */
+  let RED = null, pRed = null, redOn = false;
+  addEventListener('col-cerrar', () => { const sp = $ley().querySelector('[data-s="col"]'); if (solo === 'col' && sp) sp.click(); });
+  function redColegios() {
+    const on = T3.escenario === 'proyecto' && solo === 'col';
+    if (on && !RED && !pRed) pRed = import('./colegios_red.js?v=1').then(m => { RED = m.crearRedColegios({ T3, lw, COLE }); window.KEN_RED = RED; redColegios(); }).catch(e => console.warn('red de colegios:', e));
+    if (RED) { RED.ver(on); if (on && !redOn) Promise.resolve(RED.listo).then(() => { if (RED.on) RED.general(); }); } // vista de toda la red cuando llegan los datos
+    redOn = on;
+  }
   function resaltarColegios() {
-    distritoBavaria();
+    distritoBavaria(); redColegios();
     const on = T3.escenario === 'proyecto' && solo === 'col' && !!COLE;
     if (on && !GCOL) armarColegios();
     if (GCOL) GCOL.visible = on;
@@ -154,7 +163,7 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
   $ley().addEventListener('click', (ev) => { const sp = ev.target.closest('[data-s]'); if (!sp) return;
     solo = solo === sp.dataset.s ? null : sp.dataset.s; filtrar(); limpiarAnterior();
     if (solo === 'col') say(`Colegios de Kennedy: ${PUNTOS.filter(p => p.s.id === 'col').length} (OpenStreetMap)`, 3000);
-    const L = PUNTOS.filter(p => p.vis); if (!L.length || !T3.orbit || solo === 'bav') return; // Bavaria: la cámara la mueve el distrito
+    const L = PUNTOS.filter(p => p.vis); if (!L.length || !T3.orbit || solo === 'bav' || solo === 'col') return; // Bavaria y colegios: la cámara la mueve su módulo
     let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const p of L) { x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); z0 = Math.min(z0, p.z); z1 = Math.max(z1, p.z); }
     const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, s = Math.min(4200, Math.max(500, (x1 - x0) * 0.75, (z1 - z0) * 0.75)), o = T3.orbit, THREE = T3.THREE;
     const p0 = T3.camera.position.clone(), t0 = o.target.clone(), p1 = new THREE.Vector3(cx + s * 0.35, s * 0.8, cz + s * 0.6), t1 = new THREE.Vector3(cx, 0, cz), ini = performance.now();
