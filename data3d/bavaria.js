@@ -28,7 +28,9 @@ export function construirBavaria({ THREE, T3, lw, D, liviano }) {
   const matBlanco = new THREE.MeshStandardMaterial({ color: 0xe9e7e2, roughness: 0.7, metalness: 0.05 });
 
   // ---- acumuladores: muros con textura (posición + uv) y ventanas ----
-  const ML = { p: [], uv: [], i: [] }, MB = { p: [], uv: [], i: [] }, MV = { p: [], i: [] }, MC = { p: [], i: [], c: [] };
+  const ML = { p: [], uv: [], i: [] }, MB = { p: [], uv: [], i: [] }, MV = { p: [], i: [] }, MC = { p: [], i: [], c: [] }, MVg = MV;
+  // anexos que el plan del distrito Bavaria Común propone retirar (D1: 27, D2: 20; data3d/bavaria_distrito.js): van en un grupo aparte para poder quitarlos
+  const DEMOLER = new Set([20, 27]), XL = { p: [], uv: [], i: [] }, XB = { p: [], uv: [], i: [] }, XV = { p: [], i: [] }, XC = { p: [], i: [], c: [] };
   const quad = (A, q, uvs) => { const b = A.p.length / 3; for (const v of q) A.p.push(...v); if (uvs) A.uv.push(...uvs); A.i.push(b, b + 1, b + 2, b, b + 2, b + 3); };
   const muros = (W, y0, y1, s0 = 0, A = ML) => { // W: anillo en el mundo [[x,z]...]
     let s = s0;
@@ -44,7 +46,7 @@ export function construirBavaria({ THREE, T3, lw, D, liviano }) {
     for (const t of tri) A.i.push(b + t[0], b + t[2], b + t[1]);
   };
   const ccw = (W) => { let a = 0; for (let k = 0; k < W.length; k++) { const p = W[k], q = W[(k + 1) % W.length]; a += p[0] * q[1] - q[0] * p[1]; } return a; };
-  const ventanas = (W, h, piso, ancho, alto, cinta) => { // en el mundo: normal hacia afuera según el sentido del anillo
+  const ventanas = (W, h, piso, ancho, alto, cinta, MV = MVg) => { // en el mundo: normal hacia afuera según el sentido del anillo
     const sg = ccw(W) > 0 ? 1 : -1;
     for (let k = 0; k < W.length; k++) {
       const a = W[k], b = W[(k + 1) % W.length], L = Math.hypot(b[0] - a[0], b[1] - a[1]); if (L < 5) continue;
@@ -107,26 +109,27 @@ export function construirBavaria({ THREE, T3, lw, D, liviano }) {
     for (let j = 0; j < n; j++) { const t = (j + 0.5) * L0 / n; silosC.push([a0[0] + ux * t + nx * r * 0.55, h / 2 - 1, a0[1] + uz * t + nz * r * 0.55, r, h + 2]); }
   };
   const silosC = [];
-  for (const e of D.edif) {
-    const W = e.p.map(p => lw(p[0], p[1]));
-    if (e.s === 'esqueleto') { esqueleto(W, e.h); continue; }
+  D.edif.forEach((e, ie) => {
+    const W = e.p.map(p => lw(p[0], p[1])), X = DEMOLER.has(ie), ML_ = X ? XL : ML, MB_ = X ? XB : MB, MC_ = X ? XC : MC, MV_ = X ? XV : MV;
+    if (e.s === 'esqueleto') { esqueleto(W, e.h); return; }
     const tc = colTecho(e), claro = e.col && (0.3 * e.col[0] + 0.59 * e.col[1] + 0.11 * e.col[2]) > 140;
-    if (e.s === 'silos') { muros(W, -1, e.h, 0, MB); silos(W, e.h); cubierta(W, e.h, MC, tc); continue; }
-    if (e.s === 'blanco') { muros(W, -1, e.h, 0, MB); ventanas(W, e.h, 3.6, 0, 1.8, true); cubierta(W, e.h, MC, tc); continue; } // nave de cuatro pisos con hileras de ventanas
-    muros(W, -1, e.h, 0, claro ? MB : ML);
-    if (e.s === 'oficina') { ventanas(W, e.h, 3.4, 0, 1.9, true); cubierta(W, e.h, MC, tc); }
-    else { ventanas(W, e.h, 4.2, 2.4, 1.7, false); cubierta(W, e.h, MC, tc); }
-  }
+    if (e.s === 'silos') { muros(W, -1, e.h, 0, MB_); silos(W, e.h); cubierta(W, e.h, MC_, tc); return; }
+    if (e.s === 'blanco') { muros(W, -1, e.h, 0, MB_); ventanas(W, e.h, 3.6, 0, 1.8, true, MV_); cubierta(W, e.h, MC_, tc); return; } // nave de cuatro pisos con hileras de ventanas
+    muros(W, -1, e.h, 0, claro ? MB_ : ML_);
+    if (e.s === 'oficina') { ventanas(W, e.h, 3.4, 0, 1.9, true, MV_); cubierta(W, e.h, MC_, tc); }
+    else { ventanas(W, e.h, 4.2, 2.4, 1.7, false, MV_); cubierta(W, e.h, MC_, tc); }
+  });
 
-  const malla = (A, mat, uv) => {
+  const malla = (A, mat, uv, G = grupo) => {
     if (!A.i.length) return;
     const gg = new THREE.BufferGeometry(); gg.setAttribute('position', new THREE.Float32BufferAttribute(A.p, 3));
     if (uv) gg.setAttribute('uv', new THREE.Float32BufferAttribute(A.uv, 2));
     if (A.c && A.c.length) gg.setAttribute('color', new THREE.Float32BufferAttribute(A.c, 3));
     gg.setIndex(A.i); gg.computeVertexNormals();
-    const m = new THREE.Mesh(gg, mat); m.castShadow = sombras; m.receiveShadow = sombras; grupo.add(m);
+    const m = new THREE.Mesh(gg, mat); m.castShadow = sombras; m.receiveShadow = sombras; G.add(m);
   };
   malla(ML, matLadrillo, true); malla(MB, matPintado, true); malla(MV, matVidrio); malla(MC, matCubierta);
+  { const dem = new THREE.Group(); dem.name = 'bavaria_demoler'; malla(XL, matLadrillo, true, dem); malla(XB, matPintado, true, dem); malla(XV, matVidrio, false, dem); malla(XC, matCubierta, false, dem); grupo.add(dem); grupo.userData.demoler = dem; }
   if (silosC.length) { const im = new THREE.InstancedMesh(new THREE.CylinderGeometry(1, 1, 1, 20), matPintado, silosC.length), d = new THREE.Object3D(); silosC.forEach((s, k) => { d.position.set(s[0], s[1], s[2]); d.scale.set(s[3], s[4], s[3]); d.updateMatrix(); im.setMatrixAt(k, d.matrix); }); im.castShadow = sombras; im.receiveShadow = sombras; grupo.add(im); }
 
   const instancias = (L, mat, tinte) => {

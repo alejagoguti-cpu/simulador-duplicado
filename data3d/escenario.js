@@ -99,7 +99,17 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
     GCOL = new THREE.Group(); GCOL.name = 'colegios_resaltados'; const m = new THREE.Mesh(g, mv), li = new THREE.LineSegments(gl, ml);
     m.renderOrder = 8; li.renderOrder = 9; GCOL.add(m, li); GCOL.userData = { mv, ml }; GCOL.visible = false; T3.scene.add(GCOL);
   }
+  /* ---------- Bavaria Común: al escogerla se abre el distrito (data3d/bavaria_distrito.js) ---------- */
+  let DIST = null, pDist = null;
+  addEventListener('bav-cerrar', () => { const sp = $ley().querySelector('[data-s="bav"]'); if (solo === 'bav' && sp) sp.click(); }); // la × del panel vuelve a todas las estrategias
+  function distritoBavaria() {
+    const on = T3.escenario === 'proyecto' && solo === 'bav';
+    if (on && !DIST && !pDist) pDist = Promise.all([import('./bavaria_distrito.js?v=4'), cj('data3d/bavaria.json?v=3')])
+      .then(([m, D]) => { DIST = m.crearDistritoBavaria({ T3, lw, D }); window.KEN_BAV = DIST; distritoBavaria(); }).catch(e => console.warn('distrito Bavaria:', e));
+    if (DIST) DIST.ver(on);
+  }
   function resaltarColegios() {
+    distritoBavaria();
     const on = T3.escenario === 'proyecto' && solo === 'col' && !!COLE;
     if (on && !GCOL) armarColegios();
     if (GCOL) GCOL.visible = on;
@@ -144,7 +154,7 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
   $ley().addEventListener('click', (ev) => { const sp = ev.target.closest('[data-s]'); if (!sp) return;
     solo = solo === sp.dataset.s ? null : sp.dataset.s; filtrar(); limpiarAnterior();
     if (solo === 'col') say(`Colegios de Kennedy: ${PUNTOS.filter(p => p.s.id === 'col').length} (OpenStreetMap)`, 3000);
-    const L = PUNTOS.filter(p => p.vis); if (!L.length || !T3.orbit) return;
+    const L = PUNTOS.filter(p => p.vis); if (!L.length || !T3.orbit || solo === 'bav') return; // Bavaria: la cámara la mueve el distrito
     let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const p of L) { x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); z0 = Math.min(z0, p.z); z1 = Math.max(z1, p.z); }
     const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, s = Math.min(4200, Math.max(500, (x1 - x0) * 0.75, (z1 - z0) * 0.75)), o = T3.orbit, THREE = T3.THREE;
     const p0 = T3.camera.position.clone(), t0 = o.target.clone(), p1 = new THREE.Vector3(cx + s * 0.35, s * 0.8, cz + s * 0.6), t1 = new THREE.Vector3(cx, 0, cz), ini = performance.now();
@@ -159,7 +169,7 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
     const EST = T3.EST; if (EST && EST.hidroponia) EST.hidroponia(hu); T3.conHidro = hu && !!EST; // huertas hidropónicas en techos y balcones con sus polinizadores
     if (T3.huertas && T3.huertas.grupo) T3.huertas.grupo.visible = hu && !EST; // camas de tierra en terrazas solo si no hay hidroponía
     if (T3.torres && T3.torres.huertas) T3.torres.huertas(hu);
-    const bv = T3.bavaria; if (bv && bv.userData && bv.userData.mallasHuerta) bv.userData.mallasHuerta.forEach(m => { m.visible = hu; });
+    const bv = T3.bavaria; if (bv && bv.userData && bv.userData.mallasHuerta) bv.userData.mallasHuerta.forEach(m => { m.visible = hu && solo !== 'bav'; }); // con el distrito, su campo experimental reemplaza las parcelas
     const co = T3.scene && T3.scene.getObjectByName('corabastos'); if (co && co.userData.quitadas) co.userData.quitadas.visible = true;
     if (T3.bio && T3.bio.ESTADO) T3.bio.ESTADO.escenario = 'hoy';
     if (T3.sintaxisEscenario) T3.sintaxisEscenario();
