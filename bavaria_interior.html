@@ -13,6 +13,9 @@
 canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}canvas#c:active{cursor:grabbing}
 .top{position:fixed;left:0;right:0;top:0;z-index:6;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 22px 22px;font-size:12px;color:var(--tx2);background:linear-gradient(rgba(6,8,7,.95),rgba(6,8,7,.6) 60%,transparent)}
 body::before{content:'';position:fixed;left:0;top:0;bottom:0;width:min(560px,60vw);z-index:2;pointer-events:none;background:linear-gradient(90deg,rgba(6,8,7,.82),rgba(6,8,7,.5) 55%,transparent)}
+.top,.hero,.ctl,.ayuda,.nota{opacity:0;transition:opacity .9s ease .2s}
+body.ready .top,body.ready .hero,body.ready .ctl,body.ready .ayuda,body.ready .nota{opacity:1}
+@media(prefers-reduced-motion:reduce){.top,.hero,.ctl,.ayuda,.nota{opacity:1;transition:none}}
 @media(max-width:760px){body::before{width:100%;bottom:auto;height:260px;background:linear-gradient(rgba(6,8,7,.85),transparent)}}
 .top a{color:var(--tx2);text-decoration:none}.top a:hover{color:var(--tx)}
 .edif{display:flex;gap:3px;overflow-x:auto;scrollbar-width:none;max-width:70vw}.edif::-webkit-scrollbar{display:none}
@@ -23,7 +26,8 @@ body::before{content:'';position:fixed;left:0;top:0;bottom:0;width:min(560px,60v
 .hero h1{margin:10px 0 12px;font:300 44px/1.02 var(--cond);text-transform:uppercase}
 .hero p{margin:0 0 10px;font-size:13.5px;line-height:1.6;color:#d6ddd8;text-shadow:0 1px 8px rgba(0,0,0,.85)}
 .hero .kp{display:flex;gap:18px;margin-top:12px}.hero .kp b{display:block;font:300 26px var(--cond)}.hero .kp span{font:500 9.5px var(--mono);letter-spacing:.12em;color:var(--tx3);text-transform:uppercase}
-.lb{position:fixed;left:0;top:0;z-index:3;display:none;flex-direction:column;align-items:center;cursor:pointer;text-align:center;white-space:nowrap}
+.lb{position:fixed;left:0;top:0;z-index:3;display:none;flex-direction:column;align-items:center;cursor:pointer;text-align:center;white-space:nowrap;opacity:0;transition:opacity .6s ease}
+body.ready .lb{opacity:1}
 .lb b{font:600 10.5px var(--sans);letter-spacing:.08em;text-transform:uppercase;text-shadow:0 1px 4px #000,0 0 10px rgba(0,0,0,.8)}
 .lb i{font:400 10px var(--mono);color:var(--tx2);font-style:normal;text-shadow:0 1px 4px #000}
 .lb s{display:block;width:1px;height:20px;margin-top:3px;background:linear-gradient(rgba(255,255,255,.6),rgba(255,255,255,.12))}
@@ -263,7 +267,9 @@ function tam() { R.setSize(innerWidth, innerHeight, false); cam.aspect = innerWi
 addEventListener('resize', tam); tam();
 const V = new THREE.Vector3(); let t0 = performance.now(), tp = t0;
 function cuadro(t) {
-  requestAnimationFrame(cuadro); const dt = Math.min(0.05, (t - tp) / 1000); tp = t; const tt = (t - t0) / 1000; U.uT.value = tt; U.uIn.value = RMQ ? 1 : Math.min(1, tt / 1.8);
+  requestAnimationFrame(cuadro); const dt = Math.min(0.05, (t - tp) / 1000); tp = t; const tt = (t - t0) / 1000; U.uT.value = tt; U.uIn.value = RMQ ? 1 : Math.min(1, tt / 2.6);
+  if (!RMQ && U.uIn.value >= 0.99 && !document.body.classList.contains('ready')) document.body.classList.add('ready');
+  if (RMQ && !document.body.classList.contains('ready')) document.body.classList.add('ready');
   let ava = mant.ava, lat = 0, gir = mant.gir;
   if (teclas.has('w') || teclas.has('arrowup')) ava = 1; if (teclas.has('s') || teclas.has('arrowdown')) ava = -1; if (teclas.has('a')) lat = -1; if (teclas.has('d')) lat = 1; if (teclas.has('arrowleft')) gir = 1; if (teclas.has('arrowright')) gir = -1;
   if (st.rec) { const a = tt * 0.12; const rx = (L / 2 - 2) * Math.cos(a), rz = (W / 2 - 1.6) * Math.sin(a); st.x += (rx - st.x) * dt; st.z += (rz - st.z) * dt; st.yaw += (Math.atan2(rx, rz) + Math.PI * 1.0 - st.yaw) * 0; st.yaw = Math.atan2(st.x, st.z); }
