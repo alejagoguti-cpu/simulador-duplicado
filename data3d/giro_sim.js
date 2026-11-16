@@ -461,7 +461,7 @@ export async function iniciarSimulacion(cfg = {}) {
     }
     const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); COLS = { i: new Float32Array(cI), c: new Float32Array(cC) };
     geo.setAttribute('color', new THREE.BufferAttribute(COLS.i.slice(), 3)); geo.setIndex(idx);
-    CINTAS = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.22, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -16 }));
+    CINTAS = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.82, toneMapped: false, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -16 }));
     CINTAS.renderOrder = 2; CINTAS.frustumCulled = false; T3.scene.add(CINTAS); CINTAS.visible = !!st0.capa; /* abre apagada: vista limpia */
     /* escenario «con la propuesta» (T3.escenario): las calles toman la sintaxis después de abrir los pasajes de Bavaria Común y los
        pasajes aparecen como calles nuevas (data3d/sintaxis_proyecto.json, tools/sintaxis_proyecto_build.js) */
@@ -480,10 +480,10 @@ export async function iniciarSimulacion(cfg = {}) {
       const P = [], CI = [], CC = [], X = [];
       for (const s of SP.nuevos) { const b = P.length / 3, n = s.p.length, ci = rgb(s.i), cc = rgb(s.c);
         for (let k = 0; k < n; k++) { const a = s.p[Math.max(0, k - 1)], q = s.p[Math.min(n - 1, k + 1)]; let dx = q[0] - a[0], dy = q[1] - a[1]; const l = Math.hypot(dx, dy) || 1; dx /= l; dy /= l;
-          const x = s.p[k][0] + OX, z = s.p[k][1] + OZ, y = Y0 + 0.06 + (T3.alzaVia ? T3.alzaVia(x, z) : 0); P.push(x - dy * 2.2, y, z + dx * 2.2, x + dy * 2.2, y, z - dx * 2.2); CI.push(...ci, ...ci); CC.push(...cc, ...cc);
+          const x = s.p[k][0] + OX, z = s.p[k][1] + OZ, y = Y0 + 0.06 + (T3.alzaVia ? T3.alzaVia(x, z) : 0); P.push(x - dy * 4, y, z + dx * 4, x + dy * 4, y, z - dx * 4); CI.push(...ci, ...ci); CC.push(...cc, ...cc);
           if (k < n - 1) { const v = b + k * 2; X.push(v, v + 1, v + 2, v + 1, v + 3, v + 2); } } }
       const g2 = new THREE.BufferGeometry(); g2.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g2.setAttribute('color', new THREE.BufferAttribute(new Float32Array(CI), 3)); g2.setIndex(X);
-      NUEVAS = new THREE.Mesh(g2, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.85, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -5, polygonOffsetUnits: -20 }));
+      NUEVAS = new THREE.Mesh(g2, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.95, toneMapped: false, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -5, polygonOffsetUnits: -20 }));
       NUEVAS.renderOrder = 3; NUEVAS.frustumCulled = false; NUEVAS.visible = false; NUEVAS.userData.C = { i: new Float32Array(CI), c: new Float32Array(CC), d: new Float32Array(CI.length).map((_, k) => [0.13, 0.83, 0.93][k % 3]) }; T3.scene.add(NUEVAS); capa3D();
     }).catch(e => console.warn('sintaxis con la propuesta:', e));
     capa3D = () => { const pro = T3.escenario === 'proyecto' && !!(T3.PROP && T3.PROP.sintaxis); // con la propuesta: sintaxis con los pasajes de Bavaria Común
@@ -491,7 +491,7 @@ export async function iniciarSimulacion(cfg = {}) {
         if (st0.capa === 'd') { const b = izq.querySelector('#gs-capa button[data-c="i"]'); if (b) { b.click(); return; } }
         const ley = izq.querySelector('#gs-ley-sx'); if (ley) { const d = st0.capa === 'd'; ley.children[0].textContent = d ? 'pierde' : 'baja'; ley.children[2].textContent = d ? 'gana' : 'alta'; ley.children[1].style.background = d ? 'linear-gradient(90deg,#f2724f,#6b737f 50%,#22c55e)' : ''; }
         const nt = izq.querySelector('#gs-sx-pro'); if (nt && ley && ley.nextElementSibling !== nt) ley.after(nt); /* la nota va justo debajo de la leyenda */ if (nt) { nt.classList.toggle('on', pro && !!st0.capa && !!SXPRO); if (SXPRO) nt.innerHTML = `<b>Con la propuesta:</b> ${SXPRO.nuevos} pasajes nuevos en Bavaria Común (${SXPRO.m.toLocaleString('es-CO')} m). ${SXPRO.sube.toLocaleString('es-CO')} calles ganan integración` + (SXPRO.baja ? ` y ${SXPRO.baja.toLocaleString('es-CO')} pierden` : '') + `: misma escala de color que hoy, compara con «Kennedy hoy».`; } }
-      CINTAS.material.opacity = st0.capa === 'd' && pro ? 0.6 : 0.22;
+      CINTAS.material.opacity = 0.82; /* colores plenos de DepthmapX (antes 0,22 y con tone mapping: salían lavados) */
       if (NUEVAS) { NUEVAS.visible = !!st0.capa && pro; if (NUEVAS.visible) { NUEVAS.geometry.attributes.color.array.set(NUEVAS.userData.C[st0.capa]); NUEVAS.geometry.attributes.color.needsUpdate = true; } }
       if (!st0.capa) { CINTAS.visible = false; return; } CINTAS.visible = true; geo.attributes.color.array.set(COLS[st0.capa + (pro && COLS.iP ? 'P' : '')]); geo.attributes.color.needsUpdate = true; };
     T3.sintaxisEscenario = () => capa3D(); // lo llama el selector de escenario (data3d/escenario.js)
