@@ -40,21 +40,9 @@ export function iniciarEscenario({ T3, say = () => {} }) {
 @keyframes escIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
 #esc .ley-h{flex:1 0 100%;display:flex;justify-content:space-between;align-items:baseline;padding:0 4px 2px;font:500 9.5px var(--ui-mono,'JetBrains Mono',monospace);letter-spacing:.16em;text-transform:uppercase;color:var(--ui-tx3,#646c71)}
 #esc .ley-h small{font:400 10px var(--ui-sans,Inter,sans-serif);letter-spacing:0;text-transform:none}
-#esc .ley span{display:inline-flex;align-items:center;gap:7px;height:28px;padding:0 11px 0 9px;border-radius:14px;cursor:pointer;white-space:nowrap;
-  font:500 11px var(--ui-sans,Inter,sans-serif);color:var(--ui-tx2,#a3abb0);background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);transition:background .2s,border-color .2s,color .2s,opacity .2s}
-#esc .ley span:hover{color:var(--ui-tx,#e9ebec);border-color:color-mix(in srgb,var(--c) 45%,transparent);background:color-mix(in srgb,var(--c) 8%,transparent)}
-#esc .ley i{width:7px;height:7px;border-radius:50%;background:var(--c);box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 22%,transparent)}.esc-pt{position:fixed;z-index:6;left:0;top:0;pointer-events:none;display:none;align-items:center;gap:6px;transform:translate(-5px,-5px);
   font:500 11px var(--ui-sans,Inter,system-ui,sans-serif);color:#f4f5f6;text-shadow:0 1px 3px rgba(0,0,0,.9),0 0 8px rgba(0,0,0,.6);white-space:nowrap}
-.esc-pt i{width:10px;height:10px;border-radius:50%;border:2px solid #fff;flex:none;box-shadow:0 1px 4px rgba(0,0,0,.6)}
-.esc-pt.chico span{display:none}
-.esc-pt.col i{width:9px;height:9px;border-width:1.5px;animation:escCol 2.4s ease-out infinite}
-.esc-pt.col span{display:none}.esc-pt.col.cerca span{display:inline}
 @keyframes escCol{0%{box-shadow:0 0 0 0 rgba(232,121,249,.75),0 1px 4px rgba(0,0,0,.6)}70%{box-shadow:0 0 0 9px rgba(232,121,249,0),0 1px 4px rgba(0,0,0,.6)}100%{box-shadow:0 0 0 0 rgba(232,121,249,0),0 1px 4px rgba(0,0,0,.6)}}
 body.esc-solo-col #hid-red{display:none!important}
-#esc .ley span.off{opacity:.42}
-#esc .ley span.on{color:#fff;background:color-mix(in srgb,var(--c) 18%,transparent);border-color:color-mix(in srgb,var(--c) 65%,transparent);box-shadow:0 0 14px color-mix(in srgb,var(--c) 25%,transparent)}
-#esc .ley span:focus-visible{outline:2px solid var(--ui-acc,#e2a55b);outline-offset:2px}
-#esc .ley em{font-style:normal;font:500 10px var(--ui-mono,'JetBrains Mono',ui-monospace,monospace);color:var(--ui-tx3,#8e979d);padding:1px 5px;border-radius:6px;background:rgba(255,255,255,.06)}
 @property --escAng{syntax:'<angle>';inherits:false;initial-value:0deg}
 #esc{--escC:#8fb0c9;isolation:isolate}
 #esc[data-e="proyecto"]{--escC:#e2a55b}
@@ -73,15 +61,49 @@ body.esc-solo-col #hid-red{display:none!important}
 #esc .sw button kbd{margin-left:auto;font:500 9.5px var(--ui-mono,'JetBrains Mono',monospace);color:var(--ui-tx3,#646c71);padding:2px 5px;border-radius:4px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04)}
 #esc .sw button[aria-pressed="true"] kbd{color:var(--escC);border-color:color-mix(in srgb,var(--escC) 50%,transparent)}
 #esc .sw button:active{transform:scale(.98)}
-#esc .ley span:hover{transform:translateY(-1px);box-shadow:0 6px 16px color-mix(in srgb,var(--c) 22%,transparent)}
-#esc .ley span:hover i{box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 30%,transparent),0 0 10px var(--c)}
 @media(max-width:760px){#esc .sw button kbd{display:none}#esc .cab{padding:2px 6px 5px}}
 @media(prefers-reduced-motion:reduce){#esc::before,#esc .cab .st i{animation:none}#esc.barre::after{animation:none}}
+/* ---------- estrategias: tarjetas con ícono ---------- */
+#esc .ley{display:none;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:10px 2px 2px}
+#esc[data-e="proyecto"] .ley{display:grid}
+@media(min-width:1101px){#esc[data-e="proyecto"]{width:min(620px,calc(100vw - 620px))}}
+#esc .ley-h{grid-column:1/-1}
+#esc .est{position:relative;display:flex;align-items:center;gap:9px;min-width:0;padding:9px 10px 9px 9px;border-radius:12px;cursor:pointer;text-align:left;overflow:hidden;
+  border:1px solid rgba(255,255,255,.09);background:linear-gradient(150deg,color-mix(in srgb,var(--c) 13%,rgba(255,255,255,.03)),rgba(255,255,255,.02));color:var(--ui-tx,#e9ebec);
+  transition:transform .2s,border-color .2s,box-shadow .2s,opacity .2s,background .2s}
+#esc .est::after{content:'';position:absolute;inset:auto -20% -60% auto;width:70%;height:120%;border-radius:50%;background:radial-gradient(color-mix(in srgb,var(--c) 30%,transparent),transparent 70%);opacity:.5;pointer-events:none}
+#esc .est .ico{flex:none;width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;
+  background:linear-gradient(140deg,var(--c),color-mix(in srgb,var(--c) 55%,#000));box-shadow:0 4px 14px color-mix(in srgb,var(--c) 40%,transparent),inset 0 1px 0 rgba(255,255,255,.3)}
+#esc .est .tx{display:flex;flex-direction:column;min-width:0}
+#esc .est b{font:600 12px/1.2 var(--ui-sans,Inter,sans-serif);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#esc .est small{font:400 10px/1.3 var(--ui-sans,Inter,sans-serif);color:var(--ui-tx2,#b9c1c6);margin-top:2px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+#esc .est small em{font:500 10px var(--ui-mono,monospace);font-style:normal;color:var(--c)}
+#esc .est .nu{position:absolute;right:8px;top:6px;font:500 9px var(--ui-mono,'JetBrains Mono',monospace);color:rgba(255,255,255,.28);letter-spacing:.06em}
+#esc .est:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--c) 55%,transparent);box-shadow:0 10px 24px color-mix(in srgb,var(--c) 22%,transparent)}
+#esc .est.on{border-color:var(--c);box-shadow:0 0 0 1px var(--c),0 10px 28px color-mix(in srgb,var(--c) 32%,transparent);background:linear-gradient(150deg,color-mix(in srgb,var(--c) 28%,transparent),rgba(255,255,255,.03))}
+#esc .est.off{opacity:.4}
+#esc .est:focus-visible{outline:2px solid var(--c);outline-offset:2px}
+/* ---------- marcadores en el mapa: pin con ícono y anillo que late ---------- */
+.esc-pt{position:fixed;z-index:6;left:0;top:0;pointer-events:none;display:none;align-items:center;gap:7px;white-space:nowrap;
+  font:600 11px var(--ui-sans,Inter,system-ui,sans-serif);color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9),0 0 10px rgba(0,0,0,.6)}
+.esc-pt .pin{position:relative;flex:none;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50% 50% 50% 4px;transform:rotate(-45deg) translate(10px,-10px);
+  display:flex;align-items:center;justify-content:center;background:linear-gradient(140deg,var(--c),color-mix(in srgb,var(--c) 55%,#000));
+  border:1.5px solid rgba(255,255,255,.85);box-shadow:0 6px 16px rgba(0,0,0,.45),0 0 0 4px color-mix(in srgb,var(--c) 25%,transparent)}
+.esc-pt .pin svg{transform:rotate(45deg);color:#fff}
+.esc-pt .pin::after{content:'';position:absolute;inset:-6px;border-radius:inherit;border:2px solid var(--c);opacity:0;animation:escPin 2.6s ease-out infinite}
+@keyframes escPin{0%{opacity:.8;transform:scale(.8)}100%{opacity:0;transform:scale(1.6)}}
+.esc-pt span{padding:3px 8px;border-radius:7px;background:rgba(10,12,15,.62);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1px solid color-mix(in srgb,var(--c) 45%,transparent);text-shadow:none;transform:translateY(-14px)}
+.esc-pt.chico span{display:none}
+.esc-pt.chico .pin{width:22px;height:22px}.esc-pt.chico .pin svg{width:12px;height:12px}
+.esc-pt.col .pin{width:20px;height:20px}.esc-pt.col .pin svg{width:11px;height:11px}.esc-pt.col .pin::after{animation-duration:3.2s}
+.esc-pt.col span{display:none}.esc-pt.col.cerca span{display:inline}
+@media(max-width:760px){#esc .ley{display:none;grid-auto-flow:column;grid-auto-columns:minmax(170px,1fr);grid-template-columns:none;overflow-x:auto;scrollbar-width:none;padding:8px 2px 2px}#esc[data-e="proyecto"] .ley{display:grid}#esc .ley::-webkit-scrollbar{display:none}#esc .est{padding:7px 8px}#esc .est .ico{width:30px;height:30px}}
+@media(prefers-reduced-motion:reduce){.esc-pt .pin::after{animation:none}}
 /* la propuesta anterior no se ofrece mientras se redefine: botón y lista de estrategias del panel, y la Visión */
 body .gs-est, body .gs-sub:has(+ .gs-est), body #gs-cv-b, body #vi-btn{display:none!important}
 body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
 @media(max-width:1100px){#esc{width:min(468px,calc(100vw - 32px));min-width:0;top:auto;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 70px)}}
-@media(max-width:760px){#esc{min-width:0;width:calc(100vw - 16px);padding:5px;border-radius:14px}#esc .sw button{height:42px;font-size:12.5px;gap:8px;padding:0 8px}#esc .sw button small{font-size:9.5px}#esc .ley{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding:8px 2px 2px;-webkit-mask:linear-gradient(90deg,#000 88%,transparent)}#esc .ley::-webkit-scrollbar{display:none}#esc .ley-h{display:none}#esc .ley span{flex:none;height:30px}
+@media(max-width:760px){#esc{min-width:0;width:calc(100vw - 16px);padding:5px;border-radius:14px}#esc .sw button{height:42px;font-size:12.5px;gap:8px;padding:0 8px}#esc .sw button small{font-size:9.5px}#esc .ley{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding:8px 2px 2px;-webkit-mask:linear-gradient(90deg,#000 88%,transparent)}#esc .ley::-webkit-scrollbar{display:none}#esc .ley-h{display:none}
   body.tb-abierto #esc,body.gs-abierto #esc{display:none} /* con el panel de simulación abierto en celular, el selector no lo tapa */
   body #hid-red{bottom:calc(max(12px,env(safe-area-inset-bottom)) + 196px)!important}}
 @media(min-width:761px) and (max-width:1100px){body #hid-red{bottom:calc(max(12px,env(safe-area-inset-bottom)) + 180px)!important}}
@@ -95,15 +117,24 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
   document.body.appendChild(el);
 
   /* ---------- las 5 estrategias: un punto en cada lugar ---------- */
+  const IC = { // íconos de línea (24 × 24)
+    bav: '<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3"/><path d="M7.5 15h9"/>',
+    mer: '<path d="M3 9l1.5-5h15L21 9"/><path d="M4 9v11h16V9"/><path d="M3 9h18"/><path d="M9 20v-6h6v6"/>',
+    cor: '<path d="M3 6h11v10H3z"/><path d="M14 10h4l3 3v3h-7"/><circle cx="7" cy="17.5" r="1.6"/><circle cx="17" cy="17.5" r="1.6"/>',
+    res: '<path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/><path d="M12 8c-2 2-2 5 0 8 2-3 2-6 0-8z"/>',
+    red: '<circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h8.5a3.5 3.5 0 0 0 0-7h-9a3.5 3.5 0 0 1 0-7H16"/>',
+    col: '<path d="M12 4 2 9l10 5 10-5-10-5z"/><path d="M6 11v5c0 1.5 3 3 6 3s6-1.5 6-3v-5"/>'
+  };
+  const svg = (id, s = 18) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[id]}</svg>`;
   const EST5 = [
-    { id: 'bav', n: 'Bavaria Común', c: '#ef4444' },
-    { id: 'mer', n: 'Mercados de abastecimiento', c: '#38bdf8' },
-    { id: 'cor', n: 'Corabastos', c: '#f59e0b' },
-    { id: 'res', n: 'Gestión de residuos', c: '#a78bfa' },
-    { id: 'red', n: 'Red de distribución alimentaria', c: '#4ade80' },
-    { id: 'col', n: 'Colegios', c: '#e879f9' } // solo se prenden al escogerlos en la leyenda
+    { id: 'bav', n: 'Bavaria Común', t: 'Distrito de ciencia y alimento', c: '#ef4444' },
+    { id: 'mer', n: 'Plazas de Barrio', t: 'Mercados cerca de casa', c: '#38bdf8' },
+    { id: 'cor', n: 'Corabastos Abierto', t: 'Menos camiones, más humedal', c: '#f59e0b' },
+    { id: 'res', n: 'Ciclo Cero', t: 'Los residuos vuelven a la tierra', c: '#a78bfa' },
+    { id: 'red', n: 'Ruta Verde', t: 'Huertas y triciclos de reparto', c: '#4ade80' },
+    { id: 'col', n: 'Aulas Vivas', t: 'Colegios en red con huertas', c: '#e879f9' } // solo se prenden al escogerlas
   ];
-  $ley().innerHTML = `<div class="ley-h">Estrategias<small>toca una para verla sola</small></div>` + EST5.map(s => `<span data-s="${s.id}" title="Ver solo ${s.n}" style="--c:${s.c}"><i></i>${s.n}${s.id === 'col' ? ' <em id="esc-ncol"></em>' : ''}</span>`).join('');
+  $ley().innerHTML = `<div class="ley-h">Estrategias<small>toca una para verla sola</small></div>` + EST5.map((s, i) => `<button type="button" class="est" data-s="${s.id}" title="Ver solo ${s.n}" style="--c:${s.c}"><span class="ico">${svg(s.id)}</span><span class="tx"><b>${s.n}</b><small>${s.t}${s.id === 'col' ? ' · <em id="esc-ncol"></em>' : ''}</small></span><span class="nu">0${i + 1}</span></button>`).join('');
   function $ley() { return el.querySelector('#esc-ley'); }
   const PUNTOS = []; // { s, x, z, d (div), vis }
   let solo = null; // estrategia escogida en la leyenda (solo esa se prende)
@@ -144,8 +175,8 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
   addEventListener('col-cerrar', () => { const sp = $ley().querySelector('[data-s="col"]'); if (solo === 'col' && sp) sp.click(); });
   function redColegios() {
     const on = T3.escenario === 'proyecto' && solo === 'col';
-    if (on && !RED && !pRed) pRed = import('./colegios_red.js?v=2').then(m => { RED = m.crearRedColegios({ T3, lw, COLE }); window.KEN_RED = RED; redColegios(); }).catch(e => console.warn('red de colegios:', e));
-    if (RED) { RED.ver(on); if (on && !redOn) Promise.resolve(RED.listo).then(() => { if (RED.on) RED.general(); }); } // vista de toda la red cuando llegan los datos
+    if (on && !RED && !pRed) pRed = import('./colegios_red.js?v=4').then(m => { RED = m.crearRedColegios({ T3, lw, COLE }); window.KEN_RED = RED; redColegios(); }).catch(e => console.warn('red de colegios:', e));
+    if (RED) { RED.ver(on); if (on && !redOn) Promise.resolve(RED.listo).then(() => { if (RED.on) RED.general(); }); if (!RED.pintados) { RED.pintados = true; Promise.resolve(RED.listo).then(() => PUNTOS.filter(p => p.s.id === 'col').forEach((p, i) => { const c = RED.colorDe(i); if (c) p.d.style.setProperty('--c', c); })); } } // cada colegio con el color de su grupo // vista de toda la red cuando llegan los datos
     redOn = on;
   }
   function resaltarColegios() {
@@ -160,7 +191,7 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
   Promise.all([import('./alivio_cali.js?v=1'), cj('data3d/alivio_cali.json?v=1')]).then(([m, D]) => { CALI = m.crearAlivioCali({ T3, D }); window.KEN_CALI = CALI; CALI.ver(T3.escenario === 'proyecto' && !solo); }).catch(e => console.warn('Av. Ciudad de Cali:', e));
   const centro = (P) => [P.reduce((a, p) => a + p[0], 0) / P.length, P.reduce((a, p) => a + p[1], 0) / P.length];
   const poner = (sid, x, z, n) => { const s = EST5.find(q => q.id === sid), d = document.createElement('div'); d.className = 'esc-pt';
-    d.innerHTML = `<i style="background:${s.c}"></i><span>${n === undefined ? s.n : n}</span>`; if (sid === 'col') d.classList.add('col'); document.body.appendChild(d); PUNTOS.push({ s, x, z, d, vis: solo ? sid === solo : sid !== 'col' }); };
+    d.style.setProperty('--c', s.c); d.innerHTML = `<b class="pin">${svg(s.id, 15)}</b><span>${n === undefined ? s.n : n}</span>`; if (sid === 'col') d.classList.add('col'); document.body.appendChild(d); PUNTOS.push({ s, x, z, d, vis: solo ? sid === solo : sid !== 'col' }); };
   Promise.all([
     cj('data3d/bavaria.json?v=3').then(B => { const c = centro(B.sitio), w = lw(c[0], c[1]); poner('bav', w[0], w[1]); }).catch(() => {}),
     cj('data3d/corabastos.json').then(C => { const c = centro(C.poly), w = lw(c[0], c[1]); poner('cor', w[0], w[1]); }).catch(() => {}),
@@ -182,7 +213,7 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
       if (p.s.id === 'col') p.d.classList.toggle('cerca', Math.hypot(cp.x - p.x, cp.y, cp.z - p.z) < 1600); // el nombre del colegio solo de cerca
       V.set(p.x, 2 + (T3.alzaVia ? T3.alzaVia(p.x, p.z) : 0), p.z).project(cam);
       const ok = V.z < 1 && Math.abs(V.x) < 1.05 && Math.abs(V.y) < 1.05; p.d.style.display = ok ? 'flex' : 'none';
-      if (ok) p.d.style.transform = `translate(${((V.x + 1) / 2 * W - 5).toFixed(1)}px,${((1 - V.y) / 2 * H - 5).toFixed(1)}px)`; }
+      if (ok) p.d.style.transform = `translate(${((V.x + 1) / 2 * W).toFixed(1)}px,${((1 - V.y) / 2 * H).toFixed(1)}px)`; }
   }
   function verPuntos(on) { cancelAnimationFrame(raf); if (on) cuadro(); else PUNTOS.forEach(p => { p.d.style.display = 'none'; }); }
   // tocar una estrategia de la leyenda: se prende SOLO esa y la cámara va a sus puntos; tocarla otra vez vuelve a mostrar todas.
@@ -203,7 +234,6 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
     const p0 = T3.camera.position.clone(), t0 = o.target.clone(), p1 = new THREE.Vector3(cx + s * 0.35, s * 0.8, cz + s * 0.6), t1 = new THREE.Vector3(cx, 0, cz), ini = performance.now();
     const vuela = () => { const k = Math.min(1, (performance.now() - ini) / 1400), e2 = k * k * (3 - 2 * k); T3.camera.position.lerpVectors(p0, p1, e2); o.target.lerpVectors(t0, t1, e2); o.update(); if (k < 1) requestAnimationFrame(vuela); };
     vuela(); });
-  $ley().querySelectorAll('[data-s]').forEach(sp => { sp.setAttribute('role', 'button'); sp.setAttribute('tabindex', '0'); sp.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); sp.click(); } }); });
   filtrar();
   /* ---------- apagar lo de la propuesta anterior; las HUERTAS (techos, balcones y Bavaria) sí van con la propuesta ---------- */
   function limpiarAnterior() {
