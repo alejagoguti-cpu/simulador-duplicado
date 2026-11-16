@@ -57,6 +57,10 @@ const CSS = `
 #gs-dial:focus-visible{box-shadow:0 0 0 2px #7dd3fc}
 #gs-dial.arr{cursor:grabbing}.gs-fila{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:8px}
 .gs-fila3{grid-template-columns:repeat(3,1fr)}
+#gs-capa .gs-cambio{display:none}
+#gs-capa.pro{grid-template-columns:repeat(4,minmax(0,1fr))}#gs-capa.pro .gs-cambio{display:block}#gs-capa.pro button{font-size:10px;letter-spacing:-.01em;padding-left:1px;padding-right:1px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gs-sxpro{display:none;margin-top:7px;padding:6px 8px;border-radius:7px;background:rgba(226,165,91,.08);border:1px solid rgba(226,165,91,.25);font-size:10.5px;line-height:1.4;color:#e8d5bb}
+.gs-sxpro.on{display:block}.gs-sxpro b{color:#fff;font-weight:600}
 .gs-pan button{height:30px;border:none;border-radius:8px;background:rgba(255,255,255,.06);color:#cbd5e1;font:700 10px system-ui,sans-serif;letter-spacing:.06em;cursor:pointer}
 .gs-pan button.on{background:#7dd3fc;color:#04121c}
 .gs-pan input[type=range]{width:100%;margin:8px 0 2px;accent-color:#7dd3fc}
@@ -203,8 +207,9 @@ export async function iniciarSimulacion(cfg = {}) {
     <div class="gs-reloj"><svg id="gs-dial" viewBox="0 0 120 120" role="slider" tabindex="0" aria-label="Hora del día (24 horas): arrastra alrededor" aria-valuemin="0" aria-valuemax="1439"></svg><div><b id="gs-hora">06:30</b><small id="gs-jor">Antes de la jornada</small><em>Arrastra la bola alrededor: después de las 23:59 sigue la 00:00</em></div></div>
     <div class="gs-fila"><button id="gs-play">❚❚</button><button data-v="20">x20</button><button data-v="60" class="on">x60</button><button data-v="240">x240</button></div>
     <div class="gs-sub">SINTAXIS ESPACIAL <span>DepthmapX</span></div>
-    <div class="gs-fila gs-fila3" id="gs-capa"><button data-c="i">Integración</button><button data-c="c">Elección</button><button data-c="" class="on">Apagar</button></div>
-    <div class="gs-ley"><span>baja</span><i></i><span>alta</span></div>
+    <div class="gs-fila gs-fila3" id="gs-capa"><button data-c="i">Integración</button><button data-c="c">Elección</button><button data-c="d" class="gs-cambio" title="Qué calles ganan o pierden integración con la propuesta">Cambio</button><button data-c="" class="on">Apagar</button></div>
+    <div class="gs-ley" id="gs-ley-sx"><span>baja</span><i></i><span>alta</span></div>
+    <div id="gs-sx-pro" class="gs-sxpro"></div>
     <div class="gs-fila" style="grid-template-columns:1fr 1fr"><button id="gs-ag" class="on">Agentes</button><button id="gs-cv-b" class="${SINP ? '' : 'on'}">${SINP ? 'Estrategias' : 'Convenciones'}</button></div>
     ${SINP ? `<div class="gs-sub">ESTRATEGIAS <span>toca para ver u ocultar</span></div>
     ${EST.map(e => `<button class="gs-conv gs-est" data-e="${e.id}" style="opacity:.4;width:100%;height:auto;padding:4px 6px;background:none;text-align:left;font:inherit;color:inherit;letter-spacing:0;cursor:pointer"><b style="background:${e.c}">${e.id}</b><div>${e.n}<small>${e.det || (e.n_lotes.toLocaleString('es-CO') + ' lotes · ' + (e.area / 1e4).toLocaleString('es-CO', { maximumFractionDigits: 1 }) + ' ha')}</small></div></button>`).join('')}`
@@ -268,7 +273,7 @@ export async function iniciarSimulacion(cfg = {}) {
     g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, Hh);
     const P = GIRO.proyectar;
     if (st0.capa) {
-      const clave = st0.capa, cubos = DEPTHMAP.map(() => [new Path2D(), new Path2D(), new Path2D()]); // color × grosor
+      const clave = st0.capa === 'd' ? 'i' : st0.capa, cubos = DEPTHMAP.map(() => [new Path2D(), new Path2D(), new Path2D()]); // color × grosor
       for (const s of S) {
         const v = s[clave], ci = Math.min(DEPTHMAP.length - 1, Math.floor(v * DEPTHMAP.length));
         let prev = null, zsum = 0, n = 0; const path = new Path2D(); let algo = false;
@@ -460,11 +465,18 @@ export async function iniciarSimulacion(cfg = {}) {
     CINTAS.renderOrder = 2; CINTAS.frustumCulled = false; T3.scene.add(CINTAS); CINTAS.visible = !!st0.capa; /* abre apagada: vista limpia */
     /* escenario «con la propuesta» (T3.escenario): las calles toman la sintaxis después de abrir los pasajes de Bavaria Común y los
        pasajes aparecen como calles nuevas (data3d/sintaxis_proyecto.json, tools/sintaxis_proyecto_build.js) */
-    let NUEVAS = null;
+    let NUEVAS = null, SXPRO = null;
     fetch('data3d/sintaxis_proyecto.json?v=1').then(r => r.json()).then(SP => {
       const pI = COLS.i.slice(), pC = COLS.c.slice(), donde = new Map(RANGO.map(([si, b, n]) => [si, [b, n]]));
       for (const [si, iP, cP] of SP.cambios) { const r = donde.get(si); if (!r) continue; const a = rgb(iP), c = rgb(cP); for (let k = 0; k < r[1] * 2; k++) { pI.set(a, (r[0] + k) * 3); pC.set(c, (r[0] + k) * 3); } }
       COLS.iP = pI; COLS.cP = pC;
+      { // modo CAMBIO: gris = igual; verde = gana integración; rojo = pierde (pasajes nuevos en cian)
+        const pD = new Float32Array(COLS.i.length); for (let k = 0; k < pD.length; k += 3) { pD[k] = 0.42; pD[k + 1] = 0.45; pD[k + 2] = 0.5; }
+        let sube = 0, baja = 0; for (const [si, iP] of SP.cambios) { const r = donde.get(si); if (!r) continue; const d = iP - S[si].i; if (Math.abs(d) < 0.003) continue; d > 0 ? sube++ : baja++;
+          const k2 = Math.min(1, Math.abs(d) / 0.06), c = d > 0 ? [0.55 - 0.42 * k2, 0.75 + 0.2 * k2, 0.45 - 0.2 * k2] : [0.95, 0.45 - 0.2 * k2, 0.4 - 0.2 * k2];
+          for (let k = 0; k < r[1] * 2; k++) pD.set(c, (r[0] + k) * 3); }
+        COLS.dP = pD; COLS.d = pD; SXPRO = { nuevos: SP.nuevos.length, sube, baja, m: Math.round(SP.nuevos.reduce((a, s) => { let L = 0; for (let i = 1; i < s.p.length; i++) L += Math.hypot(s.p[i][0] - s.p[i - 1][0], s.p[i][1] - s.p[i - 1][1]); return a + L; }, 0)) };
+      }
       const P = [], CI = [], CC = [], X = [];
       for (const s of SP.nuevos) { const b = P.length / 3, n = s.p.length, ci = rgb(s.i), cc = rgb(s.c);
         for (let k = 0; k < n; k++) { const a = s.p[Math.max(0, k - 1)], q = s.p[Math.min(n - 1, k + 1)]; let dx = q[0] - a[0], dy = q[1] - a[1]; const l = Math.hypot(dx, dy) || 1; dx /= l; dy /= l;
@@ -472,9 +484,14 @@ export async function iniciarSimulacion(cfg = {}) {
           if (k < n - 1) { const v = b + k * 2; X.push(v, v + 1, v + 2, v + 1, v + 3, v + 2); } } }
       const g2 = new THREE.BufferGeometry(); g2.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g2.setAttribute('color', new THREE.BufferAttribute(new Float32Array(CI), 3)); g2.setIndex(X);
       NUEVAS = new THREE.Mesh(g2, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.85, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -5, polygonOffsetUnits: -20 }));
-      NUEVAS.renderOrder = 3; NUEVAS.frustumCulled = false; NUEVAS.visible = false; NUEVAS.userData.C = { i: new Float32Array(CI), c: new Float32Array(CC) }; T3.scene.add(NUEVAS); capa3D();
+      NUEVAS.renderOrder = 3; NUEVAS.frustumCulled = false; NUEVAS.visible = false; NUEVAS.userData.C = { i: new Float32Array(CI), c: new Float32Array(CC), d: new Float32Array(CI.length).map((_, k) => [0.13, 0.83, 0.93][k % 3]) }; T3.scene.add(NUEVAS); capa3D();
     }).catch(e => console.warn('sintaxis con la propuesta:', e));
-    capa3D = () => { const pro = T3.escenario === 'proyecto' && !!(T3.PROP && T3.PROP.sintaxis); // la propuesta se está redefiniendo: por ahora sin cambio de sintaxis
+    capa3D = () => { const pro = T3.escenario === 'proyecto' && !!(T3.PROP && T3.PROP.sintaxis); // con la propuesta: sintaxis con los pasajes de Bavaria Común
+      { const cp = izq.querySelector('#gs-capa'); if (cp) cp.classList.toggle('pro', pro);
+        if (!pro && st0.capa === 'd') { const b = izq.querySelector('#gs-capa button[data-c="i"]'); if (b) { b.click(); return; } }
+        const ley = izq.querySelector('#gs-ley-sx'); if (ley) { const d = st0.capa === 'd'; ley.children[0].textContent = d ? 'pierde' : 'baja'; ley.children[2].textContent = d ? 'gana' : 'alta'; ley.children[1].style.background = d ? 'linear-gradient(90deg,#f2724f,#6b737f 50%,#22c55e)' : ''; }
+        const nt = izq.querySelector('#gs-sx-pro'); if (nt && ley && ley.nextElementSibling !== nt) ley.after(nt); /* la nota va justo debajo de la leyenda */ if (nt) { nt.classList.toggle('on', pro && !!st0.capa && !!SXPRO); if (SXPRO) nt.innerHTML = `<b>Con la propuesta:</b> ${SXPRO.nuevos} pasajes nuevos en Bavaria Común (${SXPRO.m.toLocaleString('es-CO')} m). ${SXPRO.sube.toLocaleString('es-CO')} calles ganan integración` + (SXPRO.baja ? ` y ${SXPRO.baja.toLocaleString('es-CO')} pierden` : '') + `. Toca <b>Cambio</b> para verlas.`; } }
+      CINTAS.material.opacity = st0.capa === 'd' && pro ? 0.6 : 0.22;
       if (NUEVAS) { NUEVAS.visible = !!st0.capa && pro; if (NUEVAS.visible) { NUEVAS.geometry.attributes.color.array.set(NUEVAS.userData.C[st0.capa]); NUEVAS.geometry.attributes.color.needsUpdate = true; } }
       if (!st0.capa) { CINTAS.visible = false; return; } CINTAS.visible = true; geo.attributes.color.array.set(COLS[st0.capa + (pro && COLS.iP ? 'P' : '')]); geo.attributes.color.needsUpdate = true; };
     T3.sintaxisEscenario = () => capa3D(); // lo llama el selector de escenario (data3d/escenario.js)

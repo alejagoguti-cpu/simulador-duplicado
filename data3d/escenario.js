@@ -10,7 +10,7 @@
 export function iniciarEscenario({ T3, say = () => {} }) {
   const CHOY = '#8fb0c9', CPRO = '#e2a55b';
   // qué de la propuesta anterior se usa (todo apagado mientras se redefine)
-  T3.PROP = { sintaxis: false, camiones: false, fauna: false, carga: false, comparar: false };
+  T3.PROP = { sintaxis: true, camiones: false, fauna: false, carga: false, comparar: false };
   const LC = { x: 5341.33, y: 3161.9 }, lw = (x, y) => [x - LC.x, LC.y - y]; // marco «modelo» -> mundo
   const css = document.createElement('style');
   css.textContent = `
@@ -41,6 +41,7 @@ export function iniciarEscenario({ T3, say = () => {} }) {
 .esc-pt.col span{display:none}.esc-pt.col.cerca span{display:inline}
 @keyframes escCol{0%{box-shadow:0 0 0 0 rgba(232,121,249,.75),0 1px 4px rgba(0,0,0,.6)}70%{box-shadow:0 0 0 9px rgba(232,121,249,0),0 1px 4px rgba(0,0,0,.6)}100%{box-shadow:0 0 0 0 rgba(232,121,249,0),0 1px 4px rgba(0,0,0,.6)}}
 body.esc-solo-col #hid-red{display:none!important}
+@media(min-width:1101px){body #hid-red{top:134px!important}} /* en escritorio, debajo del selector de escenario */
 #esc .ley span.off{opacity:.38}
 #esc .ley span.on{color:var(--ui-tx,#e9ebec)}
 #esc .ley span.on i{box-shadow:0 0 0 2px rgba(255,255,255,.85)}
@@ -51,7 +52,7 @@ body .gs-est, body .gs-sub:has(+ .gs-est), body #gs-cv-b, body #vi-btn{display:n
 body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
 @media(max-width:1100px){#esc{width:min(380px,calc(100vw - 32px));top:auto;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 70px)}}
 @media(max-width:760px){#esc{min-width:0;width:calc(100vw - 16px);padding:4px}#esc .sw button{height:36px;font-size:12px}#esc .ley{font-size:10.5px;gap:4px 10px}
-  body.tb-abierto #esc{display:none}
+  body.tb-abierto #esc,body.gs-abierto #esc{display:none} /* con el panel de simulación abierto en celular, el selector no lo tapa */
   body #hid-red{bottom:calc(max(12px,env(safe-area-inset-bottom)) + 196px)!important}}
 @media(min-width:761px) and (max-width:1100px){body #hid-red{bottom:calc(max(12px,env(safe-area-inset-bottom)) + 180px)!important}}
 @media(prefers-reduced-motion:reduce){#esc .sw i{transition:none}.esc-pt.col i{animation:none}}`;
