@@ -75,7 +75,7 @@ for p in J('parques.json'):
     if p.get('tipo') == 'Manual' or not p.get('pts') or len(p['pts']) < 4: continue
     if 'Mundo Aventura' in (p.get('nombre') or ''): continue  # parque de diversiones privado, no espacio público
     pg = Polygon([lw(*q) for q in p['pts']]).buffer(0)
-    if pg.is_empty or pg.area < 20000 or not LIM.contains(pg.representative_point()): continue
+    if pg.is_empty or pg.area < 12000 or not LIM.contains(pg.representative_point()): continue
     if pg.geom_type == 'MultiPolygon': pg = max(pg.geoms, key=lambda g: g.area)
     cand.append({'n': p.get('nombre') or 'Parque', 'tipo': p.get('tipo'), 'pg': pg, 'c': (pg.centroid.x, pg.centroid.y)})
 print('candidatos', len(cand))
@@ -108,65 +108,58 @@ print('cuerpos de agua en parques', len(agua))
 obst = arb + can + edi + agua + [Polygon([lw(*q) for q in TIN['zona_modelo']]).buffer(8)]
 ARBOL = STRtree(obst)
 
-TAM = [(48, 30)]  # un solo módulo: pocas huertas pero grandes
+RH = 30  # huerta circular de cubiertas efímeras (como la de la Biblioteca El Tintal): radio de 30 m si cabe, si no más pequeña
+NOARB = STRtree(can + edi + agua + [obst[-1]]); obst2 = can + edi + agua + [obst[-1]]
 def ubicar(pg):
-    # orientación principal del parque (rectángulo mínimo)
-    mr = pg.minimum_rotated_rectangle; xs = list(mr.exterior.coords)
-    l0 = dist(xs[0], xs[1]); l1 = dist(xs[1], xs[2])
-    a0 = math.atan2(xs[1][1] - xs[0][1], xs[1][0] - xs[0][0]) if l0 >= l1 else math.atan2(xs[2][1] - xs[1][1], xs[2][0] - xs[1][0])
-    seg = pg.buffer(-6)
-    if seg.is_empty: return None
-    x0, y0, x1, y1 = seg.bounds
-    for (Lh, Wh) in TAM:
-        best = None
-        for ang in [a0 + m * math.pi / 12 for m in range(12)]:
-            r0 = box(-Lh / 2, -Wh / 2, Lh / 2, Wh / 2)
-            r0 = affinity.rotate(r0, ang, use_radians=True, origin=(0, 0))
-            y = y0
-            while y <= y1:
-                x = x0
-                while x <= x1:
-                    if seg.contains(Point(x, y)):
-                        r = affinity.translate(r0, x, y)
-                        if seg.contains(r):
-                            hit = [o for o in ARBOL.query(r) if obst[o].intersects(r)] if True else []
-                            if not hit:
-                                # preferir lo cercano al centro del parque (más visible y accesible)
-                                s = -dist((x, y), (pg.centroid.x, pg.centroid.y))
-                                if best is None or s > best[0]: best = (s, x, y, ang)
-                    x += 4
-                y += 4
-        if best: return {'c': [round(best[1], 1), round(best[2], 1)], 'a': round(best[3], 4), 'L': Lh, 'W': Wh}
+    cx, cy = pg.centroid.x, pg.centroid.y
+    for R, idx, lista in [(30, ARBOL, obst), (24, ARBOL, obst), (19, ARBOL, obst), (15, ARBOL, obst), (22, NOARB, obst2)]:
+        seg = pg.buffer(-(4 + R))
+        if seg.is_empty: continue
+        x0, y0, x1, y1 = seg.bounds; best = None
+        y = y0
+        while y <= y1:
+            x = x0
+            while x <= x1:
+                p = Point(x, y)
+                if seg.contains(p):
+                    r = p.buffer(R, 16)
+                    if not any(lista[o].intersects(r) for o in idx.query(r)):
+                        s = -dist((x, y), (cx, cy))
+                        if best is None or s > best[0]: best = (s, x, y)
+                x += 4
+            y += 4
+        if best: return {'c': [round(best[1], 1), round(best[2], 1)], 'r': R}
     return None
-
-COB = 1200
+COB = 1000
+MAXH = N // 4  # máximo una huerta por cada 4 colegios
 def cubre(k): return {i for i in range(N) if cand[k]['pg'].distance(Point(P[i])) <= COB}
 UB = {}
 def cabe(k):
     if k not in UB: UB[k] = ubicar(cand[k]['pg'])
     return UB[k] is not None
-sel = [next(k for k, c in enumerate(cand) if 'Tintal' in c['n'])]
-cub = cubre(sel[0])
-fuera = set()
-while len(sel) < 7:
+# la Biblioteca El Tintal ya tiene su huerta circular (data3d/tintal.js): entra fija
+kT = next(k for k, c in enumerate(cand) if 'Tintal' in c['n'])
+TC = TIN['huerta']; UB[kT] = {'c': [round(TC['c'][0] + 2095.67, 1), round(TC['c'][1] - 109.06, 1)], 'r': TC['r'], 'fija': True}
+sel = [kT]; cub = cubre(kT); fuera = set()
+while len(sel) < MAXH:
     opc = sorted(((len(cubre(k) - cub), cand[k]['pg'].area, k) for k in range(len(cand)) if k not in sel and k not in fuera), reverse=True)
-    opc = [o for o in opc if o[0] >= 3]
+    opc = [o for o in opc if o[0] >= 2]
     if not opc: break
     g, _, k = opc[0]
-    if not cabe(k): fuera.add(k); print('no cabe el módulo en', cand[k]['n']); continue
+    if not cabe(k): fuera.add(k); print('no cabe la huerta en', cand[k]['n']); continue
+    # no dos huertas a menos de 700 m
+    if any(dist(UB[k]['c'], UB[j]['c']) < 700 for j in sel): fuera.add(k); continue
     sel.append(k); cub |= cubre(k)
-print('parques', [(cand[k]['n'], round(cand[k]['pg'].area)) for k in sel], 'cubre', len(cub))
+print('parques', len(sel), 'cubre', len(cub), 'de', N)
 
 huertas = []
 for k in sel:
-    c = cand[k]; u = UB[k] if k in UB else ubicar(c['pg'])
-    if not u: print('sin claro', c['n']); continue
+    c = cand[k]; u = UB[k]
     CORTO = {'Marsella Sector Norte I Etapa,Pinos De Marsella': 'Pinos de Marsella', 'Las Margaritas (Gilma Jimenez)': 'Las Margaritas (Gilma Jiménez)',
-             'Ciudad Urbisa I y II Sector - Castilla Real (2 Sector)': 'Castilla Real (Urbisa)', 'Bellavista-Dindalito': 'Bellavista – Dindalito'}
-    huertas.append({'n': CORTO.get(c['n'], c['n']), 'idrd': c['n'], 'tipo': c['tipo'], 'area': round(c['pg'].area), **u,
+             'Ciudad Urbisa I y II Sector - Castilla Real (2 Sector)': 'Castilla Real (Urbisa)', 'Bellavista-Dindalito': 'Bellavista – Dindalito', 'Urbanización El Carmelo "Favidi" Sectores A y B, Urbanización Gran Britalia': 'El Carmelo – Gran Britalia'}
+    huertas.append({'n': CORTO.get(c['n'], c['n']).replace('Î¼', '').replace('\u03bc', '').strip(), 'idrd': c['n'], 'tipo': c['tipo'], 'area': round(c['pg'].area), **u,
                     'poly': [[round(x, 1), round(y, 1)] for x, y in list(c['pg'].simplify(2).exterior.coords)[:-1]]})
-    print(c['n'], u)
-# colegio -> parque-huerta más cercano (al módulo de huerta)
+    print(c['n'], round(c['pg'].area), u)# colegio -> parque-huerta más cercano (al módulo de huerta)
 asig = []
 for i in range(N):
     d, h = min((dist(P[i], H['c']), h) for h, H in enumerate(huertas))

@@ -2,7 +2,7 @@
    Datos: data3d/colegios_red.json (tools/colegios_red_build.py) + data3d/colegios.json (marco mundo).
    1. enlaces colegio–colegio: árbol de expansión mínima + vecinos cercanos, ≤ 1,5 km y sin cruces
    2. cada colegio -> el parque-huerta más cercano (parques del IDRD de 2 ha o más donde cabe un módulo de 48 × 30 m sin tocar
-      árboles, canchas, edificios ni agua). En cada parque, una HUERTA EFÍMERA de dos pisos:
+      árboles, canchas, edificios ni agua). En cada parque, una HUERTA EFÍMERA CIRCULAR (data3d/huerta_circular.js, la de la Biblioteca El Tintal); antes era de dos pisos:
       abajo 40 camas elevadas bajo malla anti-aves; arriba una pérgola liviana con enredaderas y flores para abejas, colibríes y mariposas,
       cajas nido, perchas y hoteles de insectos (todo con instancias)
    3. cada colegio -> Bavaria Común: edificio según la distancia (frecuencia de visita) y entrada según el recorrido más corto
@@ -13,7 +13,7 @@ export function crearRedColegios({ T3, lw, COLE = null }) {
   const grupo = new THREE.Group(); grupo.name = 'red-colegios'; grupo.visible = false; T3.scene.add(grupo);
   let on = false, listo = false, API = null;
   if (COLE && !Array.isArray(COLE)) COLE = COLE.colegios || null; // acepta la lista o el JSON completo de colegios.json (mismo orden que colegios_red.json)
-  const pDatos = Promise.all([cj('data3d/colegios_red.json?v=2'), COLE ? Promise.resolve(COLE) : cj('data3d/colegios.json?v=2').then(C => C.colegios)])
+  const pDatos = Promise.all([cj('data3d/colegios_red.json?v=3'), COLE ? Promise.resolve(COLE) : cj('data3d/colegios.json?v=2').then(C => C.colegios)])
     .then(([R, C]) => { API = armar(R, C); listo = true; if (on) API.mostrar(true); })
     .catch(e => console.warn('red de colegios:', e));
 
@@ -60,8 +60,7 @@ void main(){ float d=fract((vD-uT*uV)/uS); float f=smoothstep(0.,10.,vD)*smooths
     // 1. colegio – colegio
     capa('red', R.enlaces.map(([i, j, d]) => arco(P[i], P[j], 6 + Math.min(110, d * 0.16))), COL.red, 0.5, 26, 120);
     // 2. colegio -> parque-huerta (llega al borde del módulo de huerta, no a su centro)
-    const borde = (h, p) => { const dx = p[0] - h.c[0], dz = p[1] - h.c[1], ca = Math.cos(h.a), sa = Math.sin(h.a), du = dx * ca + dz * sa, dv = -dx * sa + dz * ca, n = Math.hypot(du, dv) || 1;
-      const t = Math.min((h.L / 2 + 6) / (Math.abs(du / n) || 1e-6), (h.W / 2 + 6) / (Math.abs(dv / n) || 1e-6)); return [h.c[0] + dx / n * t, h.c[1] + dz / n * t]; };
+    const borde = (h, p) => { const dx = p[0] - h.c[0], dz = p[1] - h.c[1], n = Math.hypot(dx, dz) || 1, t = h.r + 4; return [h.c[0] + dx / n * t, h.c[1] + dz / n * t]; }; // borde de la huerta circular
     capa('hue', R.asig.map(([h, d], i) => arco(P[i], borde(H[h], P[i]), 6 + Math.min(90, d * 0.12), 5, 2)), COL.hue, 0.45, 30, 90);
     // 3. colegio -> entrada -> edificio de Bavaria Común
     for (const k of ['inst', 'lab', 'campo']) {
@@ -76,7 +75,7 @@ void main(){ float d=fract((vD-uT*uV)/uS); float f=smoothstep(0.,10.,vD)*smooths
     Object.values(R.ent).forEach(p => anillo(p, 9, COL.acc));
     Object.entries(R.dest).forEach(([k, p]) => anillo(p, 14, COL[k]));
 
-    /* ================= HUERTAS EFÍMERAS DE DOS PISOS ================= */
+    /* ================= (piezas de la huerta anterior de dos pisos: ya no se instancian) ================= */
     const mStd = (c, o = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.85, metalness: 0, ...o });
     const lienzo = (w, h, f) => { const cv = document.createElement('canvas'); cv.width = w; cv.height = h; f(cv.getContext('2d'), w, h); const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t; };
     // malla anti-aves: hilo negro de polietileno, cuadro fino
@@ -160,60 +159,17 @@ void main(){ float d=fract((vD-uT*uV)/uS); float f=smoothstep(0.,10.,vD)*smooths
     const CULTIVO = [['#7fb847', '#94c95a', '#6aa93a'], ['#7b2d43', '#8e3a52', '#6a2438'], ['#4a7a52', '#3f6b48', '#58875e'], ['#a6c955', '#b5d46a', '#98bd4a']];
     const UP = [-23.4, -11.7, -1.5, 1.5, 11.7, 23.4], VP = [-14.2, -8.1, -1.5, 1.5, 8.1, 14.2], HP = 3.8; // ejes de la pérgola (pasan por pasillos, no por camas)
     const HIT = [], FAUNA = [];
+    // huertas circulares de cubiertas efímeras (las mismas de la Biblioteca El Tintal, data3d/huerta_circular.js); la del Tintal ya la arma tintal.js
+    const Yh = (T3.sueloY != null ? T3.sueloY : 0.35) - 0.38;
+    import('./huerta_circular.js?v=1').then(({ crearHuertaCircular }) => H.forEach((h, k) => { if (h.fija) return;
+      crearHuertaCircular({ THREE, T3, c: h.c, r: h.r, Y0: Yh, semilla: 97 + k * 13, flores: false }).then(g => grupo.add(g)).catch(e => console.warn('huerta', h.n, e)); }));
     H.forEach((h, k) => {
-      O.position.set(h.c[0], 0, h.c[1]); O.rotation.set(0, -h.a, 0); O.scale.set(1, 1, 1); O.updateMatrix(); MH.copy(O.matrix);
-      const L = h.L, W = h.W, sL = L / 48, sW = W / 30;
-      // --- piso: corteza bajo las camas + caminos de recebo en cruz y perímetro
-      poner(PZ.piso, 0, -0.2, 0, 0, L + 1, 0.5, W + 1);
-      poner(PZ.camino, 0, -0.17, 0, 0, L + 1, 0.5, 3 * sW); poner(PZ.camino, 0, -0.17, 0, 0, 3 * sL, 0.5, W + 1);
-      // --- PISO 1: camas elevadas de madera con cultivo, bajo malla anti-aves sobre arcos
-      const CU = [-17.4, -6, 6, 17.4].map(u => u * sL), CV = [2.1, 4.5, 6.9, 9.3, 11.7].flatMap(v => [v * sW, -v * sW]);
-      CU.forEach((u, iu) => CV.forEach((v, iv) => {
-        poner(PZ.cama, u, 0, v); poner(PZ.tierra, u, 0.6, v);
-        const tipo = (iu * 3 + iv) % 4, alto = (iu + iv) % 5 === 0, pal = CULTIVO[tipo];
-        for (let f = -1; f <= 1; f += 2) for (let i = 0; i < 14; i++) { const s = 0.85 + rnd() * 0.4;
-          if (alto) poner(PZ.alta, u - 4.1 + i * 0.63, 0.62, v + f * 0.27, rnd() * 6, s, s * (0.8 + rnd() * 0.5), s, elegir(['#3f6b2b', '#4f7f2a', '#5d8a35']));
-          else poner(PZ.lechuga, u - 4.1 + i * 0.63, 0.66, v + f * 0.27, rnd() * 6, s, s, s, elegir(pal)); }
-        poner(PZ.malla, u, 0.6, v); for (let i = 0; i <= 6; i++) poner(PZ.aro, u - 4.5 + i * 1.5, 0.6, v, Math.PI / 2);
-      }));
-      // --- PISO 2: pérgola liviana de madera a 3,8 m con cables para enredaderas
-      UP.forEach(u0 => VP.forEach(v0 => { const u = u0 * sL, v = v0 * sW, esq = Math.abs(u0) > 20 && Math.abs(v0) > 12;
-        poner(PZ.zapata, u, 0, v); poner(PZ.poste, u, 0.2, v, 0, 1, (esq ? 6.2 : HP + 0.3) - 0.2, 1);
-        if (esq) { poner(PZ.percha, u, 5.6, v, 0, 1.6, 1, 1); poner(PZ.percha, u, 6.05, v, Math.PI / 2, 1.1, 1, 1); } // perchas altas en las esquinas: las aves se posan aquí y no en las camas
-        // enredadera que trepa por el poste
-        for (let i = 0; i < 5; i++) { const t = rnd() * 6.28, s = 0.42 + rnd() * 0.2; poner(PZ.hojaV, u + Math.cos(t) * 0.16, 0.55 + i * 0.68 + rnd() * 0.15, v + Math.sin(t) * 0.16, rnd() * 6, s, s * 1.5, s, elegir(VERDES)); }
-        // cajas nido en los postes del borde (mirando hacia afuera)
-        if ((Math.abs(v0) > 12 || Math.abs(u0) > 20) && !esq && rnd() < 0.8) { const out = Math.abs(v0) > 12 ? (v0 > 0 ? 0 : Math.PI) : (u0 > 0 ? Math.PI / 2 : -Math.PI / 2), dx = Math.sin(out) * 0.23, dz = Math.cos(out) * 0.23;
-          poner(PZ.nido, u + dx, 2.5, v + dz, out); poner(PZ.techoNido, u + dx, 2.88, v + dz, out, 1, 1, 1, null, 0.22); poner(PZ.hueco, u + dx * 1.57, 2.78, v + dz * 1.57, out); poner(PZ.percha, u + dx * 1.7, 2.66, v + dz * 1.7, out + Math.PI / 2, 0.16, 1, 1); }
-      }));
-      VP.forEach(v0 => poner(PZ.viga, 0, HP + 0.15, v0 * sW, 0, L + 1.2, 1, 1));
-      UP.forEach(u0 => poner(PZ.viga, u0 * sL, HP - 0.15, 0, Math.PI / 2, W + 0.6, 1, 1));
-      const NC = Math.round(L / 1.2);
-      for (let i = 0; i <= NC; i++) { const u = -L / 2 + i * (L / NC); poner(PZ.cable, u, HP + 0.32, 0, Math.PI / 2, W, 1, 1); }
-      // techo verde: enredaderas en franjas (dejan pasar luz a las camas) con flores melíferas
-      for (let i = 0; i <= NC; i++) { const u = -L / 2 + i * (L / NC), fc = elegir(FLORES), fc2 = elegir(FLORES); // cada cable: una o dos especies de enredadera
-        for (let v = -W / 2 + 0.3; v < W / 2 - 0.2; v += 0.42 + rnd() * 0.18) {
-          const n = Math.sin(v * 0.32 + i * 0.55 + k) + 0.8 * Math.sin(i * 0.21 - v * 0.11 + k * 3); if (n < -0.35 + rnd() * 0.3) continue; // tramos cubiertos y claros: la luz pasa a las camas
-          const s = 0.8 + rnd() * 0.5, y = HP + 0.36 + rnd() * 0.1; poner(PZ.hoja, u + (rnd() - 0.5) * 0.3, y, v, rnd() * 6, s, s, s, elegir(VERDES));
-          if (rnd() < 0.55) { const nf = 1 + Math.floor(rnd() * 3); for (let f = 0; f < nf; f++) poner(PZ.flor, u + (rnd() - 0.5) * 0.6 * s, y + 0.05 + rnd() * 0.12, v + (rnd() - 0.5) * 0.6 * s, rnd() * 6, 1, 0.7, 1, rnd() < 0.6 ? fc : fc2); }
-          if (rnd() < 0.05) poner(PZ.flor, u + (rnd() - 0.5) * 0.4, y - 0.25, v, 0, 1, 1.3, 1, fc); // flores colgantes, a la altura de los colibríes
-          if ((Math.abs(v) > W / 2 - 0.8 || i === 0 || i === NC) && rnd() < 0.3) { const lj = 1 + Math.floor(rnd() * 2.5); for (let j = 0; j < lj; j++) poner(PZ.hojaV, u, y - 0.55 - j * 0.85, v, rnd() * 6, 0.55, 0.95, 0.55, elegir(VERDES)); } // cortinas que cuelgan del borde
-        } }
-      // borde de flores (franja melífera alrededor de la huerta)
-      for (let t = 0; t < 1; t += 0.0065) { const per = 2 * (L + W), s0 = t * per; let u, v; if (s0 < L) { u = -L / 2 + s0; v = -W / 2 - 0.2; } else if (s0 < L + W) { u = L / 2 + 0.2; v = -W / 2 + s0 - L; } else if (s0 < 2 * L + W) { u = L / 2 - (s0 - L - W); v = W / 2 + 0.2; } else { u = -L / 2 - 0.2; v = W / 2 - (s0 - 2 * L - W); }
-        if (Math.abs(u) < 2 || Math.abs(v) < 2) continue; // entradas por los caminos
-        const s = 0.6 + rnd() * 0.35, fc = elegir(FLORES); poner(PZ.bancaFlor, u, 0.05 + 0.3 * s, v, rnd() * 6, s, s * 0.7, s, elegir(VERDES)); for (let f = 0; f < 4; f++) poner(PZ.flor, u + (rnd() - 0.5) * 0.45, 0.25 + 0.5 * s * rnd(), v + (rnd() - 0.5) * 0.45, 0, 1.2, 1.2, 1.2, fc); }
-      // hoteles de insectos (4 por huerta) en el margen, mirando hacia afuera
-      [[-6, 1], [6, 1], [-6, -1], [6, -1]].forEach(([u0, sg]) => { const u = u0 * sL, v = sg * (W / 2 - 1.3), r = sg > 0 ? 0 : Math.PI;
-        for (const [a, b] of [[-0.7, -0.15], [0.7, -0.15], [-0.7, 0.15], [0.7, 0.15]]) poner(PZ.pata, u + (sg > 0 ? a : -a), 0, v + (sg > 0 ? b : -b));
-        poner(PZ.hotel, u, 0.5, v, r); poner(PZ.techoHotel, u - 0, 2.45, v + sg * 0.05, r, 1, 1, 1, null, 0.28); });
       // zona de toque (para volar al tocar la huerta)
-      const hb = new THREE.Mesh(new THREE.BoxGeometry(L + 6, 8, W + 6).translate(0, 4, 0)); hb.position.set(h.c[0], 0, h.c[1]); hb.rotation.y = -h.a; hb.updateMatrixWorld(); hb.userData.k = k; HIT.push(hb);
+      const hb = new THREE.Mesh(new THREE.CylinderGeometry(h.r + 3, h.r + 3, 10, 24).translate(0, 5, 0)); hb.position.set(h.c[0], 0, h.c[1]); hb.updateMatrixWorld(); hb.userData.k = k; HIT.push(hb);
       // contorno del parque sobre el suelo
       const pts = h.poly.map(p => V3(p[0], 1.1, p[1])); const ln = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: COL.hue, transparent: true, opacity: 0.75, depthWrite: false, toneMapped: false })); ln.renderOrder = 11; grupo.add(ln);
-      FAUNA.push({ c: h.c, a: h.a, L, W });
-    });
-    for (const p of PIEZAS) { if (!p.M.length) continue; const im = new THREE.InstancedMesh(p.geo, p.mat, p.M.length); p.M.forEach((m, i) => im.setMatrixAt(i, m)); if (p.color) p.C.forEach((c, i) => im.setColorAt(i, c));
+      FAUNA.push({ c: h.c, a: 0, L: h.r * 1.6, W: h.r * 1.6 });
+    });    for (const p of PIEZAS) { if (!p.M.length) continue; const im = new THREE.InstancedMesh(p.geo, p.mat, p.M.length); p.M.forEach((m, i) => im.setMatrixAt(i, m)); if (p.color) p.C.forEach((c, i) => im.setColorAt(i, c));
       im.castShadow = p.sombra; im.receiveShadow = true; im.computeBoundingSphere(); grupo.add(im); }
 
     // fauna que visita la huerta: mariposas, abejas y colibríes (solo se animan las de las huertas cercanas a la cámara)
@@ -314,7 +270,7 @@ body.cr-on #dock{display:none!important}
       d.innerHTML = `<div class="cj"><span class="k">${num}</span><span class="t"><b>${n}</b>${sub ? `<small>${sub}</small>` : ''}</span></div><i class="pt"></i>`;
       if (fn) { d.setAttribute('role', 'button'); d.tabIndex = 0; d.setAttribute('aria-label', n); d.onclick = fn; d.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fn(); } }; }
       document.body.appendChild(d); const o = { d, pos }; ETQ.push(o); return o; };
-    const LBH = H.map((h, k) => etiqueta(h.n, `huerta ${h.L}×${h.W} m · ${nH[k]} colegios`, COL.hue, [h.c[0], 9, h.c[1]], 'hue', () => enfocarHuerta(k), 'H' + (k + 1)));
+    const LBH = H.map((h, k) => etiqueta(h.n, `huerta circular Ø${Math.round(h.r * 2)} m · ${nH[k]} colegios`, COL.hue, [h.c[0], 9, h.c[1]], 'hue', () => enfocarHuerta(k), 'H' + (k + 1)));
     const nDest = { inst: 0, lab: 0, campo: 0 }, nEnt = { A: 0, B: 0, C: 0 }; R.bav.forEach(b => { nDest[b[0]]++; nEnt[b[1]]++; });
     // Bavaria: de lejos una sola etiqueta; de cerca los tres edificios y (más cerca) las tres entradas
     const LBB = Object.entries(R.dest).map(([k, p]) => Object.assign(etiqueta(DEST[k].n, `${nDest[k]} colegios`, COL[k], [p[0], 45, p[1]], 'bav', () => volarA(p, 260), k === 'inst' ? 'I' : k === 'lab' ? 'L' : 'C'), { max: 2600 }));
@@ -325,7 +281,7 @@ body.cr-on #dock{display:none!important}
     const nComp = (() => { const pa = [...Array(N).keys()], f = (x) => (pa[x] === x ? x : (pa[x] = f(pa[x]))); R.enlaces.forEach(([i, j]) => { pa[f(i)] = f(j); }); return new Set(pa.map((_, i) => f(i))).size; })();
     const kmRed = R.enlaces.reduce((s, e) => s + e[2], 0) / 1000, medRed = R.enlaces.reduce((s, e) => s + e[2], 0) / R.enlaces.length;
     const medHue = R.asig.reduce((s, a) => s + a[1], 0) / N;
-    const haH = H.reduce((s, h) => s + h.L * h.W, 0);
+    const haH = H.reduce((s, h) => s + Math.PI * h.r * h.r, 0);
     const pan = document.createElement('section'); pan.id = 'cr'; pan.setAttribute('aria-label', 'Red de colegios de Kennedy');
     const fila = (num, col, n, a, d, data) => `<div class="it" ${data || ''} tabindex="0" role="button" style="--c:${col}"><i>${num}</i><b>${n}</b><em>${a || ''}</em><p>${d}</p></div>`;
     const ley = (col, n, d) => `<div class="ley" style="--c:${col}"><i></i><div><b>${n}</b><br>${d}</div></div>`;
@@ -336,10 +292,10 @@ body.cr-on #dock{display:none!important}
         ley(COL.hue, `Colegio → parque-huerta · ${N} recorridos`, `Cada colegio va al parque-huerta más cercano; distancia media ${fmt(medHue)} m.`) +
         ley(COL.lab, `Colegio → Bavaria Común · ${N} recorridos`, `Por la entrada más corta hasta el edificio que le corresponde (color del edificio).`) +
         `<p class="nota">Los pulsos avanzan en el sentido del viaje: del colegio a la huerta y a Bavaria. Fuente: OpenStreetMap (colegios con edificio en el 3D) y parques del IDRD.</p>`,
-      hue: () => `<div class="ind" style="margin-top:0">${H.length} <b>huertas efímeras</b> de ${H[0].L} × ${H[0].W} m (${fmt(haH)} m² en total) en los parques grandes del IDRD (2 ha o más) que cubren más colegios a menos de 1,2 km. Se arman sobre el claro más amplio de cada parque, sin tocar árboles, canchas ni edificios, y se pueden desmontar.</div>
+      hue: () => `<div class="ind" style="margin-top:0">${H.length} <b>huertas efímeras circulares</b> (como la de la Biblioteca El Tintal: cubiertas de membrana sobre columnas-árbol, bancales y composteras; ${fmt(haH)} m² en total), una por cada 4 colegios o menos, en los parques del IDRD que cubren más colegios a menos de 1 km. Se arman sobre el claro más amplio de cada parque, sin tocar árboles, canchas ni edificios, y se pueden desmontar.</div>
         <div class="pisos">
-          <div class="piso"><div class="n">Piso 2<span>+3,8 m</span></div><ul><li><b>Pérgola liviana</b> de madera con cables: enredaderas (curuba, gulupa, capuchina) y flores melíferas para <b>abejas, colibríes y mariposas</b>.</li><li><b>Cajas nido</b> en los postes del borde y <b>perchas</b> altas en las esquinas para copetones y mirlas.</li><li>Las franjas verdes dejan pasar luz a las camas.</li></ul></div>
-          <div class="piso"><div class="n">Piso 1<span>±0 m</span></div><ul><li><b>40 camas elevadas</b> de 9 × 1,2 m (432 m² sembrados): lechuga verde y morada, acelga, cilantro, haba.</li><li><b>Malla anti-aves</b> sobre arcos en cada cama: las aves se alimentan arriba, no de la cosecha.</li><li><b>4 hoteles de insectos</b> y un borde de flores; caminos de recebo en cruz.</li></ul></div>
+          <div class="piso"><div class="n">Arriba<span>6 – 9 m</span></div><ul><li><b>Cubiertas efímeras</b> de membrana traslúcida con costillas blancas, sobre <b>columnas-árbol</b> que recogen el agua lluvia.</li><li>Sobre las cubiertas, <b>jardineras con flores</b> para abejas, colibríes y mariposas: los animales se alimentan arriba, no de la cosecha.</li></ul></div>
+          <div class="piso"><div class="n">Abajo<span>±0 m</span></div><ul><li><b>Bancales orgánicos</b> de concreto claro sembrados (plantas medicinales y de hoja) sobre un prado circular.</li><li><b>Composteras</b> de madera y bancas curvas en el anillo exterior. Se arma y se desmonta.</li></ul></div>
         </div>
         <div class="sub">Parques-huerta</div>` +
         H.map((h, k) => fila('H' + (k + 1), COL.hue, h.n, `${fmt(h.area / 10000, 1)} ha`, `${nH[k]} colegios · ${h.tipo ? h.tipo.toLowerCase() : 'parque'} · media ${fmt(R.asig.filter(a => a[0] === k).reduce((s, a) => s + a[1], 0) / Math.max(1, nH[k]))} m`, `data-h="${k}"`)).join(''),
@@ -352,7 +308,7 @@ body.cr-on #dock{display:none!important}
     };
     pan.innerHTML = `<header><button type="button" class="cerrar" aria-label="Cerrar la red de colegios">&#215;</button><div class="ey">Colegios · red educativa</div><h2>Conectografía escolar</h2>
       <p class="lead">Los colegios de Kennedy se enlazan entre sí, con una huerta efímera en el parque grande más cercano y con el distrito Bavaria Común.</p>
-      <div class="kp"><div><b>${N}</b><span>colegios con edificio</span></div><div><b>${R.enlaces.length}</b><span>enlaces entre colegios</span></div><div><b>${H.length}</b><span>parques-huerta de 2 pisos</span></div></div></header>
+      <div class="kp"><div><b>${N}</b><span>colegios con edificio</span></div><div><b>${R.enlaces.length}</b><span>enlaces entre colegios</span></div><div><b>${H.length}</b><span>huertas efímeras en parques</span></div></div></header>
       <nav class="tabs" role="tablist">${[['red', 'Red'], ['hue', 'Parques-huerta'], ['bav', 'Bavaria Común']].map(([k, n]) => `<button type="button" role="tab" data-t="${k}" aria-selected="false">${n}</button>`).join('')}</nav>
       <div class="cuerpo" role="tabpanel"></div>
       <div class="pie"><button type="button" id="cr-ver">Vista general</button></div>`;

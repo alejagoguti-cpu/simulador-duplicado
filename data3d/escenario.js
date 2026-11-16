@@ -122,7 +122,7 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
   addEventListener('col-cerrar', () => { const sp = $ley().querySelector('[data-s="col"]'); if (solo === 'col' && sp) sp.click(); });
   function redColegios() {
     const on = T3.escenario === 'proyecto' && solo === 'col';
-    if (on && !RED && !pRed) pRed = import('./colegios_red.js?v=1').then(m => { RED = m.crearRedColegios({ T3, lw, COLE }); window.KEN_RED = RED; redColegios(); }).catch(e => console.warn('red de colegios:', e));
+    if (on && !RED && !pRed) pRed = import('./colegios_red.js?v=2').then(m => { RED = m.crearRedColegios({ T3, lw, COLE }); window.KEN_RED = RED; redColegios(); }).catch(e => console.warn('red de colegios:', e));
     if (RED) { RED.ver(on); if (on && !redOn) Promise.resolve(RED.listo).then(() => { if (RED.on) RED.general(); }); } // vista de toda la red cuando llegan los datos
     redOn = on;
   }
