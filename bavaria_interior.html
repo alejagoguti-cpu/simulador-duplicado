@@ -26,7 +26,10 @@ body.ready .top,body.ready .hero,body.ready .ctl,body.ready .ayuda,body.ready .n
 .hero h1{margin:10px 0 12px;font:300 44px/1.02 var(--cond);text-transform:uppercase}
 .hero p{margin:0 0 10px;font-size:13.5px;line-height:1.6;color:#d6ddd8;text-shadow:0 1px 8px rgba(0,0,0,.85)}
 .hero .kp{display:flex;gap:18px;margin-top:12px}.hero .kp b{display:block;font:300 26px var(--cond)}.hero .kp span{font:500 9.5px var(--mono);letter-spacing:.12em;color:var(--tx3);text-transform:uppercase}
-.lb{position:fixed;left:0;top:0;z-index:3;display:none;flex-direction:column;align-items:center;cursor:pointer;text-align:center;white-space:nowrap;opacity:0;transition:opacity .6s ease}
+.bf{position:fixed;z-index:5;pointer-events:none;width:40px;height:40px;opacity:0;animation:bfly 12s ease-in-out infinite}
+.bf svg{width:100%;height:100%;animation:flap .35s ease-in-out infinite alternate}
+@keyframes bfly{0%{transform:translate(-10vw,30vh) rotate(0deg);opacity:0}10%{opacity:.85}50%{transform:translate(50vw,10vh) rotate(20deg);opacity:.85}90%{opacity:.85}100%{transform:translate(110vw,40vh) rotate(-10deg);opacity:0}}
+@keyframes flap{from{transform:scaleX(1)}to{transform:scaleX(.4)}}
 body.ready .lb{opacity:1}
 .lb b{font:600 10.5px var(--sans);letter-spacing:.08em;text-transform:uppercase;text-shadow:0 1px 4px #000,0 0 10px rgba(0,0,0,.8)}
 .lb i{font:400 10px var(--mono);color:var(--tx2);font-style:normal;text-shadow:0 1px 4px #000}
@@ -283,6 +286,7 @@ function cuadro(t) {
   for (const l of LB) { V.copy(l.v).project(cam); const ok = V.z < 1 && Math.abs(V.x) < 1.05 && Math.abs(V.y) < 1.05 && cam.position.distanceTo(l.v) < 24; l.d.style.display = ok ? 'flex' : 'none';
     if (ok) l.d.style.transform = `translate(${((V.x + 1) / 2 * innerWidth).toFixed(1)}px,${((1 - V.y) / 2 * innerHeight).toFixed(1)}px) translate(-50%,-100%)`; }
 }
+if (K === 'poli') { for (let i = 0; i < 8; i++) { const b = document.createElement('div'); b.className = 'bf'; b.style.top = (10 + Math.random()*60) + 'vh'; b.style.animationDelay = (i*1.7) + 's'; b.style.animationDuration = (10 + Math.random()*6) + 's'; b.innerHTML = '<svg viewBox="0 0 64 64"><path d="M32 32 C20 10, 4 14, 8 30 C12 46, 28 40, 32 32 Z" fill="#fb923c" opacity=".85"/><path d="M32 32 C44 10, 60 14, 56 30 C52 46, 36 40, 32 32 Z" fill="#fdba74" opacity=".85"/><circle cx="32" cy="32" r="2" fill="#202325"/></svg>'; document.body.appendChild(b); } }
 requestAnimationFrame(cuadro);
 </script>
 </body>
