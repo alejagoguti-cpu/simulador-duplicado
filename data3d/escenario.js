@@ -37,6 +37,15 @@ export function iniciarEscenario({ T3, say = () => {} }) {
   font:500 11px var(--ui-sans,Inter,system-ui,sans-serif);color:#f4f5f6;text-shadow:0 1px 3px rgba(0,0,0,.9),0 0 8px rgba(0,0,0,.6);white-space:nowrap}
 .esc-pt i{width:10px;height:10px;border-radius:50%;border:2px solid #fff;flex:none;box-shadow:0 1px 4px rgba(0,0,0,.6)}
 .esc-pt.chico span{display:none}
+.esc-pt.col i{width:9px;height:9px;border-width:1.5px;animation:escCol 2.4s ease-out infinite}
+.esc-pt.col span{display:none}.esc-pt.col.cerca span{display:inline}
+@keyframes escCol{0%{box-shadow:0 0 0 0 rgba(232,121,249,.75),0 1px 4px rgba(0,0,0,.6)}70%{box-shadow:0 0 0 9px rgba(232,121,249,0),0 1px 4px rgba(0,0,0,.6)}100%{box-shadow:0 0 0 0 rgba(232,121,249,0),0 1px 4px rgba(0,0,0,.6)}}
+body.esc-solo-col #hid-red{display:none!important}
+#esc .ley span.off{opacity:.38}
+#esc .ley span.on{color:var(--ui-tx,#e9ebec)}
+#esc .ley span.on i{box-shadow:0 0 0 2px rgba(255,255,255,.85)}
+#esc .ley span:focus-visible{outline:2px solid var(--ui-acc,#e2a55b);outline-offset:2px;border-radius:3px}
+#esc .ley em{font-style:normal;font:500 10px 'JetBrains Mono',ui-monospace,monospace;color:#8e979d}
 /* la propuesta anterior no se ofrece mientras se redefine: botón y lista de estrategias del panel, y la Visión */
 body .gs-est, body .gs-sub:has(+ .gs-est), body #gs-cv-b, body #vi-btn{display:none!important}
 body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
@@ -45,7 +54,7 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
   body.tb-abierto #esc{display:none}
   body #hid-red{bottom:calc(max(12px,env(safe-area-inset-bottom)) + 196px)!important}}
 @media(min-width:761px) and (max-width:1100px){body #hid-red{bottom:calc(max(12px,env(safe-area-inset-bottom)) + 180px)!important}}
-@media(prefers-reduced-motion:reduce){#esc .sw i{transition:none}}`;
+@media(prefers-reduced-motion:reduce){#esc .sw i{transition:none}.esc-pt.col i{animation:none}}`;
   document.head.appendChild(css);
   const el = document.createElement('section'); el.id = 'esc'; el.setAttribute('aria-label', 'Escenario del territorio'); el.dataset.e = 'hoy';
   el.innerHTML = `<div class="sw" role="group" aria-label="Escenario"><i aria-hidden="true"></i>
@@ -60,48 +69,66 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
     { id: 'mer', n: 'Mercados de abastecimiento', c: '#38bdf8' },
     { id: 'cor', n: 'Corabastos', c: '#f59e0b' },
     { id: 'res', n: 'Gestión de residuos', c: '#a78bfa' },
-    { id: 'red', n: 'Red de distribución alimentaria', c: '#4ade80' }
+    { id: 'red', n: 'Red de distribución alimentaria', c: '#4ade80' },
+    { id: 'col', n: 'Colegios', c: '#e879f9' } // solo se prenden al escogerlos en la leyenda
   ];
-  $ley().innerHTML = EST5.map(s => `<span data-s="${s.id}" title="Ir a ${s.n}"><i style="background:${s.c}"></i>${s.n}</span>`).join('');
+  $ley().innerHTML = EST5.map(s => `<span data-s="${s.id}" title="Ver solo ${s.n}"><i style="background:${s.c}"></i>${s.n}${s.id === 'col' ? ' <em id="esc-ncol"></em>' : ''}</span>`).join('');
   function $ley() { return el.querySelector('#esc-ley'); }
-  const PUNTOS = []; // { s, x, z, n, d (div) }
+  const PUNTOS = []; // { s, x, z, d (div), vis }
+  let solo = null; // estrategia escogida en la leyenda (solo esa se prende)
   const cj = (u) => (window.cargarJSON ? window.cargarJSON(u) : fetch(u).then(r => r.json()));
   const centro = (P) => [P.reduce((a, p) => a + p[0], 0) / P.length, P.reduce((a, p) => a + p[1], 0) / P.length];
   const poner = (sid, x, z, n) => { const s = EST5.find(q => q.id === sid), d = document.createElement('div'); d.className = 'esc-pt';
-    d.innerHTML = `<i style="background:${s.c}"></i><span>${n === undefined ? s.n : n}</span>`; document.body.appendChild(d); PUNTOS.push({ s, x, z, d }); };
+    d.innerHTML = `<i style="background:${s.c}"></i><span>${n === undefined ? s.n : n}</span>`; if (sid === 'col') d.classList.add('col'); document.body.appendChild(d); PUNTOS.push({ s, x, z, d, vis: solo ? sid === solo : sid !== 'col' }); };
   Promise.all([
     cj('data3d/bavaria.json?v=3').then(B => { const c = centro(B.sitio), w = lw(c[0], c[1]); poner('bav', w[0], w[1]); }).catch(() => {}),
     cj('data3d/corabastos.json').then(C => { const c = centro(C.poly), w = lw(c[0], c[1]); poner('cor', w[0], w[1]); }).catch(() => {}),
     // mercados de abastecimiento: los 8 lugares de mercado de barrio ya definidos (data3d/carga.json)
     fetch('data3d/carga.json?v=1').then(r => r.json()).then(K => K.mercados.forEach((m, i) => { const w = lw(m.p[0], m.p[1]); poner('mer', w[0], w[1], i ? '' : undefined); })).catch(() => {}),
     // gestión de residuos (lugar de E4, distrito biotecnológico) y red de distribución alimentaria (centro de la red E8 de huertas)
+    // colegios de Kennedy (OpenStreetMap, tools/colegios_build.py): ya vienen en el marco del mundo
+    cj('data3d/colegios.json?v=1').then(C => { C.colegios.forEach(c => poner('col', c.c[0], c.c[1], c.n)); const ne = el.querySelector('#esc-ncol'); if (ne) ne.textContent = C.colegios.length; }).catch(() => {}),
     new Promise(r => { const mira = (k) => { const E = T3.EST; if (E && E.lugar) { const a = E.lugar('E4'), b = E.lugar('E8'); if (a) poner('res', a.c[0], a.c[1]); if (b) poner('red', b.c[0], b.c[1]); r(); } else if (k < 40) setTimeout(() => mira(k + 1), 500); else r(); }; mira(0); })
   ]).then(() => { PUNTOS.forEach(p => { if (!p.d.querySelector('span').textContent) p.d.classList.add('chico'); }); });
   // los puntos se dibujan en pantalla (siempre del mismo tamaño), sobre la posición 3D a 2 m del suelo
   let raf = 0; const V = new T3.THREE.Vector3();
   function cuadro() {
     raf = requestAnimationFrame(cuadro); const cam = T3.camera, W = innerWidth, H = innerHeight;
-    for (const p of PUNTOS) { V.set(p.x, 2 + (T3.alzaVia ? T3.alzaVia(p.x, p.z) : 0), p.z).project(cam);
+    const cp = cam.position;
+    for (const p of PUNTOS) { if (!p.vis) { if (p.d.style.display !== 'none') p.d.style.display = 'none'; continue; }
+      if (p.s.id === 'col') p.d.classList.toggle('cerca', Math.hypot(cp.x - p.x, cp.y, cp.z - p.z) < 1600); // el nombre del colegio solo de cerca
+      V.set(p.x, 2 + (T3.alzaVia ? T3.alzaVia(p.x, p.z) : 0), p.z).project(cam);
       const ok = V.z < 1 && Math.abs(V.x) < 1.05 && Math.abs(V.y) < 1.05; p.d.style.display = ok ? 'flex' : 'none';
       if (ok) p.d.style.transform = `translate(${((V.x + 1) / 2 * W - 5).toFixed(1)}px,${((1 - V.y) / 2 * H - 5).toFixed(1)}px)`; }
   }
   function verPuntos(on) { cancelAnimationFrame(raf); if (on) cuadro(); else PUNTOS.forEach(p => { p.d.style.display = 'none'; }); }
-  // tocar una estrategia de la leyenda: la cámara va a su(s) punto(s)
-  $ley().addEventListener('click', (ev) => { const sp = ev.target.closest('[data-s]'); if (!sp) return; const L = PUNTOS.filter(p => p.s.id === sp.dataset.s); if (!L.length || !T3.orbit) return;
+  // tocar una estrategia de la leyenda: se prende SOLO esa y la cámara va a sus puntos; tocarla otra vez vuelve a mostrar todas.
+  // Los colegios no se muestran con todas (son más de cien): solo cuando se escogen.
+  function filtrar() {
+    PUNTOS.forEach(p => { p.vis = solo ? p.s.id === solo : p.s.id !== 'col'; });
+    document.body.classList.toggle('esc-solo-col', solo === 'col'); // sin huertas no se muestra el panel de polinización
+    $ley().querySelectorAll('[data-s]').forEach(sp => { sp.classList.toggle('on', sp.dataset.s === solo); sp.classList.toggle('off', !!solo && sp.dataset.s !== solo); sp.setAttribute('aria-pressed', String(sp.dataset.s === solo)); });
+  }
+  T3.escSolo = () => solo;
+  $ley().addEventListener('click', (ev) => { const sp = ev.target.closest('[data-s]'); if (!sp) return;
+    solo = solo === sp.dataset.s ? null : sp.dataset.s; filtrar(); limpiarAnterior();
+    if (solo === 'col') say(`Colegios de Kennedy: ${PUNTOS.filter(p => p.s.id === 'col').length} (OpenStreetMap)`, 3000);
+    const L = PUNTOS.filter(p => p.vis); if (!L.length || !T3.orbit) return;
     let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const p of L) { x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); z0 = Math.min(z0, p.z); z1 = Math.max(z1, p.z); }
-    const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, s = Math.max(500, (x1 - x0) * 1.3, (z1 - z0) * 1.3), o = T3.orbit, THREE = T3.THREE;
+    const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, s = Math.min(4200, Math.max(500, (x1 - x0) * 0.75, (z1 - z0) * 0.75)), o = T3.orbit, THREE = T3.THREE;
     const p0 = T3.camera.position.clone(), t0 = o.target.clone(), p1 = new THREE.Vector3(cx + s * 0.35, s * 0.8, cz + s * 0.6), t1 = new THREE.Vector3(cx, 0, cz), ini = performance.now();
     const vuela = () => { const k = Math.min(1, (performance.now() - ini) / 1400), e2 = k * k * (3 - 2 * k); T3.camera.position.lerpVectors(p0, p1, e2); o.target.lerpVectors(t0, t1, e2); o.update(); if (k < 1) requestAnimationFrame(vuela); };
     vuela(); });
-
+  $ley().querySelectorAll('[data-s]').forEach(sp => { sp.setAttribute('role', 'button'); sp.setAttribute('tabindex', '0'); sp.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); sp.click(); } }); });
+  filtrar();
   /* ---------- apagar lo de la propuesta anterior; las HUERTAS (techos, balcones y Bavaria) sí van con la propuesta ---------- */
   function limpiarAnterior() {
-    const pro = T3.escenario === 'proyecto';
+    const pro = T3.escenario === 'proyecto', hu = pro && solo !== 'col'; // con «solo colegios» se apagan las huertas
     const b = document.getElementById('gs-cv-b'); if (b && b.classList.contains('on')) b.click(); // estrategias E1-E9 (polígonos, conexiones, red de huertas)
-    const EST = T3.EST; if (EST && EST.hidroponia) EST.hidroponia(pro); T3.conHidro = pro && !!EST; // huertas hidropónicas en techos y balcones con sus polinizadores
-    if (T3.huertas && T3.huertas.grupo) T3.huertas.grupo.visible = pro && !EST; // camas de tierra en terrazas solo si no hay hidroponía
-    if (T3.torres && T3.torres.huertas) T3.torres.huertas(pro);
-    const bv = T3.bavaria; if (bv && bv.userData && bv.userData.mallasHuerta) bv.userData.mallasHuerta.forEach(m => { m.visible = pro; });
+    const EST = T3.EST; if (EST && EST.hidroponia) EST.hidroponia(hu); T3.conHidro = hu && !!EST; // huertas hidropónicas en techos y balcones con sus polinizadores
+    if (T3.huertas && T3.huertas.grupo) T3.huertas.grupo.visible = hu && !EST; // camas de tierra en terrazas solo si no hay hidroponía
+    if (T3.torres && T3.torres.huertas) T3.torres.huertas(hu);
+    const bv = T3.bavaria; if (bv && bv.userData && bv.userData.mallasHuerta) bv.userData.mallasHuerta.forEach(m => { m.visible = hu; });
     const co = T3.scene && T3.scene.getObjectByName('corabastos'); if (co && co.userData.quitadas) co.userData.quitadas.visible = true;
     if (T3.bio && T3.bio.ESTADO) T3.bio.ESTADO.escenario = 'hoy';
     if (T3.sintaxisEscenario) T3.sintaxisEscenario();
