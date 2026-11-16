@@ -20,7 +20,7 @@ predios, puntos = [], []
 for el in OSM:
     t = el.get('tags', {})
     if t.get('amenity') != 'school': continue
-    n = (t.get('name') or '').strip() or 'Colegio sin nombre'
+    n = (t.get('name') or '').strip() or 'Colegio'
     if el['type'] == 'way' and 'geometry' in el:
         P = [xy(g['lon'], g['lat']) for g in el['geometry']]
         if len(P) < 4: continue
@@ -39,6 +39,38 @@ for c in puntos:
     if any(q['pg'].buffer(25).contains(c['p']) for q in predios): continue
     if any(math.dist((c['p'].x, c['p'].y), o['c']) < 40 for o in out): continue
     out.append({'n': c['n'], 'c': [round(c['p'].x, 1), round(c['p'].y, 1)], 'a': 0, 'poly': None})
+# ---- solo los colegios que tienen edificios levantados en el 3D (data3d/edif/*.bin, marco del modelo) ----
+import struct
+from shapely.prepared import prep
+LC = (5341.33, 3161.9)
+EI = json.load(open(os.path.join(RAIZ, 'data3d', 'edif', 'index.json'), encoding='utf-8'))
+def edificios(f):
+    b = open(os.path.join(RAIZ, 'data3d', 'edif', f), 'rb').read()
+    if b[:4] != b'REB1': return []
+    end = 8 + struct.unpack_from('<I', b, 4)[0]; o = 8; iq = 1 / EI['Q']; L = []
+    while o < end:
+        n, h, x, y = struct.unpack_from('<HHHH', b, o); o += 8
+        P = [(x * iq + EI['X0'], y * iq + EI['Y0'])]
+        for i in range(1, n):
+            dx, dy = struct.unpack_from('<hh', b, o); o += 4; x += dx; y += dy; P.append((x * iq + EI['X0'], y * iq + EI['Y0']))
+        L.append((h / 10, [(X - LC[0], LC[1] - Y) for X, Y in P]))  # al marco del mundo
+    return L
+ED = [e for c in EI['celdas'] for e in edificios(c['f'])]
+print('edificios del modelo', len(ED))
+cent = [Polygon(P).centroid if len(P) >= 3 else None for _, P in ED]
+from shapely.strtree import STRtree
+idx = [i for i, c in enumerate(cent) if c is not None]
+arbol = STRtree([cent[i] for i in idx])
+con = []
+for o in out:
+    zona = Polygon(o['poly']).buffer(4) if o['poly'] else Point(o['c']).buffer(12)  # colegio dibujado solo como punto: el edificio que lo contiene
+    pz = prep(zona); sel = []
+    for k in arbol.query(zona):
+        i = idx[int(k)]
+        if pz.contains(cent[i]): h, P = ED[i]; sel.append({'h': round(h, 1), 'p': [[round(x, 1), round(z, 1)] for x, z in P]})
+    if sel: o['ed'] = sel; con.append(o)
+print('colegios con edificio 3D', len(con), 'de', len(out), 'edificios resaltados', sum(len(o['ed']) for o in con))
+out = con
 out.sort(key=lambda o: o['n'])
 json.dump({'fuente': 'OpenStreetMap (amenity=school), © colaboradores de OpenStreetMap, ODbL', 'colegios': out},
           open(os.path.join(RAIZ, 'data3d', 'colegios.json'), 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))

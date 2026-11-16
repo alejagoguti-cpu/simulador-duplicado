@@ -76,6 +76,34 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
   function $ley() { return el.querySelector('#esc-ley'); }
   const PUNTOS = []; // { s, x, z, d (div), vis }
   let solo = null; // estrategia escogida en la leyenda (solo esa se prende)
+  /* ---------- edificios de los colegios resaltados: un volumen de luz que envuelve cada edificio (0,7 m más grande) con aristas brillantes ---------- */
+  let COLE = null, GCOL = null; const RMQ = matchMedia('(prefers-reduced-motion: reduce)');
+  function armarColegios() {
+    const THREE = T3.THREE, P = [], I = [], L = [];
+    for (const c of COLE) for (const e of c.ed || []) {
+      let W = e.p; if (W.length > 3 && W[0][0] === W[W.length - 1][0] && W[0][1] === W[W.length - 1][1]) W = W.slice(0, -1);
+      const n = W.length; if (n < 3) continue;
+      let cx = 0, cz = 0; for (const q of W) { cx += q[0]; cz += q[1]; } cx /= n; cz /= n;
+      W = W.map(q => { const dx = q[0] - cx, dz = q[1] - cz, d = Math.hypot(dx, dz) || 1; return [q[0] + dx / d * 0.7, q[1] + dz / d * 0.7]; });
+      const y0 = 0.2, y1 = Math.max(3, e.h) + 0.7, b = P.length / 3;
+      for (const q of W) P.push(q[0], y0, q[1]); for (const q of W) P.push(q[0], y1, q[1]);
+      for (let i = 0; i < n; i++) { const j = (i + 1) % n; I.push(b + i, b + j, b + n + i, b + j, b + n + j, b + n + i);
+        L.push(W[i][0], y1, W[i][1], W[j][0], y1, W[j][1], W[i][0], y0, W[i][1], W[i][0], y1, W[i][1]); }
+      let tri = []; try { tri = THREE.ShapeUtils.triangulateShape(W.map(q => new THREE.Vector2(q[0], q[1])), []); } catch (er) {}
+      for (const t of tri) I.push(b + n + t[0], b + n + t[1], b + n + t[2]);
+    }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setIndex(I);
+    const mv = new THREE.MeshBasicMaterial({ color: '#e879f9', transparent: true, opacity: 0.42, depthWrite: false, side: THREE.DoubleSide, toneMapped: false });
+    const gl = new THREE.BufferGeometry(); gl.setAttribute('position', new THREE.Float32BufferAttribute(L, 3));
+    const ml = new THREE.LineBasicMaterial({ color: '#fbe7ff', transparent: true, opacity: 0.95, toneMapped: false });
+    GCOL = new THREE.Group(); GCOL.name = 'colegios_resaltados'; const m = new THREE.Mesh(g, mv), li = new THREE.LineSegments(gl, ml);
+    m.renderOrder = 8; li.renderOrder = 9; GCOL.add(m, li); GCOL.userData = { mv, ml }; GCOL.visible = false; T3.scene.add(GCOL);
+  }
+  function resaltarColegios() {
+    const on = T3.escenario === 'proyecto' && solo === 'col' && !!COLE;
+    if (on && !GCOL) armarColegios();
+    if (GCOL) GCOL.visible = on;
+  }
   const cj = (u) => (window.cargarJSON ? window.cargarJSON(u) : fetch(u).then(r => r.json()));
   const centro = (P) => [P.reduce((a, p) => a + p[0], 0) / P.length, P.reduce((a, p) => a + p[1], 0) / P.length];
   const poner = (sid, x, z, n) => { const s = EST5.find(q => q.id === sid), d = document.createElement('div'); d.className = 'esc-pt';
@@ -87,7 +115,8 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
     fetch('data3d/carga.json?v=1').then(r => r.json()).then(K => K.mercados.forEach((m, i) => { const w = lw(m.p[0], m.p[1]); poner('mer', w[0], w[1], i ? '' : undefined); })).catch(() => {}),
     // gestión de residuos (lugar de E4, distrito biotecnológico) y red de distribución alimentaria (centro de la red E8 de huertas)
     // colegios de Kennedy (OpenStreetMap, tools/colegios_build.py): ya vienen en el marco del mundo
-    cj('data3d/colegios.json?v=1').then(C => { C.colegios.forEach(c => poner('col', c.c[0], c.c[1], c.n)); const ne = el.querySelector('#esc-ncol'); if (ne) ne.textContent = C.colegios.length; }).catch(() => {}),
+    // solo los que tienen edificio levantado en el 3D; cada uno trae las huellas y alturas de sus edificios (c.ed)
+    cj('data3d/colegios.json?v=2').then(C => { COLE = C.colegios; C.colegios.forEach(c => poner('col', c.c[0], c.c[1], c.n)); const ne = el.querySelector('#esc-ncol'); if (ne) ne.textContent = C.colegios.length; resaltarColegios(); }).catch(() => {}),
     new Promise(r => { const mira = (k) => { const E = T3.EST; if (E && E.lugar) { const a = E.lugar('E4'), b = E.lugar('E8'); if (a) poner('res', a.c[0], a.c[1]); if (b) poner('red', b.c[0], b.c[1]); r(); } else if (k < 40) setTimeout(() => mira(k + 1), 500); else r(); }; mira(0); })
   ]).then(() => { PUNTOS.forEach(p => { if (!p.d.querySelector('span').textContent) p.d.classList.add('chico'); }); });
   // los puntos se dibujan en pantalla (siempre del mismo tamaño), sobre la posición 3D a 2 m del suelo
@@ -95,6 +124,7 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
   function cuadro() {
     raf = requestAnimationFrame(cuadro); const cam = T3.camera, W = innerWidth, H = innerHeight;
     const cp = cam.position;
+    if (GCOL && GCOL.visible && !RMQ.matches) GCOL.userData.mv.opacity = 0.34 + 0.14 * Math.sin(performance.now() / 420); // los colegios «respiran»
     for (const p of PUNTOS) { if (!p.vis) { if (p.d.style.display !== 'none') p.d.style.display = 'none'; continue; }
       if (p.s.id === 'col') p.d.classList.toggle('cerca', Math.hypot(cp.x - p.x, cp.y, cp.z - p.z) < 1600); // el nombre del colegio solo de cerca
       V.set(p.x, 2 + (T3.alzaVia ? T3.alzaVia(p.x, p.z) : 0), p.z).project(cam);
@@ -107,6 +137,7 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
   function filtrar() {
     PUNTOS.forEach(p => { p.vis = solo ? p.s.id === solo : p.s.id !== 'col'; });
     document.body.classList.toggle('esc-solo-col', solo === 'col'); // sin huertas no se muestra el panel de polinización
+    resaltarColegios();
     $ley().querySelectorAll('[data-s]').forEach(sp => { sp.classList.toggle('on', sp.dataset.s === solo); sp.classList.toggle('off', !!solo && sp.dataset.s !== solo); sp.setAttribute('aria-pressed', String(sp.dataset.s === solo)); });
   }
   T3.escSolo = () => solo;
@@ -136,7 +167,7 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
   function aplicar(e) {
     T3.escenario = e; el.dataset.e = e;
     el.querySelectorAll('.sw button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.e === e)));
-    limpiarAnterior(); verPuntos(e === 'proyecto');
+    limpiarAnterior(); verPuntos(e === 'proyecto'); resaltarColegios();
     const re = document.getElementById('ruido-esc'); if (re) re.textContent = nombre();
     window.dispatchEvent(new CustomEvent('escenario', { detail: e }));
   }
