@@ -265,13 +265,27 @@ export async function iniciarHidroponia({ THREE, T3, techos, movil = false }) {
   }
   // ficha y contador de la red
   const css = document.createElement('style'); css.textContent = `
-#hid-red{position:fixed;z-index:9;left:50%;top:14px;transform:translateX(-50%);display:none;align-items:center;gap:12px;padding:8px 14px;border-radius:12px;background:rgba(8,16,26,.86);border:1px solid rgba(125,211,252,.25);color:#e2f3ff;font:600 11px system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
-#hid-red b{color:#7dd3fc;letter-spacing:.12em;text-transform:uppercase;font-size:10px}#hid-red span{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}#hid-red i{width:8px;height:8px;border-radius:50%;display:inline-block}
-#hid-red em{font-style:normal;color:#94a3b8;font-weight:500}
-@media(max-width:760px){#hid-red{top:auto;bottom:86px;flex-wrap:wrap;justify-content:center;max-width:calc(100vw - 24px);gap:6px 10px;font-size:10px}}`;
+#hid-red{position:fixed;z-index:9;right:14px;top:14px;width:304px;display:none;flex-direction:column;gap:0;padding:14px 16px 12px;border-radius:12px;
+  background:var(--ui-bg,rgba(13,15,18,.8));border:1px solid var(--ui-bd,rgba(255,255,255,.075));color:var(--ui-tx,#e9ebec);font:400 12px var(--ui-sans,Inter,system-ui,sans-serif);
+  -webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);box-shadow:0 12px 32px rgba(0,0,0,.28);font-variant-numeric:tabular-nums}
+#hid-red .hr-h{font:500 9.5px var(--ui-mono,'JetBrains Mono',monospace);letter-spacing:.16em;text-transform:uppercase;color:var(--ui-tx3,#646c71)}
+#hid-red .hr-t{margin:4px 0 12px;font-size:13px;font-weight:500;line-height:1.3}#hid-red .hr-t small{display:block;margin-top:2px;font-size:11px;font-weight:400;color:var(--ui-tx2,#9aa2a7)}
+#hid-red .hr-k{display:grid;grid-template-columns:repeat(3,1fr);padding:10px 0;border-top:1px solid rgba(255,255,255,.06);border-bottom:1px solid rgba(255,255,255,.06)}
+#hid-red .hr-k div{padding:0 8px;border-left:1px solid rgba(255,255,255,.06)}#hid-red .hr-k div:first-child{padding-left:0;border-left:0}
+#hid-red .hr-k strong{display:block;font:300 20px/1.1 var(--ui-sans,Inter,sans-serif)}#hid-red .hr-k small{display:block;margin-top:3px;font-size:10px;line-height:1.3;color:var(--ui-tx3,#646c71)}
+#hid-red .hr-l{display:grid;gap:7px;margin-top:10px}
+#hid-red .hr-r{display:grid;grid-template-columns:8px minmax(0,1fr) 72px 30px;gap:9px;align-items:center;font-size:11.5px}
+#hid-red .hr-r i{width:8px;height:8px;border-radius:50%}#hid-red .hr-r span small{display:block;font-size:10px;font-style:italic;color:var(--ui-tx3,#646c71)}
+#hid-red .hr-r u{display:block;height:4px;border-radius:2px;background:rgba(255,255,255,.06);text-decoration:none;overflow:hidden}#hid-red .hr-r u b{display:block;height:100%;border-radius:2px}
+#hid-red .hr-r em{font-style:normal;text-align:right;color:var(--ui-tx2,#9aa2a7)}
+#dock #hid-red{padding:12px 14px!important;box-shadow:none!important;border:0!important;background:none!important}
+@media(max-width:760px){#hid-red{left:8px;right:8px;width:auto;top:auto;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 196px);padding:10px 12px}#hid-red .hr-l,#hid-red .hr-t small{display:none}#hid-red .hr-t{margin:2px 0 8px}#hid-red .hr-k{padding:6px 0 0;border-bottom:0}#hid-red .hr-k strong{font-size:16px}}`;
   document.head.appendChild(css);
-  const panel = document.createElement('div'); panel.id = 'hid-red';
-  panel.innerHTML = '<b>Red de polinización · huertas hidropónicas</b>' + Object.entries(ESP).map(([k, e]) => `<span title="${e.sci} · ${e.rol}"><i style="background:${e.c}"></i>${e.n} ${e.cant}</span>`).join('') + '<em id="hid-cnt"></em>';
+  const panel = document.createElement('div'); panel.id = 'hid-red'; panel.dataset.on = '0';
+  const maxC = Math.max(...Object.values(ESP).map(e => e.cant));
+  panel.innerHTML = '<div class="hr-h">Polinización · con la propuesta</div><div class="hr-t">Huertas hidropónicas en techos y balcones<small>Los polinizadores vuelan de flor en flor y de un edificio a otro.</small></div>'
+    + '<div class="hr-k"><div><strong id="hid-v">0</strong><small>visitas a flores</small></div><div><strong id="hid-x">0</strong><small>vuelos entre edificios</small></div><div><strong id="hid-e">0</strong><small>edificios conectados</small></div></div>'
+    + '<div class="hr-l">' + Object.values(ESP).map(e => `<div class="hr-r" title="${e.rol}"><i style="background:${e.c}"></i><span>${e.n}<small>${e.sci}</small></span><u><b style="width:${(e.cant / maxC * 100).toFixed(0)}%;background:${e.c}"></b></u><em>${e.cant}</em></div>`).join('') + '</div>';
   document.body.appendChild(panel);
   let tUlt = performance.now(), tRec = 0, tPanel = 0;
   function cuadro() {
@@ -295,13 +309,13 @@ export async function iniciarHidroponia({ THREE, T3, techos, movil = false }) {
       red.set([r.a[0], r.a[1], r.a[2], r.b[0], r.b[1], r.b[2]], n * 6); for (let j = 0; j < 2; j++) { redC[n * 6 + j * 3] = r.c.r * k; redC[n * 6 + j * 3 + 1] = r.c.g * k; redC[n * 6 + j * 3 + 2] = r.c.b * k; } n++;
     }
     gRed.setDrawRange(0, n * 2); gRed.attributes.position.needsUpdate = true; gRed.attributes.color.needsUpdate = true;
-    if ((tPanel -= dt) <= 0) { tPanel = 0.5; const c = document.getElementById('hid-cnt'); if (c) c.textContent = `${conteo.visitas.toLocaleString('es-CO')} visitas · ${conteo.cruces.toLocaleString('es-CO')} entre edificios · ${conteo.edificios.size} edificios conectados`; }
+    if ((tPanel -= dt) <= 0) { tPanel = 0.5; const f = (v) => v.toLocaleString('es-CO'), s = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; }; s('hid-v', f(conteo.visitas)); s('hid-x', f(conteo.cruces)); s('hid-e', f(conteo.edificios.size)); }
   }
   requestAnimationFrame(cuadro);
   T3.hidroAgentes = AG; T3.hidroMesh = MESH; // para depurar
   const total = Object.fromEntries(Object.entries(INST).map(([k, v]) => [k, v.length]));
   return {
     grupo, total, flores: FLORES.length,
-    ver: (on) => { grupo.visible = on; panel.style.display = on ? 'flex' : 'none'; if (on) { ultimo = null; recalcular(); } }
+    ver: (on) => { grupo.visible = on; panel.style.display = on ? 'flex' : 'none'; const v = on ? '1' : '0'; if (panel.dataset.on !== v) { panel.dataset.on = v; dispatchEvent(new Event('dock-cambio')); } if (on) { ultimo = null; recalcular(); } }
   };
 }

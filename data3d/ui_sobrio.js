@@ -3,7 +3,7 @@
    - Izquierda: las capas se agrupan bajo un título "Capas" y se ven como interruptores (estilos en ui_sobrio.css).
    - Marca más discreta. En celular no se toca (cada panel conserva su botón). */
 export function iniciarUI() {
-  const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = 'data3d/ui_sobrio.css?v=5'; document.head.appendChild(css);
+  const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = 'data3d/ui_sobrio.css?v=6'; document.head.appendChild(css);
   if (!document.querySelector('link[href*="family=Inter"]')) { const f = document.createElement('link'); f.rel = 'stylesheet'; f.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap'; document.head.appendChild(f); }
   const movil = () => innerWidth <= 760;
   const PEST = [['gs-der', 'Actores'], ['bt-pan', 'Red biótica'], ['hid-red', 'Polinización']];
@@ -21,11 +21,12 @@ export function iniciarUI() {
     pintar();
   };
   const pintar = () => {
-    if (!dock) return; const hay = PEST.filter(([id]) => document.getElementById(id));
+    if (!dock) return; const hay = PEST.filter(([id]) => { const el = document.getElementById(id); return el && el.dataset.on !== '0'; }); // un panel apagado (p. ej. polinización en «hoy») no tiene pestaña
     if ((!elegido || !hay.find(([id]) => id === act)) && hay.length) act = hay[0][0]; /* abre en Actores apenas exista */
     dock.querySelector('.dk-tabs').innerHTML = hay.map(([id, n]) => `<button data-k="${id}" class="${id === act ? 'on' : ''}">${n}</button>`).join('') + `<button class="dk-min" title="Minimizar">${dock.classList.contains('min') ? '+' : '–'}</button>`;
-    for (const [id] of PEST) { const el = document.getElementById(id); if (el) el.classList.toggle('dk-oculto', id !== act); }
+    for (const [id] of PEST) { const el = document.getElementById(id); if (el) el.classList.toggle('dk-oculto', id !== act || el.dataset.on === '0'); }
   };
+  addEventListener('dock-cambio', () => armarDock()); // paneles que se crean o se prenden después (polinización con la propuesta)
   // capas del panel izquierdo: título y orden
   const ordenarCapas = () => {
     const izq = document.getElementById('gs-izq'); if (!izq) return;

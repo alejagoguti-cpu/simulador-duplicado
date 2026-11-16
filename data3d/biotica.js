@@ -64,7 +64,7 @@ const ESP = {
 };
 const POR_HUMEDAL = { 'Humedal El Burro': 1, 'Humedal La Vaca': 0.6, 'Humedal de Techo': 0.45 };
 // zonas verdes (parques de data3d/parques.json): individuos por parque de tamaño medio (las especies de agua solo van en los humedales)
-const POR_HUERTA = { abeja: 10, lombriz: 6, copeton: 3, mirla: 2, colibri: 1 }; // por huerta (P4)
+const POR_HUERTA = { abeja: 14, lombriz: 6, copeton: 3, mirla: 3, colibri: 2 }; // por huerta (P4)
 const POR_PARQUE = { abeja: 1.2, lombriz: 0.6, copeton: 3, mirla: 1.6, torcaza: 2.2, colibri: 1, chamon: 0.6, cucarachero: 1, rata: 0.8, lagartija: 0.8, caracol: 1.4, culebra: 0.25, curi: 0.3, comadreja: 0.12, cernicalo: 0.05, buho: 0.04 };
 // conexiones: con quién se une cada animal (individuo más cercano de cada especie relacionada en la red, y árbol relacionado)
 const R_RED = 220, R_RAPAZ = 420, R_ARBOL = 90, CERCA = 18;
@@ -142,7 +142,9 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
   const POR_BOSQUE = { copeton: 10, mirla: 8, torcaza: 8, chamon: 4, cucarachero: 6, colibri: 4, abeja: 6, lombriz: 5, curi: 6, comadreja: 2, rata: 5, lagartija: 5, culebra: 2, caracol: 6, cernicalo: 1, buho: 1 };
   const POR_CORA = { rata: 18, torcaza: 14, copeton: 8, chamon: 6, mirla: 3, cucarachero: 3, caracol: 4, comadreja: 1, cernicalo: 1, lagartija: 2 };
   const habitat = (n, polyModelo, cnt) => { const poly = polyModelo.map(p => lw(p[0], p[1])); let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const p of poly) { x0 = Math.min(x0, p[0]); x1 = Math.max(x1, p[0]); z0 = Math.min(z0, p[1]); z1 = Math.max(z1, p[1]); } return { n, tipo: 'parque', poly, borde: poly.concat([poly[0]]), x0, x1, z0, z1, cx: (x0 + x1) / 2, cz: (z0 + z1) / 2, ag: {}, k: 1, cnt }; };
-  const EXTRA = []; if (BV && BV.sitio) EXTRA.push(habitat('Bosque de la antigua fábrica de Bavaria', BV.sitio, POR_BOSQUE)); if (CO && CO.poly) EXTRA.push(habitat('Corabastos', CO.poly, POR_CORA));
+  const EXTRA = []; if (BV && BV.sitio) EXTRA.push(habitat('Bosque de la antigua fábrica de Bavaria', BV.sitio, POR_BOSQUE));
+  // con la propuesta: las ~6 ha de huertas del distrito Bavaria Común con sus módulos de fauna (apiario, nidos, perchas, refugios): solo existen en «proyecto»
+  if (BV && BV.sitio) { const h = habitat('Huertas del distrito Bavaria Común', BV.sitio, { abeja: 40, colibri: 8, copeton: 8, mirla: 6, cucarachero: 6, torcaza: 4, lombriz: 14, cernicalo: 1, buho: 1 }); h.tipo = 'huerta'; EXTRA.push(h); } if (CO && CO.poly) EXTRA.push(habitat('Corabastos', CO.poly, POR_CORA));
   const HAB = HUM.concat(PAR, HUE, EXTRA);
   // árboles reales (censo SIGAU) en toda la zona, en un índice espacial único
   const CEL = 20, GRID = new Map(), gk = (i, j) => i * 100003 + j;

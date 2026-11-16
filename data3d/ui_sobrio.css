@@ -85,10 +85,7 @@ body #hud-c svg{opacity:.8}
 #dock .dk-body > *{position:static!important; inset:auto!important; transform:none!important; width:auto!important; max-height:none!important; margin:0!important;
   border:0!important; background:transparent!important; box-shadow:none!important; -webkit-backdrop-filter:none!important; backdrop-filter:none!important; border-radius:0!important}
 #dock .dk-body > .dk-oculto{display:none!important}
-#dock #hid-red:not(.dk-oculto){display:flex!important; flex-direction:column; align-items:stretch!important; gap:7px!important; padding:12px 14px!important; font:400 12px var(--ui-sans)!important}
-#dock #hid-red b{font:500 9.5px var(--ui-mono)!important; letter-spacing:.16em!important; color:var(--ui-tx3)!important}
-#dock #hid-red span{justify-content:flex-start}
-#dock #hid-red em{color:var(--ui-tx3)!important; font-size:11px; white-space:normal}
+#dock #hid-red:not(.dk-oculto){display:flex!important; flex-direction:column; padding:12px 14px!important}
 #dock #bt-pan:not(.dk-oculto){display:block!important}
 #dock #bt-pan .bt-cuerpo{display:block!important}
 @media(max-width:760px){#dock{display:none}}

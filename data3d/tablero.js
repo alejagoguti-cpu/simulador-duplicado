@@ -78,6 +78,17 @@ body.tb-abierto #dock{display:none}
 #tb .sx2 h5{margin:0 0 6px;font:500 11px var(--ui-sans,sans-serif);color:var(--ui-tx2,#9aa2a7)}
 #tb .sx2 button{display:flex;justify-content:space-between;gap:6px;width:100%;padding:4px 0;border:0;border-top:1px solid rgba(255,255,255,.05);background:none;color:var(--ui-tx,#e9ebec);font:400 11.5px var(--ui-sans,sans-serif);text-align:left;cursor:pointer}
 #tb .sx2 button:hover{color:#f2c995}#tb .sx2 button small{color:var(--ui-tx3,#646c71);white-space:nowrap}
+#tb:not([data-esc="proyecto"]) .solo-pro{display:none!important}
+#tb .solo-pro h3{color:#f2c995}
+#tb .fom{display:grid;gap:0;margin:0 0 4px}
+#tb .fom .f{display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:4px 10px;align-items:center;padding:7px 0;border-top:1px solid rgba(255,255,255,.05)}
+#tb .fom .f > i{width:8px;height:8px;border-radius:50%}
+#tb .fom .f b{font-weight:500;font-size:11.5px}#tb .fom .f small{display:block;color:var(--ui-tx3,#646c71);font-size:10.5px;line-height:1.35}
+#tb .fom .f em{font:normal 500 10px var(--ui-sans,sans-serif);padding:2px 7px;border-radius:5px;white-space:nowrap}
+#tb .cali{display:grid;gap:8px;margin:2px 0 4px}
+#tb .cali .r{display:grid;grid-template-columns:78px minmax(0,1fr) 64px;gap:8px;align-items:center;font-size:11px;color:var(--ui-tx2,#9aa2a7)}
+#tb .cali .t{display:grid;gap:3px}#tb .cali .t i{display:block;height:6px;border-radius:3px;transition:width .6s}
+#tb .cali .r b{text-align:right;font-weight:500;color:#6ee7b7}
 #tp{position:fixed;z-index:27;left:290px;bottom:84px;width:min(400px,calc(100vw - 24px));display:none;padding:14px 16px 12px;font:400 12px var(--ui-sans,'Inter',system-ui,sans-serif);color:var(--ui-tx,#e9ebec);
   background:var(--ui-bg,rgba(13,15,18,.86));border:1px solid var(--ui-bd,rgba(255,255,255,.075));border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.3);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px)}
 #tp.on{display:block}
@@ -131,6 +142,11 @@ body.tb-abierto #dock{display:none}
       <div class="cmp" id="tb-cmp"><div class="vacio">Cargando indicadores…</div></div>
       <div class="nota2" id="tb-nota2"></div>
       <button class="tour" id="tb-tour">Ver cómo se implanta el proyecto, paso a paso</button></div>
+    <div class="gr" data-tab="tra"><h3>Av. Ciudad de Cali<span>camino a Corabastos · junto al humedal El Burro</span></h3>
+      <div class="kp2"><div><b id="tb-caH">–</b><small>vehículos en la vía ahora · hoy</small></div><div><b id="tb-caP" style="color:#6ee7b7">–</b><small>con la propuesta</small></div><div><b id="tb-caD" style="color:#6ee7b7">–</b><small>menos tráfico</small></div></div>
+      <div class="cali" id="tb-cab"></div>
+      <div class="fila2"><button id="tb-cali">Ver la vía en el mapa</button></div>
+      <div class="nota2" id="tb-nota5"></div></div>
     <div class="gr" data-tab="tra"><h3>Carga: ¿alivia o desplaza?<span>camiones por hora que cambian</span></h3>
       <div class="kp2"><div><b id="tb-kmA">–</b><small>km de calles con menos camiones</small></div><div><b id="tb-kmC">–</b><small>km de calles con más camiones</small></div><div><b id="tb-desp">–</b><small>camiones/h hacia los mercados</small></div></div>
       <div class="calles" id="tb-calles"></div>
@@ -142,6 +158,10 @@ body.tb-abierto #dock{display:none}
       <div class="sx2"><div><h5>Más carros de lo que la red explica</h5><div id="tb-sxM"></div></div><div><h5>Menos carros de lo que la red explica</h5><div id="tb-sxm"></div></div></div>
       <div class="fila2"><button id="tb-sxver">Ver la elección en el mapa</button></div>
       <div class="nota2" id="tb-nota4"></div></div>
+    <div class="gr solo-pro" data-tab="bio"><h3>Interacciones que fomenta la propuesta<span>huertas, parques-huerta y Bavaria Común</span></h3>
+      <div class="kp2"><div><b id="tb-fPol">–</b><small>polinizaciones ahora · hoy <span id="tb-fPolH">–</span></small></div><div><b id="tb-fDep">–</b><small>depredación (control de plagas) · hoy <span id="tb-fDepH">–</span></small></div><div><b id="tb-fTot">–</b><small>interacciones · hoy <span id="tb-fHoy">–</span></small></div></div>
+      <div class="fom" id="tb-fom"></div>
+      <div class="fila2"><button id="tb-fver">Ver el distrito Bavaria Común</button><button id="tb-fcol">Ver la red de colegios</button></div></div>
     <div class="chips" data-tab="bio" id="tb-chips">${TIPOS.map(t => `<button class="chip" data-t="${t.id}" title="${esc(t.n)}: mostrar u ocultar en el territorio"><i style="background:${t.c}"></i>${CORTO[t.id] || esc(t.n)} <b id="tb-c${t.id}">0</b></button>`).join('')}</div>
     <div class="gr" data-tab="bio"><h3>Quién interactúa con quién<span>ahora</span></h3><canvas id="tb-cuerda" aria-label="Diagrama de cuerdas de las interacciones que están ocurriendo"></canvas><div class="pie" id="tb-pie1">Pasa o toca una especie para ver con quién está interactuando.</div></div>
     <div class="gr" data-tab="bio"><h3>Interacciones durante el día<span id="tb-ld">encuentros por tipo</span></h3><canvas id="tb-flujo" aria-label="Encuentros por tipo de relación durante el día"></canvas><div class="ejes"><span>0 h</span><span>6</span><span>12</span><span>18</span><span>24</span></div><div class="pie" id="tb-pie2">Arrastra sobre la gráfica para cambiar la hora de la simulación.</div></div>
@@ -189,7 +209,7 @@ body.tb-abierto #dock{display:none}
     if (e !== escAct) tCambio = performance.now(); escAct = e; ESTADO.escenario = T3.PROP && T3.PROP.fauna ? e : 'hoy'; // propuesta en revisión: sin la fauna de las huertas
     const viejo = T3.PROP && !T3.PROP.comparar; // los indicadores «hoy vs. proyecto» y la carga desplazada eran de la propuesta anterior
     const tp = tb.querySelector('#tb-tabs button[data-k="esc"]'); if (tp) tp.style.display = viejo ? 'none' : '';
-    const gc = $('tb-calles') && $('tb-calles').closest('.gr'); if (gc) gc.style.display = viejo ? 'none' : '';
+    const gc = $('tb-calles') && $('tb-calles').closest('.gr'); if (gc) gc.style.display = T3.PROP && !T3.PROP.carga ? 'none' : ''; // la carga desplazada a mercados era de la propuesta anterior
     if (viejo && pest === 'esc') verPestana('bio');
     tb.querySelectorAll('#tb-esc button').forEach(b => b.classList.toggle('on', b.dataset.e === e));
     tb.dataset.esc = e; const eb = $('tb-escb'); if (eb) eb.textContent = e === 'proyecto' ? 'Con la propuesta' : 'Kennedy hoy';
@@ -206,7 +226,9 @@ body.tb-abierto #dock{display:none}
     const sum = (k, f) => A.reduce((s, a) => s + a[k][f], 0);
     // interacciones bióticas: promedio en las horas medidas en los dos escenarios (mismo periodo)
     let h = 0, p = 0, n = 0; for (let i = 0; i < 96; i++) if (VIVO.hoy[i] && VIVO.proyecto[i]) { h += VIVO.hoy[i].v; p += VIVO.proyecto[i].v; n++; }
+    const AL = T3.alivio, al = AL && AL.hoy > 0.5;
     return [
+      { n: 'Tráfico Av. Ciudad de Cali', s: 'vehículos en la vía ahora, camino a Corabastos', hoy: al ? AL.hoy : null, pro: al ? AL.pro : null, menos: true, u: '' },
       { n: 'Camiones por hora', s: 'vías del borde de Corabastos', hoy: sum('hoy', 'camH'), pro: sum('proyecto', 'camH'), menos: true, u: '' },
       { n: 'Ruido del tráfico', s: 'L10 a 10 m, borde de Corabastos', hoy: energia(A.map(a => a.hoy)), pro: energia(A.map(a => a.proyecto)), menos: true, u: ' dB', d: 1 },
       { n: 'Integración local', s: 'R800, 600 m alrededor de Bavaria', hoy: sx.antes.nain8, pro: sx.despues.nain8, u: '', d: 3 },
@@ -425,7 +447,8 @@ body.tb-abierto #dock{display:none}
   let CAPA = null, verCarga = true;
   const volar = (x, z, dist) => {
     const V = T3.THREE.Vector3, cam = T3.camera, tg = T3.orbit.target, c1 = new V(x, 0, z), dir = cam.position.clone().sub(tg); dir.y = 0; if (dir.lengthSq() < 1) dir.set(0, 0, 1); dir.normalize();
-    const p1 = c1.clone().addScaledVector(dir, dist * 0.45); p1.y = dist * 1.05; // casi en planta: se leen las calles if (T3.seguidor) T3.seguidor.soltar(); T3.anim = { t: 0, dur: 2.4, p0: cam.position.clone(), p1, c0: tg.clone(), c1 };
+    const p1 = c1.clone().addScaledVector(dir, dist * 0.45); p1.y = dist * 1.05; /* casi en planta: se leen las calles */
+    if (T3.seguidor) T3.seguidor.soltar(); T3.anim = { t: 0, dur: 2.4, p0: cam.position.clone(), p1, c0: tg.clone(), c1 };
   };
   if (lwM) import('./carga.js?v=3').then(m => m.crearCapaCarga({ THREE: T3.THREE, T3, lw: lwM }).then(c => { CAPA = c; CAPA.COL = [m.COL_MAS, m.COL_MENOS]; pintarCarga(); pintarSintaxis(); CAPA.ver(escAct === 'proyecto' && verCarga && !(T3.PROP && !T3.PROP.carga)); })).catch(e => console.warn('carga:', e));
   function pintarCarga() {
@@ -512,7 +535,38 @@ body.tb-abierto #dock{display:none}
     dibujarCuerda(dt); dibujarPulso(); if ((tFlujo -= dt) <= 0) { tFlujo = 0.5; dibujarFlujo(); }
     raf = requestAnimationFrame(cuadro);
   }
-  let nT = 0; tick(); setInterval(() => { tick(); pintarTexto(); if (++nT % 8 === 0 && abierto()) pintarComparacion(); }, 500);
+  /* ---------- Av. Ciudad de Cali: tráfico hoy y con la propuesta (data3d/alivio_cali.js, conteo en vivo de la simulación) ---------- */
+  function pintarCali() {
+    const AL = T3.alivio; if (!AL || !abierto() || pest !== 'tra') return;
+    const f = (v) => Math.round(v).toLocaleString('es-CO'), ok = AL.hoy > 0.5;
+    $('tb-caH').textContent = ok ? f(AL.hoy) : '–'; $('tb-caP').textContent = ok ? f(AL.pro) : '–'; $('tb-caD').textContent = ok ? '−' + Math.round((1 - AL.pro / AL.hoy) * 100) + ' %' : '–';
+    const fila = (n, h, p) => { const m = Math.max(h, 1e-6); return `<div class="r"><span>${n}</span><span class="t"><i style="width:100%;background:${CHOY}"></i><i style="width:${(p / m * 100).toFixed(1)}%;background:#34d399"></i></span><b>${h > 0.05 ? '−' + Math.round((1 - p / m) * 100) + ' %' : '–'}</b></div>`; };
+    $('tb-cab').innerHTML = fila('Vehículos', AL.hoy, AL.pro) + fila('Camiones', AL.camHoy, AL.camPro);
+    $('tb-nota5').innerHTML = `Conteo en vivo de la simulación SUMO sobre ${f(AL.largo || 1500)} m de la Av. Carrera 86, del humedal El Burro al costado de Corabastos. Barra <b style="color:${CHOY}">azul</b>: hoy; <b style="color:#34d399">verde</b>: con la propuesta. [SUP] Con el abastecimiento en Bavaria Común y en los mercados de barrio dejan de pasar el ${Math.round((1 - AL.KEEP) * 100)} % de los carros y motos y el ${Math.round((1 - AL.KEEP_CAM) * 100)} % de los camiones que hoy van a Corabastos: supuesto de escala para discutir con el grupo.`;
+  }
+  $('tb-cali').onclick = () => { const AL = T3.alivio; if (escAct !== 'proyecto') ponerEscenario('proyecto'); const b = document.querySelector('#gs-fc [data-v="1"]'); if (b) b.click(); if (AL && AL.mid) volar(AL.mid[0], AL.mid[1], 900); };
+  /* ---------- interacciones que fomenta la propuesta (módulos de fauna del distrito, parques-huerta y huertas en techos) ---------- */
+  const FOM = [
+    ['Abejas nativas y de miel', 'polinizan las huertas', 'Apiario y franjas de flores', 5, '#facc15'], ['Abejorro', 'poliniza fresa y tomate', 'Nido de abejorros', 5, '#f59e0b'],
+    ['Colibríes', 'polinizan flores tubulares', 'Franjas de flores', 5, '#22d3ee'], ['Mariposas', 'polinizan; sus orugas viven en nativas', 'Franjas de flores', 5, '#f472b6'],
+    ['Aves insectívoras', 'comen orugas y plagas', 'Nidos y perchas', 0, '#a3e635'], ['Cernícalo y lechuza', 'controlan roedores de día y de noche', 'Perchas y caja en los silos', 0, '#fb923c'],
+    ['Murciélagos', 'comen polillas y mosquitos', 'Refugios de murciélagos', 0, '#a78bfa'], ['Rana sabanera y libélulas', 'comen mosquitos', 'Charca didáctica', 0, '#60a5fa'],
+    ['Mariquitas', 'comen pulgones', 'Hoteles de insectos', 0, '#ef4444'], ['Lombrices', 'vuelven el compost suelo', 'Compostaje del distrito', -1, '#b87c8c']
+  ];
+  $('tb-fom').innerHTML = FOM.map(([n, q, m, t, c]) => `<div class="f"><i style="background:${c}"></i><div><b>${esc(n)}</b><small>${esc(q)} · ${esc(m)}</small></div><em style="color:${TIPOS[t] ? TIPOS[t].c : '#9aa2a7'};background:${rgba(TIPOS[t] ? TIPOS[t].c : '#9aa2a7', 0.12)}">${esc(CORTO[t] || 'Suelo vivo')}</em></div>`).join('');
+  $('tb-fver').onclick = () => { if (escAct !== 'proyecto') ponerEscenario('proyecto'); const s = document.querySelector('#esc-ley [data-s="bav"]'); if (s && !s.classList.contains('on')) s.click(); if (innerWidth <= 760) abrir(false); };
+  $('tb-fcol').onclick = () => { if (escAct !== 'proyecto') ponerEscenario('proyecto'); const s = document.querySelector('#esc-ley [data-s="col"]'); if (s && !s.classList.contains('on')) s.click(); if (innerWidth <= 760) abrir(false); };
+  function pintarFomento() {
+    if (!abierto() || escAct !== 'proyecto' || pest !== 'bio') return;
+    $('tb-fPol').textContent = num(ENC[5] || 0); $('tb-fDep').textContent = num(ENC[0] || 0);
+    $('tb-fTot').textContent = num(ahoraEnc);
+    let h = 0, n = 0; for (const s of VIVO.hoy) if (s) { h += s.v; n++; } $('tb-fHoy').textContent = n ? num(h / n) : '–';
+    $('tb-fPolH').textContent = PROMT.hoy.k ? num(PROMT.hoy.p) : '–'; $('tb-fDepH').textContent = PROMT.hoy.k ? num(PROMT.hoy.d) : '–';
+  }
+  // promedio de polinizaciones y depredaciones en cada escenario (para comparar con «hoy» sin cambiar de escenario)
+  const PROMT = { hoy: { p: 0, d: 0, k: 0 }, proyecto: { p: 0, d: 0, k: 0 } };
+  setInterval(() => { if (performance.now() - tCambio < 10000) return; const P = PROMT[escAct]; if (!P) return; P.k++; const a = 1 / Math.min(P.k, 60); P.p += ((ENC[5] || 0) - P.p) * a; P.d += ((ENC[0] || 0) - P.d) * a; }, 1000);
+  let nT = 0; tick(); setInterval(() => { tick(); pintarTexto(); pintarCali(); pintarFomento(); if (++nT % 8 === 0 && abierto()) pintarComparacion(); }, 500);
   aplicarEsc(T3.escenario || 'hoy');
   return { abrir, tb, verPestana };
 }

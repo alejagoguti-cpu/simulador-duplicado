@@ -10,7 +10,8 @@
 export function iniciarEscenario({ T3, say = () => {} }) {
   const CHOY = '#8fb0c9', CPRO = '#e2a55b';
   // qué de la propuesta anterior se usa (todo apagado mientras se redefine)
-  T3.PROP = { sintaxis: true, camiones: false, fauna: false, carga: false, comparar: false };
+  // sintaxis con pasajes, fauna de las huertas (interacciones que fomenta la propuesta) e indicadores hoy vs. propuesta: sí; carga desplazada: no
+  T3.PROP = { sintaxis: true, camiones: false, fauna: true, carga: false, comparar: true };
   const LC = { x: 5341.33, y: 3161.9 }, lw = (x, y) => [x - LC.x, LC.y - y]; // marco «modelo» -> mundo
   const css = document.createElement('style');
   css.textContent = `
@@ -41,7 +42,6 @@ export function iniciarEscenario({ T3, say = () => {} }) {
 .esc-pt.col span{display:none}.esc-pt.col.cerca span{display:inline}
 @keyframes escCol{0%{box-shadow:0 0 0 0 rgba(232,121,249,.75),0 1px 4px rgba(0,0,0,.6)}70%{box-shadow:0 0 0 9px rgba(232,121,249,0),0 1px 4px rgba(0,0,0,.6)}100%{box-shadow:0 0 0 0 rgba(232,121,249,0),0 1px 4px rgba(0,0,0,.6)}}
 body.esc-solo-col #hid-red{display:none!important}
-@media(min-width:1101px){body #hid-red{top:134px!important}} /* en escritorio, debajo del selector de escenario */
 #esc .ley span.off{opacity:.38}
 #esc .ley span.on{color:var(--ui-tx,#e9ebec)}
 #esc .ley span.on i{box-shadow:0 0 0 2px rgba(255,255,255,.85)}
@@ -125,6 +125,9 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
     if (GCOL) GCOL.visible = on;
   }
   const cj = (u) => (window.cargarJSON ? window.cargarJSON(u) : fetch(u).then(r => r.json()));
+  /* ---------- Av. Ciudad de Cali: con la propuesta baja su tráfico (data3d/alivio_cali.js); el conteo corre también en «hoy» ---------- */
+  let CALI = null;
+  Promise.all([import('./alivio_cali.js?v=1'), cj('data3d/alivio_cali.json?v=1')]).then(([m, D]) => { CALI = m.crearAlivioCali({ T3, D }); window.KEN_CALI = CALI; CALI.ver(T3.escenario === 'proyecto' && !solo); }).catch(e => console.warn('Av. Ciudad de Cali:', e));
   const centro = (P) => [P.reduce((a, p) => a + p[0], 0) / P.length, P.reduce((a, p) => a + p[1], 0) / P.length];
   const poner = (sid, x, z, n) => { const s = EST5.find(q => q.id === sid), d = document.createElement('div'); d.className = 'esc-pt';
     d.innerHTML = `<i style="background:${s.c}"></i><span>${n === undefined ? s.n : n}</span>`; if (sid === 'col') d.classList.add('col'); document.body.appendChild(d); PUNTOS.push({ s, x, z, d, vis: solo ? sid === solo : sid !== 'col' }); };
@@ -181,8 +184,9 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
     if (T3.torres && T3.torres.huertas) T3.torres.huertas(hu);
     const bv = T3.bavaria; if (bv && bv.userData && bv.userData.mallasHuerta) bv.userData.mallasHuerta.forEach(m => { m.visible = hu && solo !== 'bav'; }); // con el distrito, su campo experimental reemplaza las parcelas
     const co = T3.scene && T3.scene.getObjectByName('corabastos'); if (co && co.userData.quitadas) co.userData.quitadas.visible = true;
-    if (T3.bio && T3.bio.ESTADO) T3.bio.ESTADO.escenario = 'hoy';
+    if (T3.bio && T3.bio.ESTADO) T3.bio.ESTADO.escenario = pro && T3.PROP.fauna ? 'proyecto' : 'hoy'; // fauna e interacciones de las huertas
     if (T3.sintaxisEscenario) T3.sintaxisEscenario();
+    if (CALI) CALI.ver(pro && !solo); // Av. Ciudad de Cali con menos tráfico (se oculta al mirar una sola estrategia)
   }
   function aplicar(e) {
     T3.escenario = e; el.dataset.e = e;
