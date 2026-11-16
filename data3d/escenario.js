@@ -15,26 +15,35 @@ export function iniciarEscenario({ T3, say = () => {} }) {
   const LC = { x: 5341.33, y: 3161.9 }, lw = (x, y) => [x - LC.x, LC.y - y]; // marco «modelo» -> mundo
   const css = document.createElement('style');
   css.textContent = `
-#esc{position:fixed;z-index:30;top:14px;left:50%;transform:translateX(-50%);width:min(380px,calc(100vw - 600px));min-width:300px;
-  font-family:var(--ui-sans,Inter,system-ui,sans-serif);color:var(--ui-tx,#e9ebec);background:var(--ui-bg,rgba(13,15,18,.74));
-  border:1px solid var(--ui-bd,rgba(255,255,255,.075));border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.28);
-  -webkit-backdrop-filter:blur(16px) saturate(1.1);backdrop-filter:blur(16px) saturate(1.1);padding:5px}
-#esc .sw{position:relative;display:grid;grid-template-columns:1fr 1fr;background:rgba(255,255,255,.03);border-radius:8px;padding:2px}
-#esc .sw i{position:absolute;top:2px;bottom:2px;left:2px;width:calc(50% - 2px);border-radius:7px;background:rgba(143,176,201,.16);
-  border:1px solid rgba(143,176,201,.45);transition:transform .35s cubic-bezier(.3,.7,.2,1),background .35s,border-color .35s}
-#esc[data-e="proyecto"] .sw i{transform:translateX(100%);background:rgba(226,165,91,.15);border-color:rgba(226,165,91,.5)}
-#esc .sw button{position:relative;z-index:1;height:34px;border:0;background:none;color:var(--ui-tx2,#9aa2a7);cursor:pointer;
-  font:500 12.5px var(--ui-sans,Inter,system-ui,sans-serif);display:flex;align-items:center;justify-content:center;gap:8px;border-radius:7px}
-#esc .sw button b{width:7px;height:7px;border-radius:50%;display:inline-block;opacity:.55}
-#esc .sw button[aria-pressed="true"]{color:var(--ui-tx,#e9ebec)}
-#esc .sw button[aria-pressed="true"] b{opacity:1}
+#esc{position:fixed;z-index:30;top:14px;left:50%;transform:translateX(-50%);width:min(468px,calc(100vw - 640px));min-width:360px;
+  font-family:var(--ui-sans,Inter,system-ui,sans-serif);color:var(--ui-tx,#e9ebec);background:linear-gradient(180deg,rgba(22,25,29,.86),rgba(12,14,17,.86));
+  border:1px solid rgba(255,255,255,.08);border-radius:16px;box-shadow:0 18px 40px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.05);
+  -webkit-backdrop-filter:blur(18px) saturate(1.15);backdrop-filter:blur(18px) saturate(1.15);padding:6px}
+#esc .sw{position:relative;display:grid;grid-template-columns:1fr 1fr;background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.05);border-radius:11px;padding:3px}
+#esc .sw i{position:absolute;top:3px;bottom:3px;left:3px;width:calc(50% - 3px);border-radius:8px;
+  background:linear-gradient(180deg,rgba(143,176,201,.24),rgba(143,176,201,.1));box-shadow:inset 0 0 0 1px rgba(143,176,201,.42),inset 0 1px 0 rgba(255,255,255,.08),0 4px 14px rgba(0,0,0,.3);
+  transition:transform .4s cubic-bezier(.3,.7,.2,1),background .4s,box-shadow .4s}
+#esc[data-e="proyecto"] .sw i{transform:translateX(100%);background:linear-gradient(180deg,rgba(226,165,91,.26),rgba(226,165,91,.1));box-shadow:inset 0 0 0 1px rgba(226,165,91,.5),inset 0 1px 0 rgba(255,255,255,.08),0 4px 14px rgba(0,0,0,.3)}
+#esc .sw button{position:relative;z-index:1;height:46px;border:0;background:none;color:var(--ui-tx2,#9aa2a7);cursor:pointer;padding:0 12px;
+  font:500 13px var(--ui-sans,Inter,system-ui,sans-serif);display:flex;align-items:center;justify-content:center;gap:10px;border-radius:8px;text-align:left;transition:color .3s}
+#esc .sw button span{display:flex;flex-direction:column;line-height:1.15}
+#esc .sw button small{font:400 10px var(--ui-mono,'JetBrains Mono',ui-monospace,monospace);letter-spacing:.04em;color:var(--ui-tx3,#646c71);margin-top:2px;transition:color .3s}
+#esc .sw button b{width:8px;height:8px;border-radius:50%;flex:none;opacity:.45;transition:opacity .3s,box-shadow .3s}
+#esc .sw button:hover{color:var(--ui-tx,#e9ebec)}
+#esc .sw button[aria-pressed="true"]{color:#fff}
+#esc .sw button[aria-pressed="true"] small{color:var(--ui-tx2,#b4bbc0)}
+#esc .sw button[data-e="hoy"][aria-pressed="true"] b{opacity:1;box-shadow:0 0 0 3px rgba(143,176,201,.22),0 0 10px rgba(143,176,201,.6)}
+#esc .sw button[data-e="proyecto"][aria-pressed="true"] b{opacity:1;box-shadow:0 0 0 3px rgba(226,165,91,.22),0 0 10px rgba(226,165,91,.6)}
 #esc .sw button:focus-visible{outline:2px solid var(--ui-acc,#e2a55b);outline-offset:1px}
-#esc .ley{display:none;flex-wrap:wrap;gap:4px 12px;padding:7px 6px 3px;font-size:11px;color:var(--ui-tx2,#9aa2a7)}
-#esc[data-e="proyecto"] .ley{display:flex}
-#esc .ley span{display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap}
-#esc .ley span:hover{color:var(--ui-tx,#e9ebec)}
-#esc .ley i{width:8px;height:8px;border-radius:50%;box-shadow:0 0 0 2px rgba(0,0,0,.35)}
-.esc-pt{position:fixed;z-index:6;left:0;top:0;pointer-events:none;display:none;align-items:center;gap:6px;transform:translate(-5px,-5px);
+#esc .ley{display:none;flex-wrap:wrap;gap:6px;padding:10px 4px 4px}
+#esc[data-e="proyecto"] .ley{display:flex;animation:escIn .35s ease-out}
+@keyframes escIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+#esc .ley-h{flex:1 0 100%;display:flex;justify-content:space-between;align-items:baseline;padding:0 4px 2px;font:500 9.5px var(--ui-mono,'JetBrains Mono',monospace);letter-spacing:.16em;text-transform:uppercase;color:var(--ui-tx3,#646c71)}
+#esc .ley-h small{font:400 10px var(--ui-sans,Inter,sans-serif);letter-spacing:0;text-transform:none}
+#esc .ley span{display:inline-flex;align-items:center;gap:7px;height:28px;padding:0 11px 0 9px;border-radius:14px;cursor:pointer;white-space:nowrap;
+  font:500 11px var(--ui-sans,Inter,sans-serif);color:var(--ui-tx2,#a3abb0);background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);transition:background .2s,border-color .2s,color .2s,opacity .2s}
+#esc .ley span:hover{color:var(--ui-tx,#e9ebec);border-color:color-mix(in srgb,var(--c) 45%,transparent);background:color-mix(in srgb,var(--c) 8%,transparent)}
+#esc .ley i{width:7px;height:7px;border-radius:50%;background:var(--c);box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 22%,transparent)}.esc-pt{position:fixed;z-index:6;left:0;top:0;pointer-events:none;display:none;align-items:center;gap:6px;transform:translate(-5px,-5px);
   font:500 11px var(--ui-sans,Inter,system-ui,sans-serif);color:#f4f5f6;text-shadow:0 1px 3px rgba(0,0,0,.9),0 0 8px rgba(0,0,0,.6);white-space:nowrap}
 .esc-pt i{width:10px;height:10px;border-radius:50%;border:2px solid #fff;flex:none;box-shadow:0 1px 4px rgba(0,0,0,.6)}
 .esc-pt.chico span{display:none}
@@ -42,25 +51,24 @@ export function iniciarEscenario({ T3, say = () => {} }) {
 .esc-pt.col span{display:none}.esc-pt.col.cerca span{display:inline}
 @keyframes escCol{0%{box-shadow:0 0 0 0 rgba(232,121,249,.75),0 1px 4px rgba(0,0,0,.6)}70%{box-shadow:0 0 0 9px rgba(232,121,249,0),0 1px 4px rgba(0,0,0,.6)}100%{box-shadow:0 0 0 0 rgba(232,121,249,0),0 1px 4px rgba(0,0,0,.6)}}
 body.esc-solo-col #hid-red{display:none!important}
-#esc .ley span.off{opacity:.38}
-#esc .ley span.on{color:var(--ui-tx,#e9ebec)}
-#esc .ley span.on i{box-shadow:0 0 0 2px rgba(255,255,255,.85)}
-#esc .ley span:focus-visible{outline:2px solid var(--ui-acc,#e2a55b);outline-offset:2px;border-radius:3px}
-#esc .ley em{font-style:normal;font:500 10px 'JetBrains Mono',ui-monospace,monospace;color:#8e979d}
+#esc .ley span.off{opacity:.42}
+#esc .ley span.on{color:#fff;background:color-mix(in srgb,var(--c) 18%,transparent);border-color:color-mix(in srgb,var(--c) 65%,transparent);box-shadow:0 0 14px color-mix(in srgb,var(--c) 25%,transparent)}
+#esc .ley span:focus-visible{outline:2px solid var(--ui-acc,#e2a55b);outline-offset:2px}
+#esc .ley em{font-style:normal;font:500 10px var(--ui-mono,'JetBrains Mono',ui-monospace,monospace);color:var(--ui-tx3,#8e979d);padding:1px 5px;border-radius:6px;background:rgba(255,255,255,.06)}
 /* la propuesta anterior no se ofrece mientras se redefine: botón y lista de estrategias del panel, y la Visión */
 body .gs-est, body .gs-sub:has(+ .gs-est), body #gs-cv-b, body #vi-btn{display:none!important}
 body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
-@media(max-width:1100px){#esc{width:min(380px,calc(100vw - 32px));top:auto;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 70px)}}
-@media(max-width:760px){#esc{min-width:0;width:calc(100vw - 16px);padding:4px}#esc .sw button{height:36px;font-size:12px}#esc .ley{font-size:10.5px;gap:4px 10px}
+@media(max-width:1100px){#esc{width:min(468px,calc(100vw - 32px));min-width:0;top:auto;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 70px)}}
+@media(max-width:760px){#esc{min-width:0;width:calc(100vw - 16px);padding:5px;border-radius:14px}#esc .sw button{height:42px;font-size:12.5px;gap:8px;padding:0 8px}#esc .sw button small{font-size:9.5px}#esc .ley{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding:8px 2px 2px;-webkit-mask:linear-gradient(90deg,#000 88%,transparent)}#esc .ley::-webkit-scrollbar{display:none}#esc .ley-h{display:none}#esc .ley span{flex:none;height:30px}
   body.tb-abierto #esc,body.gs-abierto #esc{display:none} /* con el panel de simulación abierto en celular, el selector no lo tapa */
   body #hid-red{bottom:calc(max(12px,env(safe-area-inset-bottom)) + 196px)!important}}
 @media(min-width:761px) and (max-width:1100px){body #hid-red{bottom:calc(max(12px,env(safe-area-inset-bottom)) + 180px)!important}}
-@media(prefers-reduced-motion:reduce){#esc .sw i{transition:none}.esc-pt.col i{animation:none}}`;
+@media(prefers-reduced-motion:reduce){#esc .sw i{transition:none}#esc[data-e="proyecto"] .ley{animation:none}.esc-pt.col i{animation:none}}`;
   document.head.appendChild(css);
   const el = document.createElement('section'); el.id = 'esc'; el.setAttribute('aria-label', 'Escenario del territorio'); el.dataset.e = 'hoy';
   el.innerHTML = `<div class="sw" role="group" aria-label="Escenario"><i aria-hidden="true"></i>
-      <button type="button" data-e="hoy" aria-pressed="true"><b style="background:${CHOY}"></b>Kennedy hoy</button>
-      <button type="button" data-e="proyecto" aria-pressed="false"><b style="background:${CPRO}"></b>Con la propuesta</button></div>
+      <button type="button" data-e="hoy" aria-pressed="true"><b style="background:${CHOY}"></b><span>Kennedy hoy<small>el territorio actual</small></span></button>
+      <button type="button" data-e="proyecto" aria-pressed="false"><b style="background:${CPRO}"></b><span>Con la propuesta<small>las 5 estrategias</small></span></button></div>
     <div class="ley" id="esc-ley"></div>`;
   document.body.appendChild(el);
 
@@ -73,7 +81,7 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
     { id: 'red', n: 'Red de distribución alimentaria', c: '#4ade80' },
     { id: 'col', n: 'Colegios', c: '#e879f9' } // solo se prenden al escogerlos en la leyenda
   ];
-  $ley().innerHTML = EST5.map(s => `<span data-s="${s.id}" title="Ver solo ${s.n}"><i style="background:${s.c}"></i>${s.n}${s.id === 'col' ? ' <em id="esc-ncol"></em>' : ''}</span>`).join('');
+  $ley().innerHTML = `<div class="ley-h">Estrategias<small>toca una para verla sola</small></div>` + EST5.map(s => `<span data-s="${s.id}" title="Ver solo ${s.n}" style="--c:${s.c}"><i></i>${s.n}${s.id === 'col' ? ' <em id="esc-ncol"></em>' : ''}</span>`).join('');
   function $ley() { return el.querySelector('#esc-ley'); }
   const PUNTOS = []; // { s, x, z, d (div), vis }
   let solo = null; // estrategia escogida en la leyenda (solo esa se prende)

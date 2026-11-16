@@ -50,7 +50,15 @@ body.tb-abierto #dock{display:none}
 #tb .esc{display:flex;gap:3px;margin:0 16px 12px;padding:3px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06)}
 #tb .esc button{flex:1;height:32px;border:0;border-radius:7px;background:transparent;color:var(--ui-tx2,#9aa2a7);font:500 12px var(--ui-sans,sans-serif);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px}
 #tb .esc button i{width:8px;height:8px;border-radius:50%}
-#tb .esc button.on{background:rgba(255,255,255,.08);color:var(--ui-tx,#e9ebec)}
+#tb .esc{background:rgba(0,0,0,.28);border-color:rgba(255,255,255,.05);border-radius:11px}
+#tb .esc button{height:36px;border-radius:8px;transition:background .3s,color .3s,box-shadow .3s}
+#tb .esc button:hover{color:var(--ui-tx,#e9ebec)}
+#tb .esc button i{opacity:.45;transition:opacity .3s,box-shadow .3s}
+#tb .esc button.on{color:#fff}#tb .esc button.on i{opacity:1}
+#tb .esc button[data-e="hoy"].on{background:linear-gradient(180deg,rgba(143,176,201,.24),rgba(143,176,201,.1));box-shadow:inset 0 0 0 1px rgba(143,176,201,.42)}
+#tb .esc button[data-e="hoy"].on i{box-shadow:0 0 0 3px rgba(143,176,201,.22),0 0 10px rgba(143,176,201,.6)}
+#tb .esc button[data-e="proyecto"].on{background:linear-gradient(180deg,rgba(226,165,91,.26),rgba(226,165,91,.1));box-shadow:inset 0 0 0 1px rgba(226,165,91,.5)}
+#tb .esc button[data-e="proyecto"].on i{box-shadow:0 0 0 3px rgba(226,165,91,.22),0 0 10px rgba(226,165,91,.6)}
 #tb .cmp{display:grid;gap:9px;margin-top:4px}
 #tb .ind{display:grid;grid-template-columns:minmax(0,1fr) 214px;gap:4px 12px;align-items:center}
 #tb .ind .n{font-size:11.5px;line-height:1.3}#tb .ind .n small{display:block;color:var(--ui-tx3,#646c71);font-size:10.5px}
