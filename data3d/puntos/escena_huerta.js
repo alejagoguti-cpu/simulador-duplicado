@@ -109,6 +109,7 @@ export async function crearEscenaHuerta({ THREE, MOV = false, progreso = () => {
   /* ---------- BAVARIA REAL (los mismos datos del simulador): predio, edificios con su altura, las 3.250 copas del censo,
      pasajes nuevos y huertas en los claros. La huerta de esta vista queda en su lugar real (huerta docente de hortalizas),
      con las hileras paralelas a los edificios. ---------- */
+  const GEO = { SIT: null, EDS: [], ARB: [], CEL: [], PAS: [] }; // geometría para las visiones en mallas (escena_mallas.js)
   const J = (u) => fetch(u).then(r => r.json()).catch(() => null);
   const [BV, BA, SX] = await Promise.all([J('data3d/bavaria.json?v=3'), J('data3d/bavaria_arboles.json?v=3'), J('data3d/bavaria_distrito_sx.json?v=2')]);
   const lw = (x, y) => [x - 5341.33, 3161.9 - y];
@@ -122,6 +123,7 @@ export async function crearEscenaHuerta({ THREE, MOV = false, progreso = () => {
     const dentro = (P2, x, z) => { let c = false; for (let i = 0, j = P2.length - 1; i < P2.length; j = i++) { const a = P2[i], b = P2[j]; if ((a[1] > z) !== (b[1] > z) && x < (b[0] - a[0]) * (z - a[1]) / (b[1] - a[1]) + a[0]) c = !c; } return c; };
     const SIT = BV.sitio.map(q => M2E(q[0], q[1])); let sx0 = 1e9, sx1 = -1e9, sz0 = 1e9, sz1 = -1e9; for (const q of SIT) { sx0 = Math.min(sx0, q[0]); sx1 = Math.max(sx1, q[0]); sz0 = Math.min(sz0, q[1]); sz1 = Math.max(sz1, q[1]); }
     const EDS = BV.edif.map(e => ({ P: e.p.map(q => M2E(q[0], q[1])), h: e.h || 8 })).filter(e => !e.P.some(q => enCampo(q[0], q[1])));
+    GEO.SIT = SIT; GEO.EDS = EDS;
     const enEdif = (x, z, m = 0) => EDS.some(e => dentro(e.P, x, z));
     // suelo del predio: pasto y sotobosque
     const nS = Math.round(260000 * K);
@@ -135,11 +137,11 @@ export async function crearEscenaHuerta({ THREE, MOV = false, progreso = () => {
       let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const q of P2) { x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); z0 = Math.min(z0, q[1]); z1 = Math.max(z1, q[1]); }
       const nT = Math.round((x1 - x0) * (z1 - z0) * 0.9 * K) + 20; for (let i = 0; i < nT; i++) { const x = r2(x0, x1), z = r2(z0, z1); if (!dentro(P2, x, z)) continue; const reja = (Math.abs(((x - x0) % 6)) < 0.35) || (Math.abs(((z - z0) % 6)) < 0.35); pt(x, h, z, luz(reja ? [0.62, 0.64, 0.66] : TECHO, UP)); } }
     // pasajes nuevos: piso claro de 4 m
-    for (const sg of (SX && SX.seg || [])) { if (!sg.n) continue; const Q = sg.p.map(q => M2E(q[0], q[1])); for (let k = 1; k < Q.length; k++) { const a = Q[k - 1], b = Q[k], Lk = Math.hypot(b[0] - a[0], b[1] - a[1]), nx = -(b[1] - a[1]) / (Lk || 1), nz = (b[0] - a[0]) / (Lk || 1);
+    for (const sg of (SX && SX.seg || [])) { if (!sg.n) continue; const Q = sg.p.map(q => M2E(q[0], q[1])); GEO.PAS.push(Q); for (let k = 1; k < Q.length; k++) { const a = Q[k - 1], b = Q[k], Lk = Math.hypot(b[0] - a[0], b[1] - a[1]), nx = -(b[1] - a[1]) / (Lk || 1), nz = (b[0] - a[0]) / (Lk || 1);
       for (let i = 0; i < Lk * 18 * K; i++) { const t = rnd(), w = r2(-2, 2), x = a[0] + (b[0] - a[0]) * t + nx * w, z = a[1] + (b[1] - a[1]) * t + nz * w; if (enCampo(x, z)) continue; pt(x, 0.1, z, luz([0.9, 0.86, 0.78], UP)); } } }
     // árboles reales del censo (copas que se conservan); los lejanos con menos puntos
     const ARBR = [];
-    for (const a of (BA && BA.arboles || [])) { const [x, z] = M2E(a[0], a[1]); if (enCampo(x, z)) continue; const alto = Math.max(6, Math.min(22, a[2] || 12)); ARBR.push([x, z, alto]); }
+    for (const a of (BA && BA.arboles || [])) { const [x, z] = M2E(a[0], a[1]); if (enCampo(x, z)) continue; const alto = Math.max(6, Math.min(22, a[2] || 12)); ARBR.push([x, z, alto]); } GEO.ARB.push(...ARBR);
     for (const [x, z, alto] of ARBR) { const N = AR[(Math.abs(Math.floor(x * 7 + z * 3))) % AR.length], dd = Math.hypot(x, z), lim = dd < 70 ? 9000 : dd < 160 ? 2200 : 700, st = Math.max(1, Math.floor(N.pts.length / 3 / lim));
       const rot = (x * 13.7 + z) % 6.28, cs = Math.cos(rot), sn = Math.sin(rot), nn = new THREE.Vector3();
       for (let i = 0; i < N.pts.length; i += 3 * st) { const px = N.pts[i] * alto, py = N.pts[i + 1] * alto, pz = N.pts[i + 2] * alto; nn.set(N.nor[i], N.nor[i + 1], N.nor[i + 2]); let c = [N.cols[i], N.cols[i + 1], N.cols[i + 2]]; { const m = (c[0] + c[1] + c[2]) / 3; c = [m + (c[0] - m) * 1.5, m + (c[1] - m) * 1.5, m + (c[2] - m) * 1.5]; }
@@ -150,7 +152,7 @@ export async function crearEscenaHuerta({ THREE, MOV = false, progreso = () => {
       const mx = cx + CELL / 2, mz = cz + CELL / 2; if (enCampo(mx, mz) || !dentro(SIT, mx, mz)) continue;
       if (EDS.some(e => e.P.some(q => Math.hypot(q[0] - mx, q[1] - mz) < 22)) || EDS.some(e => dentro(e.P, mx, mz))) continue;
       if (ARBR.some(t => Math.abs(t[0] - mx) < 9 && Math.abs(t[1] - mz) < 9)) continue;
-      const c = ROW[(((Math.floor(cx / CELL) * 3 + Math.floor(cz / CELL)) % ROW.length) + ROW.length) % ROW.length];
+      const ci = (((Math.floor(cx / CELL) * 3 + Math.floor(cz / CELL)) % ROW.length) + ROW.length) % ROW.length, c = ROW[ci]; GEO.CEL.push([cx, cz, CELL, ci]);
       for (let r = 0; r < 4; r++) { const x = cx + 1 + r * 1.8; for (let i = 0; i < 160 * K + 20; i++) { const z = cz + 0.5 + rnd() * (CELL - 1); pt(x + r2(-0.35, 0.35), 0.15 + rnd() * 0.3, z, luz(mezcla(c, [0.95, 0.95, 0.8], rnd() * 0.15), UP, 0.85)); } }
       for (let i = 0; i < 60 * K + 10; i++) pt(cx + rnd() * CELL, 0.06, cz + rnd() * CELL, luz(TIERRA[(rnd() * 3) | 0], UP, 0.8));
     }
@@ -198,5 +200,6 @@ export async function crearEscenaHuerta({ THREE, MOV = false, progreso = () => {
   ANC.copeton = [0.6, 0.13, 6.5]; ANC.mirla = [-0.5, 0.13, 9]; ANC.lombriz = [ANC.zanahoria[0] - 0.1, 0.1, 5.4];
   ANC.abeja = ANC.cilantro; ANC.mariposa = ANC.cilantro; ANC.colibri = ANC.cilantro; ANC.abejorro = ANC.tomate; ANC.mariquita = ANC.lechuga; ANC.murcielago = [ANC.eucalipto[0] + 2, ANC.eucalipto[1], ANC.eucalipto[2]];
   progreso(1);
-  return { pos: new Float32Array(P), col: new Float32Array(C), anc: ANC, n: P.length / 3, ctx: CTX };
+  GEO.ARB.push(...ARB); GEO.FILAS = FILAS.map(f => ({ x: f.x, k: f.ku.k, h: f.ku.h, r: f.ku.r, c: f.ku.c })); GEO.pab = { X0, X1, Z0, Z1 }; GEO.inv = { GX0, GX1, GZ0, GZ1, GH };
+  return { pos: new Float32Array(P), col: new Float32Array(C), anc: ANC, n: P.length / 3, ctx: CTX, geo: GEO };
 }

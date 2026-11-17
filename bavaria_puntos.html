@@ -48,7 +48,8 @@ section.hero{align-items:center}
 body.libre main,body.libre .prog,body.libre #inset,body.libre #enc,body.libre #hilo{display:none!important}body.libre{overflow:hidden}body.libre #guiaRec{display:flex}body.libre canvas#c{cursor:grab}
 .tx .fin a{padding:11px 16px;border:1px solid rgba(255,255,255,.28);font:500 11px var(--mono);letter-spacing:.14em;color:var(--tx);text-decoration:none;text-transform:uppercase}.tx .fin a:hover{background:rgba(255,255,255,.07)}
 .pie{position:fixed;right:28px;bottom:24px;z-index:6;display:flex;gap:18px;align-items:center;font-size:10.5px;color:var(--tx3)}
-.pie .modos{display:flex;gap:2px;padding:3px;border:1px solid rgba(255,255,255,.16);background:rgba(4,7,10,.6)}.pie .modos{flex-wrap:wrap}.pie .modos button{padding:5px 9px;font:500 10.5px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--tx2)}.pie .modos button[aria-pressed=true]{background:var(--acc);color:#04201a}
+.pie .modos{display:flex;gap:2px;padding:3px;border:1px solid rgba(255,255,255,.16);background:rgba(4,7,10,.6)}.pie .modos{flex-wrap:wrap}
+body[data-vision=realista] main::before,body[data-vision=maqueta] main::before{content:'';position:fixed;inset:0;background:linear-gradient(90deg,rgba(4,7,10,.72),rgba(4,7,10,.25) 40%,transparent 60%);pointer-events:none;z-index:-1}.pie .modos button{padding:5px 9px;font:500 10.5px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--tx2)}.pie .modos button[aria-pressed=true]{background:var(--acc);color:#04201a}
 .pie button{all:unset;cursor:pointer;color:var(--tx2);font-size:11.5px}.pie button:hover{color:var(--tx)}.pie span{max-width:520px;text-align:right}
 .prog{position:fixed;right:14px;top:50%;transform:translateY(-50%);z-index:6;display:flex;flex-direction:column;gap:8px}
 .prog a{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.22);display:block}.prog a.on{background:var(--acc);box-shadow:0 0 8px var(--acc)}
@@ -76,7 +77,7 @@ a:focus-visible,button:focus-visible{outline:1px solid var(--acc);outline-offset
 <div id="inset" aria-hidden="true"><canvas id="ic" width="512" height="512"></canvas><span class="n"></span><div class="cap"></div></div>
 <main id="secs"></main>
 <div class="prog" id="prog" aria-hidden="true"></div>
-<div class="pie"><div class="modos" role="group" aria-label="Tipo de visión"><button type="button" data-m="0" aria-pressed="true">Puntos</button><button type="button" data-m="1" aria-pressed="false">Sólido</button><button type="button" data-m="2" aria-pressed="false">Profundidad</button><button type="button" data-m="3" aria-pressed="false">Rayos X</button><button type="button" data-m="4" aria-pressed="false">Térmica</button><button type="button" data-m="5" aria-pressed="false">Nocturna</button></div><button id="pausa" type="button">Pausar movimiento</button><span id="nota"></span></div>
+<div class="pie"><div class="modos" role="group" aria-label="Tipo de visión"><button type="button" data-m="puntos" aria-pressed="true">Puntos</button><button type="button" data-m="realista" aria-pressed="false">Realista</button><button type="button" data-m="maqueta" aria-pressed="false">Maqueta</button><button type="button" data-m="rayos" aria-pressed="false">Rayos X</button><button type="button" data-m="alambre" aria-pressed="false">Alambre</button><button type="button" data-m="termica" aria-pressed="false">Térmica</button></div><button id="pausa" type="button">Pausar movimiento</button><span id="nota"></span></div>
 <div id="guiaRec"><span>Arrastra para mirar · W A S D o flechas para caminar · rueda para avanzar</span><button type="button" id="b-salir">Salir</button></div>
 <div class="carga" id="carga"><span>CARGANDO PUNTOS</span><i><b id="cb"></b></i></div>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
@@ -149,7 +150,11 @@ const mat = new THREE.ShaderMaterial({ uniforms: U, vertexColors: true, transpar
   fragmentShader: `varying vec3 vC; varying float vA; void main(){ vec2 q = gl_PointCoord - 0.5; float d = dot(q, q); if (d > 0.25) discard; gl_FragColor = vec4(vC, vA * smoothstep(0.25, 0.1, d));
     #include <colorspace_fragment>
   }` });
-S.add(new THREE.Points(g, mat));
+const NUBEP = new THREE.Points(g, mat); S.add(NUBEP);
+/* ---------- la misma escena en MALLAS 3D para las otras visiones (data3d/puntos/escena_mallas.js) ---------- */
+R.shadowMap.enabled = !MOV; R.shadowMap.type = THREE.PCFSoftShadowMap; R.toneMapping = THREE.ACESFilmicToneMapping; R.toneMappingExposure = 1.05;
+const { crearEscenaMallas } = await import('./data3d/puntos/escena_mallas.js?v=3');
+const MAL = await crearEscenaMallas({ THREE, geo: ESC.geo, sombras: !MOV, movil: MOV }); MAL.grupo.position.y = -OJO; MAL.grupo.visible = false; S.add(MAL.grupo);
 
 /* ---------- especies en PUNTOS desde fotografías (tools/puntos/especies_puntos.py) ---------- */
 const EI = await fetch('data3d/puntos/esp/esp.json?v=1').then(r => r.json()).catch(() => ({}));
@@ -201,8 +206,12 @@ function leerScroll() { sObj = scrollY / innerHeight; }
 addEventListener('scroll', leerScroll, { passive: true });
 function tam() { R.setSize(innerWidth, innerHeight, false); cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix(); U.uPx.value = R.getPixelRatio() * innerHeight; leerScroll(); }
 addEventListener('resize', tam); tam();
-document.querySelector('.pie .modos').onclick = (e) => { const b = e.target.closest('[data-m]'); if (!b) return; const m2 = +b.dataset.m; U.uModo.value = m2;
-  mat.transparent = m2 === 0 || m2 === 3; mat.depthWrite = !(m2 === 0 || m2 === 3); mat.blending = m2 === 3 ? THREE.AdditiveBlending : THREE.NormalBlending; mat.needsUpdate = true; R.setClearColor(m2 === 5 ? 0x010a03 : m2 === 3 ? 0x020611 : 0x04070a, 1); document.querySelectorAll('.pie .modos button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); };
+let FONDO = 0x04070a;
+const FONDOS = { puntos: 0x04070a, realista: 0xbfd4e2, maqueta: 0xebe8e2, rayos: 0x020611, alambre: 0x071a2e, termica: 0x05010a };
+document.querySelector('.pie .modos').onclick = (e) => { const b = e.target.closest('[data-m]'); if (!b) return; const v = b.dataset.m;
+  NUBEP.visible = v === 'puntos'; MAL.grupo.visible = v !== 'puntos'; if (v !== 'puntos') MAL.vision(v);
+  FONDO = FONDOS[v]; R.setClearColor(FONDO, 1); S.fog = v === 'realista' ? new THREE.Fog(0xbfd4e2, 900, 4000) : v === 'maqueta' ? new THREE.Fog(0xebe8e2, 1100, 4500) : null;
+  document.body.dataset.vision = v; document.querySelectorAll('.pie .modos button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); };
 $('pausa').onclick = () => { RMQ = !RMQ; $('pausa').textContent = RMQ ? 'Reanudar movimiento' : 'Pausar movimiento'; };
 $('nota').textContent = 'Escena de la propuesta en puntos: árboles y plantas muestreados de modelos 3D reales; especies reconstruidas con puntos desde fotografías (iNaturalist, CC) y una profundidad estimada. Representación, no un levantamiento. Animales aumentados para que se vean. ' + FZ.FAUNA_FUENTES;
 
@@ -250,7 +259,7 @@ function cuadro(t) {
         camZ.position.set(zoomV.x + Math.sin(zA) * d, zoomV.y + d * 0.35, zoomV.z - Math.cos(zA) * d); camZ.lookAt(zoomV); camZ.aspect = r.width / r.height; camZ.updateProjectionMatrix();
         const u0 = U.uPx.value, uz = U.uZ.value; U.uPx.value = r.height * dpr * 0.9; U.uZ.value = 1.6;
         R.setScissorTest(true); const H = innerHeight; R.setViewport(r.left, H - r.bottom, r.width, r.height); R.setScissor(r.left, H - r.bottom, r.width, r.height);
-        R.setClearColor(0x0b100e, 1); R.clear(); R.render(S, camZ); R.setScissorTest(false); R.setViewport(0, 0, innerWidth, innerHeight); R.setClearColor(0x04070a, 1); U.uPx.value = u0; U.uZ.value = uz; } }
+        R.setClearColor(0x0b100e, 1); R.clear(); R.render(S, camZ); R.setScissorTest(false); R.setViewport(0, 0, innerWidth, innerHeight); R.setClearColor(FONDO, 1); U.uPx.value = u0; U.uZ.value = uz; } }
     const ag = SEL[kk]; if (ag) { V.copy(ag.obj.position).project(cam); const x = (V.x + 1) / 2 * innerWidth, y = (1 - V.y) / 2 * innerHeight, enc = $('enc');
       const d = cam.position.distanceTo(ag.obj.position), px = Math.max(34, Math.min(140, (TAM[kk] || 0.2) * 2.4 / (2 * d * Math.tan(fov * Math.PI / 360)) * innerHeight));
       enc.style.width = enc.style.height = px + 'px'; enc.style.transform = `translate(${x - px / 2}px,${y - px / 2}px)`;
