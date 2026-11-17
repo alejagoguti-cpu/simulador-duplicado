@@ -132,6 +132,20 @@ export function iniciarSimulaciones({ T3, tb, verPestana }) {
 #tb .sim-play{display:flex;align-items:center;gap:8px;margin:0 0 10px}
 #tb .sim-play button{height:30px;padding:0 12px;border-radius:8px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:#fff;font:500 11.5px var(--ui-sans,Inter,sans-serif);cursor:pointer}
 #tb .sim-play input{flex:1;accent-color:#e2a55b}#tb .sim-play output{font:500 11px var(--ui-mono,monospace);color:#fff;min-width:64px;text-align:right}
+#tb .sim-frase{margin:0 0 12px;padding:12px 14px;border-radius:12px;background:linear-gradient(135deg,rgba(25,158,112,.16),rgba(57,135,229,.08));border:1px solid rgba(25,158,112,.3);font:400 14px/1.45 var(--ui-sans,Inter,sans-serif);color:#e9eef0}#tb .sim-frase b{color:#fff;font-weight:600}
+#tb .sim-cmp{display:grid;gap:10px;margin:0 0 12px}
+#tb .cmp{padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07)}
+#tb .cmp .cn{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 7px;font:600 12px var(--ui-sans,Inter,sans-serif);color:#fff}
+#tb .cmp .cn em{font:600 11px var(--ui-sans,Inter,sans-serif);font-style:normal;padding:2px 8px;border-radius:10px;background:rgba(255,255,255,.08);color:#cfd5d9}
+#tb .cmp .cn em.up{background:rgba(25,158,112,.22);color:#5ee0b0}#tb .cmp .cn em.dn{background:rgba(217,89,38,.22);color:#ff9a6b}
+#tb .cmp .cb{display:grid;grid-template-columns:104px minmax(0,1fr) 74px;gap:8px;align-items:center;font-size:11px;color:var(--ui-tx2,#b9c1c6);margin-top:4px}
+#tb .cmp .cb i{display:block;height:10px;border-radius:5px;background:rgba(255,255,255,.05);overflow:hidden}#tb .cmp .cb i b{display:block;height:100%;border-radius:5px;transition:width .4s}
+#tb .cmp .cb strong{text-align:right;font:600 12px var(--ui-sans,Inter,sans-serif);color:#fff;font-variant-numeric:tabular-nums}
+#tb .sim-gp canvas{height:170px}
+#tb .sim-tec{margin:4px 0 12px;border-radius:12px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.02)}
+#tb .sim-tec > summary{cursor:pointer;padding:10px 12px;font:500 11.5px var(--ui-sans,Inter,sans-serif);color:var(--ui-tx2,#c0c7cb);list-style:none}#tb .sim-tec > summary::-webkit-details-marker{display:none}
+#tb .sim-tec > summary::before{content:'+ ';color:#e2a55b}#tb .sim-tec[open] > summary::before{content:'– '}
+#tb .sim-tec-c{padding:0 10px 4px}
 #tb .sim-nota{font-size:10px;line-height:1.45;color:var(--ui-tx3,#8e979d);margin:4px 0 6px}`;
   document.head.appendChild(css);
 
@@ -163,6 +177,7 @@ export function iniciarSimulaciones({ T3, tb, verPestana }) {
     cv._g = { X, Y, n, L, R, W, series, yfmt, x: !!x };
   }
   function hover(cv, xlabel) {
+    if (!cv || cv._hov) return; cv._hov = 1;
     cv.addEventListener('pointermove', (ev) => { const G = cv._g; if (!G) return; const r = cv.getBoundingClientRect(), mx = ev.clientX - r.left; const i = Math.max(0, Math.min(G.n - 1, Math.round((mx - G.L) / (G.W - G.L - G.R) * (G.n - 1))));
       tip.innerHTML = `<b>${xlabel(i)}</b><br>` + G.series.map(s => `<i style="background:${s.color}"></i>${esc(s.name)}: <b>${G.yfmt(s.data[i])}</b>`).join('<br>');
       tip.style.display = 'block'; tip.style.left = Math.min(innerWidth - 220, ev.clientX + 14) + 'px'; tip.style.top = (ev.clientY + 12) + 'px'; });
@@ -175,9 +190,8 @@ export function iniciarSimulaciones({ T3, tb, verPestana }) {
   /* ---------------- pintar cada simulación ---------------- */
   function cabecera(q, escs) {
     const e = escAct(), pro = T3.escenario === 'proyecto';
-    return `<p class="sim-q">${q}</p>
-      <div class="sim-esc"><span>Escenario</span>${escs.map(k => `<button data-e="${k}" style="--c:${COL[k]}" class="${k === e ? 'on' : ''}" ${(!pro && k !== 'A') || (pro && k === 'A') ? 'disabled' : ''}><i style="background:${COL[k]}"></i>${esc(NOMBRE[k])}</button>`).join('')}</div>
-      <div class="sim-play"><button data-play>${play ? 'Pausa' : '▶ Correr 10 años'}</button><input type="range" min="0" max="${SEM - 1}" value="${t}" data-t aria-label="Semana de la simulación"><output>${semLabel(t).replace('semana', 'sem.')}</output></div>`;
+    return `<div class="sim-esc"><span>Escenario</span>${escs.map(k => `<button data-e="${k}" style="--c:${COL[k]}" class="${k === e ? 'on' : ''}" ${(!pro && k !== 'A') || (pro && k === 'A') ? 'disabled' : ''}><i style="background:${COL[k]}"></i>${esc(NOMBRE[k])}</button>`).join('')}</div>
+`;
   }
   const S = { S1: null, S2: null, S3: null };
   function correr() {
@@ -187,16 +201,12 @@ export function iniciarSimulaciones({ T3, tb, verPestana }) {
   }
   function pintar() {
     if (!S.S1) correr(); const e = escAct();
-    const sub = `<div class="sim-sub" role="tablist">${[['S1', 'SIM-01 · Huertas'], ['S2', 'SIM-02 · Orgánicos'], ['S3', 'SIM-03 · Fauna']].map(([k, n]) => `<button data-s="${k}" class="${k === sim ? 'on' : ''}">${n}</button>`).join('')}</div>`;
+    const sub = `<div class="sim-sub" role="tablist">${[['S1', 'Comida'], ['S2', 'Residuos'], ['S3', 'Aves y humedal']].map(([k, n]) => `<button data-s="${k}" class="${k === sim ? 'on' : ''}">${n}</button>`).join('')}</div>`;
     let h = '';
     if (sim === 'S1') {
       const R = S.S1, r = R[e], a = R.A;
       h = cabecera('¿Cuánto baja la <b>dependencia de Corabastos</b> cuando Bavaria forma promotores, las huertas abastecen a tiendas y comedores, y cambia quién decide cómo se reparten los recursos?', ['A', 'B', 'C']) +
-        `<div class="sim-kpi"><div><b>${fmtK(r.pers[t])}</b><small>personas alimentadas con frutas y verduras</small><em>hoy (A): ${fmtK(a.pers[t])}</em></div>
-          <div><b>${fmt(r.pct[t], 2)} %</b><small>de Kennedy</small><em>hoy (A): ${fmt(a.pct[t], 2)} %</em></div>
-          <div><b>${fmt(r.dep[t] * 100)} %</b><small>dependencia de Corabastos en la zona de ${fmtK(P1.zona)} hab.</small><em>hoy (A): ${fmt(a.dep[t] * 100)} %</em></div>
-          <div><b>${fmt(r.act[t])}</b><small>hogares con huerta activa</small><em>hoy (A): ${fmt(a.act[t])}</em></div></div>
-        <div class="sim-g"><h4>G1 · Producción y destino semanal<span>kg por semana · escenario ${e}</span></h4><canvas data-c="g1"></canvas>${ley([['#199e70', 'Autoconsumo'], ['#3987e5', 'Excedente al acopio'], ['#9085e9', 'Merma']])}</div>
+        `        <div class="sim-g"><h4>G1 · Producción y destino semanal<span>kg por semana · escenario ${e}</span></h4><canvas data-c="g1"></canvas>${ley([['#199e70', 'Autoconsumo'], ['#3987e5', 'Excedente al acopio'], ['#9085e9', 'Merma']])}</div>
         <div class="sim-g"><h4>G2 · Personas alimentadas<span>A · B · C</span></h4><canvas data-c="g2"></canvas>${ley([[COL.A, 'A sin intervención'], [COL.B, 'B nodo central'], [COL.C, 'C clúster rotativo']])}</div>
         <div class="sim-g"><h4>G3 · Dependencia de Corabastos según la zona<span>al año 10, % de dependencia</span></h4><p>Más grande la zona de servicio, más depende. Cae al 50 % en una zona de ${fmtK(2 * r.pers[SEM - 1])} habitantes.</p><canvas data-c="g3"></canvas>${ley([[COL.A, 'A'], [COL.B, 'B'], [COL.C, 'C']])}</div>
         <div class="sim-g"><h4>G4 · Difusión de huertas (curva de Bass)<span>hogares activos</span></h4><canvas data-c="g4"></canvas>${ley([[COL.A, 'A'], [COL.B, 'B (techo 2.506)'], [COL.C, 'C (techo 5.400)']])}</div>
@@ -214,11 +224,7 @@ export function iniciarSimulaciones({ T3, tb, verPestana }) {
     } else if (sim === 'S2') {
       const R = S.S2, r = R[e], a = R.A, año = (arr) => arr.slice(Math.max(0, t - 51), t + 1).reduce((s, v) => s + v, 0);
       h = cabecera('¿Cuánta <b>materia orgánica vuelve al suelo</b> en vez de salir del barrio?', ['A', 'B', 'C']) +
-        `<div class="sim-kpi"><div><b>${fmt(año(r.vuelve) / 1000, 1)} t</b><small>de compost al año vuelven al suelo</small><em>hoy (A): ${fmt(año(a.vuelve) / 1000, 1)} t</em></div>
-          <div><b>${fmt(año(r.relleno) / 1000)} t</b><small>al año siguen saliendo al relleno</small><em>hoy (A): ${fmt(año(a.relleno) / 1000)} t</em></div>
-          <div><b>${fmt(año(r.hongos), 0)} kg</b><small>de hongos al año (sustrato al distrito)</small><em>hoy (A): 0 kg</em></div>
-          <div><b>${fmt(año(r.km))}</b><small>km recorridos al año por los residuos</small><em>hoy (A): ${fmt(año(a.km))} km</em></div></div>
-        <div class="sim-g"><h4>Destino de los orgánicos<span>kg por semana · escenario ${e}</span></h4><canvas data-c="o1"></canvas>${ley([['#8e979d', 'Al relleno (Doña Juana)'], ['#199e70', 'Compost que vuelve al suelo'], ['#c98500', 'Hongos (proteína)']])}</div>
+        `        <div class="sim-g"><h4>Destino de los orgánicos<span>kg por semana · escenario ${e}</span></h4><canvas data-c="o1"></canvas>${ley([['#8e979d', 'Al relleno (Doña Juana)'], ['#199e70', 'Compost que vuelve al suelo'], ['#c98500', 'Hongos (proteína)']])}</div>
         <div class="sim-g"><h4>% de los orgánicos que vuelve al suelo<span>A · B · C</span></h4><canvas data-c="o2"></canvas>${ley([[COL.A, 'A ruta actual'], [COL.B, 'B estación barrial'], [COL.C, 'C Bavaria Común']])}</div>
         <div class="sim-g"><h4>Material en maduración<span>kg en las pilas</span></h4><canvas data-c="o3"></canvas>${ley([[COL.B, 'B'], [COL.C, 'C']])}</div>
         <div class="sim-g"><h4>Kilómetros de transporte<span>km por semana</span></h4><canvas data-c="o4"></canvas>${ley([[COL.A, 'A'], [COL.B, 'B'], [COL.C, 'C']])}</div>
@@ -230,11 +236,7 @@ export function iniciarSimulaciones({ T3, tb, verPestana }) {
     } else {
       const R = S.S3, r = R[e], a = R.A;
       h = cabecera('¿Dónde y con qué especies las huertas <b>ayudan al hábitat</b> y dónde crean <b>trampas ecológicas</b>?', ['A', 'B', 'C']) +
-        `<div class="sim-kpi"><div><b>${fmt(r.aves[t])}</b><small>aves en los parches del borde del humedal</small><em>hoy (A): ${fmt(a.aves[t])}</em></div>
-          <div><b>${fmt(r.riq[t])}</b><small>especies presentes</small><em>hoy (A): ${fmt(a.riq[t])}</em></div>
-          <div><b>${fmt(r.hum[t])} %</b><small>integridad del humedal</small><em>hoy (A): ${fmt(a.hum[t])} %</em></div>
-          <div><b>${fmt(r.trampa[t])}</b><small>aves muertas en trampas (luz y vidrio), acumulado</small><em>${P3.anti ? 'con' : 'sin'} medida antitrampa</em></div></div>
-        <div class="sim-g"><h4>Aves en el borde del humedal<span>individuos · A · B · C</span></h4><canvas data-c="f1"></canvas>${ley([[COL.A, 'A sin huertas'], [COL.B, 'B sin criterio'], [COL.C, 'C con corredores']])}</div>
+        `        <div class="sim-g"><h4>Aves en el borde del humedal<span>individuos · A · B · C</span></h4><canvas data-c="f1"></canvas>${ley([[COL.A, 'A sin huertas'], [COL.B, 'B sin criterio'], [COL.C, 'C con corredores']])}</div>
         <div class="sim-g"><h4>Con y sin medida antitrampa<span>aves · escenario ${e === 'A' ? 'C' : e}</span></h4><canvas data-c="f2"></canvas>${ley([[COL[e === 'A' ? 'C' : e], 'con antitrampa'], [COL[e === 'A' ? 'C' : e], 'sin antitrampa', true]])}</div>
         <div class="sim-g"><h4>Integridad del humedal<span>% · A · B · C</span></h4><canvas data-c="f3"></canvas>${ley([[COL.A, 'A'], [COL.B, 'B'], [COL.C, 'C']])}</div>
         <details class="sim-var"><summary>Variables (sliders)</summary><div class="cv">
@@ -244,10 +246,58 @@ export function iniciarSimulaciones({ T3, tb, verPestana }) {
           <div class="chk"><label><input type="checkbox" data-b3="anti" ${P3.anti ? 'checked' : ''}>Medida antitrampa</label></div>
           <p class="sim-nota">[SUP] Crecimiento logístico de las aves con capacidad de carga según el humedal, los árboles, la conectividad entre parches (mayor en C por los corredores) y las huertas; la trampa ecológica es mortalidad por luz y vidrio en las huertas del borde, que la medida antitrampa reduce al 30 %.</p></div></details>`;
     }
-    cont.innerHTML = sub + h;
+    cont.innerHTML = sub + resumen() + `<details class="sim-tec"${abiertoTec ? ' open' : ''}><summary>Detalle técnico · gráficas del modelo, escenarios B y C y variables</summary><div class="sim-tec-c">${h}</div></details>`;
     dibujar(); conectar();
   }
+  /* ---------- resumen: una frase, la comparación hoy / con la propuesta y una sola gráfica ---------- */
+  const proK = () => (T3.escenario === 'proyecto' ? escP : 'C');
+  const año10 = () => Math.floor(t / AÑO) + 1;
+  function fila(n, hoy, pro, f, menos) {
+    const m = Math.max(hoy, pro, 1e-9), mejor = menos ? pro < hoy : pro > hoy, igual = Math.abs(pro - hoy) < 1e-9 * m;
+    const chip = igual ? 'igual' : hoy > 0 && pro / hoy >= 2 ? '×' + fmt(pro / hoy, pro / hoy < 10 ? 1 : 0) : hoy > 0 && hoy / pro >= 2 && menos ? '÷' + fmt(hoy / pro, hoy / pro < 10 ? 1 : 0) : (pro >= hoy ? '+' : '−') + fmt(Math.abs(pro - hoy) / Math.max(hoy, 1e-9) * 100) + ' %';
+    return `<div class="cmp"><div class="cn">${esc(n)}<em class="${igual ? '' : mejor ? 'up' : 'dn'}">${chip}</em></div>
+      <div class="cb"><span>Hoy</span><i><b style="width:${(hoy / m * 100).toFixed(1)}%;background:${COL.A}"></b></i><strong>${f(hoy)}</strong></div>
+      <div class="cb"><span>Con la propuesta</span><i><b style="width:${(pro / m * 100).toFixed(1)}%;background:${COL.C}"></b></i><strong>${f(pro)}</strong></div></div>`;
+  }
+  function resumen() {
+    const p = proK(), sem = (arr) => arr.slice(Math.max(0, t - 51), t + 1).reduce((s, v) => s + v, 0);
+    let q = '', frase = '', filas = '', gtit = '';
+    if (sim === 'S1') { const A = S.S1.A, P = S.S1[p];
+      q = '¿Cuánto deja Kennedy de depender de Corabastos si las huertas del barrio abastecen tiendas y comedores?';
+      frase = `En ${año10()} ${año10() === 1 ? 'año' : 'años'}, con la propuesta, <b>${fmtK(P.pers[t])} personas</b> comen frutas y verduras de las huertas del barrio. Hoy serían <b>${fmtK(A.pers[t])}</b>.`;
+      filas = fila('Hogares con huerta', A.act[t], P.act[t], (v) => fmt(v)) + fila('Personas que comen de las huertas', A.pers[t], P.pers[t], fmtK) +
+        fila(`Dependencia de Corabastos (zona de ${fmtK(P1.zona)} hab.)`, A.dep[t] * 100, P.dep[t] * 100, (v) => fmt(v) + ' %', true) + fila('Comida producida por semana', A.prod[t], P.prod[t], (v) => fmtK(v) + ' kg');
+      gtit = 'Personas que comen de las huertas, año a año';
+    } else if (sim === 'S2') { const A = S.S2.A, P = S.S2[p];
+      q = '¿Cuánta basura orgánica vuelve a la tierra como abono en vez de irse al relleno?';
+      frase = `Con la propuesta, <b>${fmt(sem(P.vuelve) / 1000)} toneladas</b> de residuos orgánicos al año vuelven a la tierra como abono. Hoy, <b>${fmt(sem(A.vuelve) / 1000)} toneladas</b>.`;
+      filas = fila('Abono que vuelve a la tierra (t/año)', sem(A.vuelve) / 1000, sem(P.vuelve) / 1000, (v) => fmt(v)) + fila('Residuos que se van al relleno (t/año)', sem(A.relleno) / 1000, sem(P.relleno) / 1000, (v) => fmt(v), true) +
+        fila('Hongos para comer (kg/año)', sem(A.hongos), sem(P.hongos), (v) => fmt(v)) + fila('Kilómetros que viajan los residuos (al año)', sem(A.km), sem(P.km), (v) => fmtK(v), true);
+      gtit = '% de los orgánicos que vuelve a la tierra';
+    } else { const A = S.S3.A, P = S.S3[p];
+      q = '¿Las huertas ayudan a las aves y al humedal, o les ponen trampas?';
+      frase = `Con la propuesta hay <b>${fmt(P.aves[t])} aves</b> en el borde del humedal y <b>${fmt(P.riq[t])} especies</b>. Hoy, <b>${fmt(A.aves[t])}</b> aves y <b>${fmt(A.riq[t])}</b> especies.`;
+      filas = fila('Aves en el borde del humedal', A.aves[t], P.aves[t], (v) => fmt(v)) + fila('Especies de aves', A.riq[t], P.riq[t], (v) => fmt(v)) +
+        fila('Estado del humedal', A.hum[t], P.hum[t], (v) => fmt(v) + ' %') + fila('Aves que mueren por luz y vidrio (acumulado)', A.trampa[t], P.trampa[t], (v) => fmt(v), true);
+      gtit = 'Aves en el borde del humedal, año a año';
+    }
+    return `<p class="sim-q">${q}</p><div class="sim-frase">${frase}</div>
+      <div class="sim-play"><button data-play>${play ? 'Pausa' : '▶ Correr 10 años'}</button><input type="range" min="0" max="${SEM - 1}" value="${t}" data-t aria-label="Tiempo de la simulación"><output>año ${año10()}</output></div>
+      <div class="sim-cmp">${filas}</div>
+      <div class="sim-g sim-gp"><h4>${esc(gtit)}</h4><canvas data-c="res"></canvas></div>`;
+  }
+  function dibujarResumen() {
+    const cv = cont.querySelector('canvas[data-c="res"]'); if (!cv) return; const p = proK();
+    const d = sim === 'S1' ? [S.S1.A.pers, S.S1[p].pers, fmtK] : sim === 'S2' ? [S.S2.A.pct, S.S2[p].pct, (v) => fmt(v, 1) + ' %'] : [S.S3.A.aves, S.S3[p].aves, (v) => fmt(v)];
+    grafica(cv, { series: [{ name: 'Hoy', color: COL.A, data: d[0], w: 2.4 }, { name: 'Con la propuesta', color: COL.C, data: d[1], w: 2.8 }], yfmt: d[2] });
+    // rótulos directos al final de cada línea
+    const G = cv._g, g = cv.getContext('2d'), i = t; g.font = '600 11px Inter,system-ui,sans-serif'; g.textAlign = 'right';
+    [[d[0], COL.A, 'Hoy'], [d[1], COL.C, 'Con la propuesta']].forEach(([arr, c, n]) => { const v = arr[i]; if (v == null) return; const x = G.X(i), y = G.Y(v); g.fillStyle = c; g.beginPath(); g.arc(x, y, 4, 0, 6.29); g.fill(); g.fillStyle = '#fff'; g.fillText(`${n}: ${d[2](v)}`, Math.max(120, x - 8), y - 9); });
+    hover(cv, (k) => `Año ${Math.floor(k / AÑO) + 1}`);
+  }
   function dibujar() {
+    dibujarResumen();
+    if (!cont.querySelector('.sim-tec') || !cont.querySelector('.sim-tec').open) return; // lo técnico solo se dibuja abierto
     const e = escAct(), c = (k) => cont.querySelector(`canvas[data-c="${k}"]`), kg = (v) => fmtK(v), pct = (v) => fmt(v, 1) + ' %';
     if (sim === 'S1') { const R = S.S1, r = R[e];
       grafica(c('g1'), { apilar: true, series: [{ name: 'Autoconsumo', color: '#199e70', data: r.auto }, { name: 'Excedente', color: '#3987e5', data: r.exc }, { name: 'Merma', color: '#9085e9', data: r.merma }], yfmt: kg });
@@ -275,14 +325,15 @@ export function iniciarSimulaciones({ T3, tb, verPestana }) {
     cont.querySelectorAll('.sim-sub button').forEach(b => b.onclick = () => { sim = b.dataset.s; pintar(); });
     cont.querySelectorAll('.sim-esc button').forEach(b => b.onclick = () => { escP = b.dataset.e; pintar(); });
     const pb = cont.querySelector('[data-play]'); if (pb) pb.onclick = () => { if (play) { clearInterval(play); play = null; pintar(); return; } if (t >= SEM - 1) t = 0; play = setInterval(() => { t = Math.min(SEM - 1, t + 4); if (t >= SEM - 1) { clearInterval(play); play = null; } pintar(); }, 60); pintar(); };
-    const ts = cont.querySelector('[data-t]'); if (ts) { ts.oninput = () => { t = +ts.value; if (play) { clearInterval(play); play = null; } const o = ts.nextElementSibling; if (o) o.textContent = semLabel(t).replace('semana', 'sem.'); dibujar(); }; ts.onchange = () => pintar(); }
+    const ts = cont.querySelector('[data-t]'); if (ts) { ts.oninput = () => { t = +ts.value; if (play) { clearInterval(play); play = null; } const o = ts.nextElementSibling; if (o) o.textContent = 'año ' + año10(); dibujar(); }; ts.onchange = () => pintar(); }
     const det = cont.querySelector('.sim-var'); if (det) { det.open = !!abiertoVar; det.ontoggle = () => { abiertoVar = det.open; }; }
+    const tec = cont.querySelector('.sim-tec'); if (tec) tec.ontoggle = () => { abiertoTec = tec.open; if (tec.open) dibujar(); };
     cont.querySelectorAll('input[data-k]').forEach(inp => { const P = sim === 'S1' ? P1 : sim === 'S2' ? P2 : P3, o = cont.querySelector(`output[data-o="${inp.dataset.k}"]`);
       inp.oninput = () => { P[inp.dataset.k] = +inp.value; if (o) o.textContent = inp.value; correr(); dibujar(); }; inp.onchange = () => pintar(); });
     cont.querySelectorAll('input[data-b]').forEach(inp => inp.onchange = () => { P1[inp.dataset.b] = inp.checked; correr(); pintar(); });
     cont.querySelectorAll('input[data-b3]').forEach(inp => inp.onchange = () => { P3.anti = inp.checked; correr(); pintar(); });
   }
-  let abiertoVar = false;
+  let abiertoVar = false, abiertoTec = false;
   addEventListener('escenario', () => { if (T3.escenario !== 'proyecto') escP = escP === 'A' ? 'C' : escP; pintar(); });
   addEventListener('resize', () => { if (cont.classList.contains('vis')) dibujar(); });
   correr(); pintar();
