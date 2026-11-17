@@ -260,7 +260,7 @@ export function iniciarSimulaciones({ T3, tb, verPestana }) {
       <div class="cb"><span>Con la propuesta</span><i><b style="width:${(pro / m * 100).toFixed(1)}%;background:${COL.C}"></b></i><strong>${f(pro)}</strong></div></div>`;
   }
   function resumen() {
-    const p = proK(), sem = (arr) => arr.slice(Math.max(0, t - 51), t + 1).reduce((s, v) => s + v, 0);
+    const p = proK(), ti = Math.floor(t), sem = (arr) => arr.slice(Math.max(0, ti - 51), ti + 1).reduce((s, v) => s + v, 0);
     let q = '', frase = '', filas = '', gtit = '';
     if (sim === 'S1') { const A = S.S1.A, P = S.S1[p];
       q = '¿Cuánto deja Kennedy de depender de Corabastos si las huertas del barrio abastecen tiendas y comedores?';
@@ -281,17 +281,17 @@ export function iniciarSimulaciones({ T3, tb, verPestana }) {
         fila('Estado del humedal', A.hum[t], P.hum[t], (v) => fmt(v) + ' %') + fila('Aves que mueren por luz y vidrio (acumulado)', A.trampa[t], P.trampa[t], (v) => fmt(v), true);
       gtit = 'Aves en el borde del humedal, año a año';
     }
-    return `<p class="sim-q">${q}</p><div class="sim-frase">${frase}</div>
+    return `<div class="sim-res"><p class="sim-q">${q}</p><div class="sim-frase">${frase}</div>
       <div class="sim-play"><button data-play>${play ? 'Pausa' : '▶ Correr 10 años'}</button><input type="range" min="0" max="${SEM - 1}" value="${t}" data-t aria-label="Tiempo de la simulación"><output>año ${año10()}</output></div>
       <div class="sim-cmp">${filas}</div>
-      <div class="sim-g sim-gp"><h4>${esc(gtit)}</h4><canvas data-c="res"></canvas></div>`;
+      <div class="sim-g sim-gp"><h4>${esc(gtit)}</h4><canvas data-c="res"></canvas></div></div>`;
   }
   function dibujarResumen() {
     const cv = cont.querySelector('canvas[data-c="res"]'); if (!cv) return; const p = proK();
     const d = sim === 'S1' ? [S.S1.A.pers, S.S1[p].pers, fmtK] : sim === 'S2' ? [S.S2.A.pct, S.S2[p].pct, (v) => fmt(v, 1) + ' %'] : [S.S3.A.aves, S.S3[p].aves, (v) => fmt(v)];
     grafica(cv, { series: [{ name: 'Hoy', color: COL.A, data: d[0], w: 2.4 }, { name: 'Con la propuesta', color: COL.C, data: d[1], w: 2.8 }], yfmt: d[2] });
     // rótulos directos al final de cada línea
-    const G = cv._g, g = cv.getContext('2d'), i = t; g.font = '600 11px Inter,system-ui,sans-serif'; g.textAlign = 'right';
+    const G = cv._g, g = cv.getContext('2d'), i = Math.floor(t); g.font = '600 11px Inter,system-ui,sans-serif'; g.textAlign = 'right';
     [[d[0], COL.A, 'Hoy'], [d[1], COL.C, 'Con la propuesta']].forEach(([arr, c, n]) => { const v = arr[i]; if (v == null) return; const x = G.X(i), y = G.Y(v); g.fillStyle = c; g.beginPath(); g.arc(x, y, 4, 0, 6.29); g.fill(); g.fillStyle = '#fff'; g.fillText(`${n}: ${d[2](v)}`, Math.max(120, x - 8), y - 9); });
     hover(cv, (k) => `Año ${Math.floor(k / AÑO) + 1}`);
   }
@@ -322,10 +322,8 @@ export function iniciarSimulaciones({ T3, tb, verPestana }) {
     }
   }
   function conectar() {
-    cont.querySelectorAll('.sim-sub button').forEach(b => b.onclick = () => { sim = b.dataset.s; pintar(); });
-    cont.querySelectorAll('.sim-esc button').forEach(b => b.onclick = () => { escP = b.dataset.e; pintar(); });
-    const pb = cont.querySelector('[data-play]'); if (pb) pb.onclick = () => { if (play) { clearInterval(play); play = null; pintar(); return; } if (t >= SEM - 1) t = 0; play = setInterval(() => { t = Math.min(SEM - 1, t + 4); if (t >= SEM - 1) { clearInterval(play); play = null; } pintar(); }, 60); pintar(); };
-    const ts = cont.querySelector('[data-t]'); if (ts) { ts.oninput = () => { t = +ts.value; if (play) { clearInterval(play); play = null; } const o = ts.nextElementSibling; if (o) o.textContent = 'año ' + año10(); dibujar(); }; ts.onchange = () => pintar(); }
+    cont.querySelectorAll('.sim-sub button').forEach(b => b.onclick = () => { sim = b.dataset.s; pintar(); animar(); });
+    cont.querySelectorAll('.sim-esc button').forEach(b => b.onclick = () => { escP = b.dataset.e; pintar(); animar(); });
     const det = cont.querySelector('.sim-var'); if (det) { det.open = !!abiertoVar; det.ontoggle = () => { abiertoVar = det.open; }; }
     const tec = cont.querySelector('.sim-tec'); if (tec) tec.ontoggle = () => { abiertoTec = tec.open; if (tec.open) dibujar(); };
     cont.querySelectorAll('input[data-k]').forEach(inp => { const P = sim === 'S1' ? P1 : sim === 'S2' ? P2 : P3, o = cont.querySelector(`output[data-o="${inp.dataset.k}"]`);
@@ -334,7 +332,21 @@ export function iniciarSimulaciones({ T3, tb, verPestana }) {
     cont.querySelectorAll('input[data-b3]').forEach(inp => inp.onchange = () => { P3.anti = inp.checked; correr(); pintar(); });
   }
   let abiertoVar = false, abiertoTec = false;
-  addEventListener('escenario', () => { if (T3.escenario !== 'proyecto') escP = escP === 'A' ? 'C' : escP; pintar(); });
+  function refrescar() { const r = cont.querySelector('.sim-res'); if (r) r.outerHTML = resumen(); dibujar(); }
+  function parar() { if (play) { cancelAnimationFrame(play); play = null; } }
+  function arrancar(desde0 = true) { parar(); if (desde0 || t >= SEM - 1) t = 0; let prev = performance.now(), tf = t;
+    const paso = (now) => { const dt = Math.min(0.1, (now - prev) / 1000); prev = now; tf = Math.min(SEM - 1, tf + dt * 66); t = Math.floor(tf); /* ~8 s los 10 años; t siempre entero */
+      if (t >= SEM - 1) { t = SEM - 1; play = null; refrescar(); return; } play = requestAnimationFrame(paso); refrescar(); };
+    play = requestAnimationFrame(paso); }
+  cont.addEventListener('click', (e) => { if (e.target.closest('[data-play]')) { if (play) { parar(); refrescar(); } else arrancar(t >= SEM - 1); } });
+  cont.addEventListener('input', (e) => { const ts = e.target.closest('[data-t]'); if (!ts) return; parar(); t = +ts.value; const o = ts.nextElementSibling; if (o) o.textContent = 'año ' + año10(); dibujar(); });
+  cont.addEventListener('change', (e) => { if (e.target.closest('[data-t]')) refrescar(); });
+  const RMQ = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const visible = () => cont.classList.contains('vis') && document.body.classList.contains('tb-abierto');
+  const animar = () => { if (RMQ) { t = SEM - 1; refrescar(); return; } if (visible()) arrancar(true); };
+  const btnTab = document.getElementById('b-tablero'); if (btnTab) btnTab.addEventListener('click', () => setTimeout(animar, 120));
+  bt.addEventListener('click', () => setTimeout(animar, 60));
+  addEventListener('escenario', () => { if (T3.escenario !== 'proyecto') escP = escP === 'A' ? 'C' : escP; pintar(); animar(); });
   addEventListener('resize', () => { if (cont.classList.contains('vis')) dibujar(); });
   correr(); pintar();
   return { pintar, S };
