@@ -1,7 +1,7 @@
 /* ============ FAUNA 3D DE LA HUERTA (vista en puntos de Bavaria Común) ============
    Animales modelados con su forma y colores reales, animados en lo que hacen en la huerta:
    abejas y mariposas que van de flor en flor del cilantro y se posan; abejorro que hace vibrar las flores del tomate; colibrí que
-   flota frente a las flores; mariquitas que caminan sobre la lechuga comiendo pulgones; lombrices en el suelo de las camas;
+   flota frente a las flores; mariquitas que caminan sobre la lechuga; lombrices en el suelo de las camas;
    copetón que salta y picotea en el camino; mirla que saca una lombriz; murciélago al rededor del urapán.
    Insectos a escala aumentada (x9) y aves (x2,4) para que se lean a la distancia de la vista; las posiciones salen de
    bavaria_campo.json (cada especie sobre su planta). */
@@ -105,14 +105,13 @@ export function crearFauna3D({ THREE, S, M, RMQ = false, modelo = null }) { // m
   // pulgones sobre la lechuga: la mariquita se los come al pasar (vuelven a aparecer después)
   const PUL = [], nPul = 90, gPul = new THREE.InstancedMesh(new THREE.SphereGeometry(0.0012 * K_INS, 6, 4).scale(1, 0.8, 1.3), std('#9acd32', { roughness: 0.5 }), nPul);
   AG.filter(g => g.tipo === 'cam').forEach((g, j) => { for (let i = 0; i < nPul / 4; i++) { const a = Math.random() * 6.28, r = g.r + (Math.random() - 0.5) * 0.05; PUL.push({ p: new THREE.Vector3(g.c.x + Math.cos(a) * r, g.c.y + 0.004, g.c.z + Math.sin(a) * r), vivo: true, t: 0 }); } });
-  gPul.count = PUL.length; grupo.add(gPul); const oP = new THREE.Object3D();
+  gPul.count = 0; // sin pulgones: la escena muestra solo las especies que ayudan a la huerta const oP = new THREE.Object3D();
   const pulgones = (dt) => { PUL.forEach((p, i) => { if (!p.vivo) { p.t -= dt; if (p.t <= 0) p.vivo = true; } else for (const g of AG) if (g.tipo === 'cam' && g.obj.position.distanceToSquared(p.p) < 0.0004) { p.vivo = false; p.t = 12 + Math.random() * 10; }
     oP.position.copy(p.p); oP.scale.setScalar(p.vivo ? 1 : 0.0001); oP.updateMatrix(); gPul.setMatrixAt(i, oP.matrix); }); gPul.instanceMatrix.needsUpdate = true; };
   /* ---------- animación ---------- */
   const tmp = new THREE.Vector3(), mira = new THREE.Vector3();
   const aletea = (o, t, amp = 0.9) => { const u = o.userData; if (!u.aI) return; const a = Math.sin(t * u.f) * amp; u.aI.rotation.z = a; u.aD.rotation.z = -a; };
   function paso(dt, t) {
-    pulgones(dt);
     for (const g of AG) {
       if (g.tipo === 'vis') {
         if (g.espera > 0) { g.espera -= dt; aletea(g.obj, t, g.obj.userData.f > 50 ? 0.9 : 0.25); if (g.obj.userData.f < 20) aletea(g.obj, t * 0.25, 0.5); g.obj.position.y = g.fin.y + Math.sin(t * 6) * 0.004; continue; }

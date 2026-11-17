@@ -85,7 +85,7 @@ import * as THREE from 'three';
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 let RMQ = matchMedia('(prefers-reduced-motion: reduce)').matches; const MOV = innerWidth <= 760;
-const M = await fetch('data3d/puntos/bavaria_campo.json?v=8').then(r => r.json());
+const M = await fetch('data3d/puntos/bavaria_campo.json?v=9').then(r => r.json());
 const ESP = M.especies, porK = Object.fromEntries(ESP.map(e => [e.k, e]));
 { const NOM = { cilantro: 'Lavanda', lechuga: 'Lechuga', tomate: 'Alcachofa', acelga: 'Kale', zanahoria: 'Acelga roja', eucalipto: 'Árboles existentes' }; for (const k in NOM) if (porK[k]) porK[k].n = NOM[k]; }
 
@@ -94,12 +94,12 @@ const SEC = [
   ['colibri', 'cilantro', 'Polinización', 'Colibrí', 'Flota frente a las flores de lavanda y toma su néctar; el polen se le pega al pico y lo lleva a la siguiente flor.'],
   ['abeja', 'cilantro', 'Polinización', 'Abeja de miel', 'Viene del apiario del distrito y recorre las hileras de lavanda: poliniza la huerta y produce miel para el mercado.'],
   ['mariposa', 'cilantro', 'Polinización', 'Mariposa', 'Toma néctar de la lavanda. Que llegue es señal de una huerta sin venenos.'],
-  ['mariquita', 'lechuga', 'Control de plagas', 'Mariquita', 'Camina por las hojas de la lechuga comiéndose los pulgones: la huerta no necesita plaguicidas.'],
+  ['mariquita', 'lechuga', 'Cuidado de los cultivos', 'Mariquita', 'Recorre las hojas de la lechuga y las mantiene sanas: con ella la huerta no necesita químicos.'],
   ['abejorro', 'tomate', 'Polinización', 'Abejorro', 'El abejorro nativo visita las flores moradas de la alcachofa y las poliniza.'],
-  ['copeton', 'acelga', 'Control de plagas', 'Copetón', 'Salta por el sendero de madera entre las hileras, comiendo semillas de maleza y orugas; anida en los árboles que se conservan.'],
+  ['copeton', 'acelga', 'Cuidado de los cultivos', 'Copetón', 'Salta por el sendero de madera entre las hileras, cuidando las plantas y dispersando semillas; anida en los árboles que se conservan.'],
   ['mirla', 'lombriz', 'Depredación', 'Mirla patiamarilla', 'Busca en la tierra húmeda junto a las hileras y saca lombrices e insectos.'],
   ['lombriz', 'zanahoria', 'Suelo vivo', 'Lombriz roja', 'Convierte el compost del distrito en tierra fértil para todos los bancales.'],
-  ['murcielago', 'eucalipto', 'Refugio', 'Murciélago', 'Al anochecer sale de los refugios de los árboles y caza las polillas de la huerta.']
+  ['murcielago', 'eucalipto', 'Refugio', 'Murciélago', 'Al anochecer sale de los refugios de los árboles y poliniza flores nocturnas.']
 ].filter(s => porK[s[0]]);
 $('secs').innerHTML = `<section class="hero" id="s0"><div class="tx"><div class="ey">Bavaria Común desde arriba · huertas de enseñanza</div><h1>Tramas de vida en la huerta</h1>
 <p>Las huertas de enseñanza de Bavaria Común vistas desde arriba: hileras de cultivos, el sendero de madera, el pabellón de la escuela, el invernadero y el bosque que se conserva. Baja con el scroll para descender a la huerta: cada parada encuadra una especie y lo que hace; al final puedes recorrerla.</p>
@@ -107,10 +107,10 @@ $('secs').innerHTML = `<section class="hero" id="s0"><div class="tx"><div class=
   SEC.map(([k, b, t, n, d], i) => `<section id="s${i + 1}"><div class="tx"><div class="ey">${String(i + 1).padStart(2, '0')} · ${esc(t)}</div><h2>${esc(n)}</h2><p>${esc(d)}</p>
   <span class="rel"><i style="background:${M.tipos[t] || '#fff'}"></i>${esc(n)} → ${esc((porK[b] || {}).n || '')}</span></div></section>`).join('') +
   `<section id="s${SEC.length + 1}"><div class="tx"><div class="ey">La trama completa</div><h2>${M.rel.length} relaciones entre ${ESP.length} especies</h2>
-  <p>Polinizadores, aves que comen plagas y el suelo vivo trabajan para la huerta; los árboles existentes les dan refugio. Así se enseña a cultivar en Bavaria Común.</p>
+  <p>Polinizadores, aves que cuidan los cultivos y el suelo vivo trabajan para la huerta; los árboles existentes les dan refugio. Así se enseña a cultivar en Bavaria Común.</p>
   <div class="fin"><button type="button" id="b-rec" class="rec">Recorrer la huerta</button><a href="index.html">Volver al simulador</a><a href="bavaria_interior.html?e=bio">Entrar a los edificios</a></div></div></section>`;
 $('prog').innerHTML = Array.from({ length: SEC.length + 2 }, (_, i) => `<a href="#s${i}" aria-label="Sección ${i}"></a>`).join('');
-$('nav').innerHTML = [['s0', 'Inicio'], ['s1', 'Polinización'], [`s${SEC.findIndex(s => s[2] === 'Control de plagas') + 1}`, 'Plagas'], [`s${SEC.findIndex(s => s[2] === 'Depredación') + 1}`, 'Suelo y aves'], [`s${SEC.length + 1}`, 'La trama']].map(([h, n]) => `<a href="#${h}">${n}</a>`).join('');
+$('nav').innerHTML = [['s0', 'Inicio'], ['s1', 'Polinización'], [`s${SEC.findIndex(s => s[2] === 'Cuidado de los cultivos') + 1}`, 'Cuidado'], [`s${SEC.findIndex(s => s[2] === 'Depredación') + 1}`, 'Suelo y aves'], [`s${SEC.length + 1}`, 'La trama']].map(([h, n]) => `<a href="#${h}">${n}</a>`).join('');
 
 /* ---------- escena de huertas en puntos: se arma en el navegador (data3d/puntos/escena_huerta.js) ---------- */
 const { crearEscenaHuerta } = await import('./data3d/puntos/escena_huerta.js?v=8');
@@ -163,7 +163,7 @@ const MATF = []; // materiales de la fauna 3D (su reloj de aleteo)
 const modelo = (k) => { if (FZ.tieneFauna(k)) { const w = new THREE.Group(), s = TAM[k] || 0.2, p = FZ.puntosFauna(THREE, k, U.uPx, 0.012 * s, MOV ? 9000 : 40000); p.scale.multiplyScalar(s); w.add(p); MATF.push(p.material); return w; }
   if (!NUBE[k]) return null; const w = new THREE.Group(), s = TAM[k] || 0.2, pts = new THREE.Points(geoEsp(k, MOV ? 2500 : 6000), matEsp(U.uPx, 0.0016 * s * 6));
   pts.scale.setScalar(s); if (SUELO[k]) pts.position.y = s * 0.5; w.add(pts); BILL.push(pts); return w; }; // (la fauna 3D no entra a BILL)
-const { crearFauna3D } = await import('./data3d/puntos/fauna3d.js?v=8');
+const { crearFauna3D } = await import('./data3d/puntos/fauna3d.js?v=9');
 const FAUNA = crearFauna3D({ THREE, S, M, RMQ, modelo });
 
 // sensores de la huerta (suelo, riego, polinizadores): puntos que titilan sobre las camas
