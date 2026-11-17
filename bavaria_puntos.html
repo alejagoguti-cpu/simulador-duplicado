@@ -68,7 +68,16 @@ body.lupa .hero{opacity:.18}.ley{padding:7px 12px;border-radius:10px;background:
   .nota{display:none}.lb b{font-size:9.5px}.lb i{display:none}.lb s{height:16px}
   body.lupa .hero{opacity:0}.ley{background:rgba(5,8,7,.7);padding:6px 10px;border-radius:8px}
 }
-@media(prefers-reduced-motion:reduce){#lupa.on{animation:none}}
+#mom{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:6;width:min(520px,calc(100vw - 32px));display:none;padding:14px 16px;border-radius:16px;
+  background:linear-gradient(165deg,rgba(26,30,28,.74),rgba(5,8,7,.84));border:1px solid rgba(255,255,255,.12);-webkit-backdrop-filter:blur(20px) saturate(1.4);backdrop-filter:blur(20px) saturate(1.4);box-shadow:0 20px 50px rgba(0,0,0,.45)}
+#mom.on{display:block;animation:lin .4s cubic-bezier(.2,.8,.2,1)}
+#mom .r{display:flex;align-items:center;gap:8px;font:500 9.5px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--tx2)}#mom .r i{width:9px;height:9px;border-radius:50%}
+#mom h3{margin:6px 0 4px;font:400 24px/1.05 var(--cond);text-transform:uppercase;letter-spacing:.02em}#mom p{margin:0;font-size:13px;line-height:1.5;color:#d6ddd8}
+#mom .pg{display:flex;gap:4px;margin-top:10px}#mom .pg b{flex:1;height:2px;border-radius:1px;background:rgba(255,255,255,.12);overflow:hidden;position:relative}#mom .pg b.on::after{content:'';position:absolute;inset:0;background:var(--acc);transform-origin:left;animation:pg 7s linear forwards}#mom .pg b.ya{background:rgba(255,255,255,.45)}
+@keyframes pg{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+body.momento .lb{opacity:.0;pointer-events:none}body.momento .lb.mo{opacity:1}body.momento .hero{opacity:0}body.momento .ley{opacity:.3}
+@media(max-width:760px){#mom{bottom:calc(64px + env(safe-area-inset-bottom));padding:11px 12px}#mom h3{font-size:20px}#mom p{font-size:12px}}
+@media(prefers-reduced-motion:reduce){#lupa.on{animation:none}#mom.on{animation:none}#mom .pg b.on::after{animation:none;transform:none}}
 </style>
 </head>
 <body>
@@ -82,8 +91,9 @@ body.lupa .hero{opacity:.18}.ley{padding:7px 12px;border-radius:10px;background:
 </section>
 <div id="marco"><i></i><em></em></div>
 <aside id="lupa" aria-live="polite"></aside>
+<div id="mom" role="status" aria-live="polite"></div>
 <div class="ley" id="ley"></div>
-<nav class="ctl" aria-label="Recorrido"><button id="b-rec">Recorrer</button><button id="b-atr">↓ Atrás</button><button id="b-ava">↑ Avanzar</button><button id="b-cen">Centrar</button></nav>
+<nav class="ctl" aria-label="Recorrido"><button id="b-mom" class="on">▶ Interacciones</button><button id="b-rec">Recorrer</button><button id="b-atr">↓ Atrás</button><button id="b-ava">↑ Avanzar</button><button id="b-cen">Centrar</button></nav>
 <div class="nota" id="nota"></div>
 <div class="carga" id="carga"><span>CARGANDO PUNTOS</span><i><b id="cb"></b></i></div>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}</script>
@@ -92,7 +102,7 @@ import * as THREE from 'three';
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const RMQ = matchMedia('(prefers-reduced-motion: reduce)').matches, MOV = innerWidth <= 760;
-const M = await fetch('data3d/puntos/bavaria_campo.json?v=4').then(r => r.json());
+const M = await fetch('data3d/puntos/bavaria_campo.json?v=5').then(r => r.json());
 // ---------- puntos (con barra de carga) ----------
 const resp = await fetch('data3d/puntos/bavaria_campo.bin?v=3'), tot = +resp.headers.get('content-length') || M.n * 9, rd = resp.body.getReader(), partes = []; let lle = 0;
 for (;;) { const { done, value } = await rd.read(); if (done) break; partes.push(value); lle += value.length; $('cb').style.width = Math.min(100, lle / tot * 100) + '%'; }
@@ -107,9 +117,9 @@ const cv = $('c'), R = new THREE.WebGLRenderer({ canvas: cv, antialias: false, p
 R.setPixelRatio(Math.min(2, devicePixelRatio || 1)); R.setClearColor(0x050807, 1);
 const S = new THREE.Scene(), cam = new THREE.PerspectiveCamera(M.fov, innerWidth / innerHeight, 0.1, 3000);
 const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3)); g.setAttribute('r', new THREE.BufferAttribute(rnd, 1));
-const U = { uT: { value: 0 }, uPx: { value: R.getPixelRatio() * innerHeight }, uIn: { value: 0 } };
+const U = { uT: { value: 0 }, uPx: { value: R.getPixelRatio() * innerHeight }, uIn: { value: 0 }, uZ: { value: 1 } };
 const mat = new THREE.ShaderMaterial({ uniforms: U, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.NormalBlending,
-  vertexShader: `attribute float r; varying vec3 vC; varying float vA; uniform float uT, uPx, uIn;
+  vertexShader: `attribute float r; varying vec3 vC; varying float vA; uniform float uT, uPx, uIn, uZ;
     void main(){
       vec3 p = position;
       float h = fract(r * 91.7);
@@ -117,7 +127,7 @@ const mat = new THREE.ShaderMaterial({ uniforms: U, vertexColors: true, transpar
       if (p.y > 1.2) p.x += sin(uT * 1.3 + p.y * 0.4 + r * 6.0) * 0.015 * (p.y - 1.2); // las copas se mecen
       float rise = smoothstep(r * 0.6, r * 0.6 + 0.4, uIn); p.y -= (1.0 - rise) * (2.0 + r * 6.0);
       vec4 mv = modelViewMatrix * vec4(p, 1.0); gl_Position = projectionMatrix * mv;
-      float d = -mv.z; gl_PointSize = clamp(uPx * 0.0030 * (0.75 + h * 0.6) / max(d, 0.1) * 6.0, 1.0, 4.2);
+      float d = -mv.z; gl_PointSize = clamp(uPx * 0.0030 * uZ * (0.75 + h * 0.6) / max(d, 0.1) * 6.0, 1.0, 4.2 * uZ);
       float niebla = smoothstep(260.0, 30.0, d);
       vC = color * (0.86 + h * 0.28) * mix(0.35, 1.0, niebla); vA = rise * mix(0.55, 1.0, niebla);
     }`,
@@ -135,7 +145,7 @@ function camara() {
 }
 // ---------- fauna 3D: animales reales animados en lo que hacen en la huerta (data3d/puntos/fauna3d.js) ----------
 const ESP = M.especies, porK = Object.fromEntries(ESP.map(e => [e.k, e]));
-const { crearFauna3D } = await import('./data3d/puntos/fauna3d.js?v=3');
+const { crearFauna3D } = await import('./data3d/puntos/fauna3d.js?v=5');
 const FAUNA = crearFauna3D({ THREE, S, M, RMQ });
 // luciérnagas (luz ambiente, como en la referencia)
 const NL = 220, lg = new THREE.BufferGeometry(), lp = new Float32Array(NL * 3), lph = new Float32Array(NL); for (let i = 0; i < NL; i++) { const a = (Math.random() - 0.5) * 1.6 + yaw0, d = 4 + Math.random() * 70; lp.set([Math.sin(a) * d, -1.5 + Math.random() * 8, Math.cos(a) * d], i * 3); lph[i] = Math.random() * 6.28; }
@@ -199,6 +209,41 @@ cv.addEventListener('pointerup', () => { drag = null; });
 cv.addEventListener('wheel', (e) => { e.preventDefault(); mover(-Math.sign(e.deltaY) * 3); }, { passive: false });
 function tam() { R.setSize(innerWidth, innerHeight, false); cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix(); U.uPx.value = R.getPixelRatio() * innerHeight; }
 addEventListener('resize', tam); tam();
+// ---------- MOMENTOS: zoom que sigue cada interacción en vivo (el ojo no se mueve: la nube de puntos se ve completa desde aquí) ----------
+const MOM = [
+  ['colibri', 'cilantro', 'Polinización', 'El colibrí toma néctar de flor en flor y se lleva el polen pegado al pico.'],
+  ['abeja', 'cilantro', 'Polinización', 'La abeja de miel visita el cilantro en flor: poliniza y lleva néctar al apiario del distrito.'],
+  ['mariquita', 'lechuga', 'Control de plagas', 'La mariquita camina por la lechuga comiéndose los pulgones: la huerta no necesita plaguicidas.'],
+  ['mirla', 'lombriz', 'Depredación', 'La mirla busca en el suelo húmedo y saca una lombriz: el suelo vivo también alimenta a las aves.'],
+  ['abejorro', 'tomate', 'Polinización', 'El abejorro nativo hace vibrar las flores del tomate para soltar el polen.'],
+  ['copeton', 'acelga', 'Control de plagas', 'El copetón salta entre las camas y picotea semillas de maleza y orugas.'],
+  ['mariposa', 'cilantro', 'Polinización', 'La mariposa se posa en las flores del cilantro: señal de una huerta sin venenos.'],
+  ['lombriz', 'lechuga', 'Suelo vivo', 'La lombriz convierte el compost en tierra fértil para las camas.']
+].filter(m => porK[m[0]] && FAUNA.agentes.some(a => a.k === m[0]));
+const mo = { on: false, i: 0, t: 0, ag: null, look: new THREE.Vector3(), fov: M.fov }, cam0 = (camara(), cam.clone()), vN = new THREE.Vector3();
+// el animal enfocado se dibuja encima de los puntos (que no lo tape una hoja en primer plano)
+const arriba = (o, on) => o.traverse(m => { if (m.isMesh) { const mt = m.material; if (mt.userData.tr0 === undefined) mt.userData.tr0 = mt.transparent; mt.depthTest = !on; mt.transparent = on || mt.userData.tr0; mt.needsUpdate = true; m.renderOrder = on ? 30 : 0; } });
+function pintarMom() {
+  const [k, b, t, txt] = MOM[mo.i], e = porK[k], bb = porK[b];
+  $('mom').innerHTML = `<div class="r"><i style="background:${TIP[t] || '#fff'}"></i>${esc(t)} · ${esc(e.n)} → ${esc(bb ? bb.n : '')}</div><h3>${esc(e.n)}</h3><p>${esc(txt)}</p><div class="pg">${MOM.map((_, j) => `<b class="${j === mo.i ? 'on' : j < mo.i ? 'ya' : ''}"></b>`).join('')}</div>`;
+  $('mom').classList.add('on'); LB.forEach(l => l.d.classList.toggle('mo', l.e.k === k || l.e.k === b));
+  if (mo.ag) arriba(mo.ag.obj, false); const cand = FAUNA.agentes.filter(a => a.k === k); mo.ag = cand.find(a => a.espera > 0) || cand[0]; mo.t = 0; if (mo.ag) arriba(mo.ag.obj, true);
+}
+function iniciarMom() { if (!MOM.length) return; cerrar(); mo.on = true; document.body.classList.add('momento'); $('b-mom').classList.add('on'); $('b-mom').textContent = '❚❚ Interacciones'; pintarMom(); }
+function pararMom() { if (!mo.on) return; mo.on = false; if (mo.ag) arriba(mo.ag.obj, false); document.body.classList.remove('momento'); $('mom').classList.remove('on'); $('b-mom').classList.remove('on'); $('b-mom').textContent = '▶ Interacciones'; LB.forEach(l => l.d.classList.remove('mo')); }
+$('b-mom').onclick = () => (mo.on ? pararMom() : iniciarMom());
+for (const id of ['b-rec', 'b-ava', 'b-atr', 'b-cen', 'ir']) $(id).addEventListener('click', pararMom);
+cv.addEventListener('pointerdown', pararMom); LB.forEach(l => l.d.addEventListener('click', pararMom, true));
+setTimeout(() => { if (!sel && !RMQ) iniciarMom(); }, 2600); // al entrar: las interacciones se muestran solas
+function camMom(dt) { // la cámara gira y se acerca (zoom) al animal, siguiéndolo
+  const k = 1 - Math.exp(-dt * 2.2);
+  if (mo.on && mo.ag) { mo.t += dt; if (mo.t > 7) { mo.i = (mo.i + 1) % MOM.length; pintarMom(); }
+    const p = mo.ag.obj.position, d = cam.position.distanceTo(p); mo.look.lerp(p, mo.t < 0.05 ? 0.25 : k);
+    vN.copy(mo.look).project(cam0); vN.x = Math.max(-0.62, Math.min(0.62, vN.x)); vN.y = Math.max(-0.62, Math.min(0.55, vN.y)); mo.look.copy(vN.unproject(cam0)); /* sin salirse de la nube capturada */ const fz = Math.max(2.2, Math.min(M.fov, 2 * Math.atan(1.1 / Math.max(d, 0.5)) * 180 / Math.PI)); mo.fov += (fz - mo.fov) * k * 0.8; }
+  else { mo.fov += (M.fov - mo.fov) * k; const f = new THREE.Vector3(); cam.getWorldDirection(f); mo.look.copy(cam.position).addScaledVector(f, 10); }
+  if (mo.on || Math.abs(mo.fov - M.fov) > 0.05) { if (mo.on) cam.lookAt(mo.look); cam.fov = mo.fov; cam.updateProjectionMatrix(); U.uZ.value = Math.min(4, Math.pow(M.fov / mo.fov, 0.7)); }
+  else if (cam.fov !== M.fov) { cam.fov = M.fov; cam.updateProjectionMatrix(); U.uZ.value = 1; }
+}
 // ---------- cuadro ----------
 const V = new THREE.Vector3(); let t0 = performance.now(), tPrev = t0;
 $('carga').style.opacity = 0; setTimeout(() => $('carga').remove(), 900);
@@ -207,6 +252,7 @@ function cuadro(t) {
   U.uT.value = RMQ ? 0 : tt; U.uIn.value = RMQ ? 1 : Math.min(1, tt / 2.2);
   if (st.rec) { st.dObj = 22 + Math.sin(tt * 0.12) * 22; st.yObj = Math.sin(tt * 0.09) * 0.28; }
   const k = 1 - Math.exp(-dt * 3); st.d += (st.dObj - st.d) * k; st.yaw += (st.yObj - st.yaw) * k; st.pitch += (st.pObj - st.pitch) * k; camara();
+  camMom(dt);
   FAUNA.paso(dt, tt); // abejas, mariposas, colibrí, mariquitas, lombrices, copetón, mirla y murciélago
   R.render(S, cam);
   // etiquetas

@@ -83,28 +83,35 @@ export function crearFauna3D({ THREE, S, M, RMQ = false }) {
   /* ---------- comportamientos ---------- */
   const AG = [], rnd = (a, b) => a + Math.random() * (b - a);
   const flores = (k, n, r, dy) => { const e = porK[k]; if (!e) return []; return Array.from({ length: n }, () => new THREE.Vector3(e.p[0] + rnd(-r, r), e.p[1] + dy + rnd(-0.05, 0.12), e.p[2] + rnd(-r, r))); };
-  const F_CIL = flores('cilantro', 14, 1.6, 0.05), F_TOM = flores('tomate', 10, 1.4, 0.2), F_LEC = flores('lechuga', 10, 0.45, 0.02);
+  const F_CIL = flores('cilantro', 14, 1.0, 0.05), F_TOM = flores('tomate', 10, 1.4, 0.2), F_LEC = flores('lechuga', 10, 0.45, 0.02);
   // volador que visita flores: vuela con curva, flota, se posa y sigue
-  const visitante = (obj, F, vel, posa, alto) => { if (!F.length) return; obj.position.copy(F[0]); grupo.add(obj); AG.push({ tipo: 'vis', obj, F, vel, posa, alto, ini: obj.position.clone(), fin: F[Math.floor(Math.random() * F.length)].clone(), u: Math.random(), espera: 0 }); };
-  for (let i = 0; i < 7; i++) visitante(abeja(), F_CIL, rnd(1.2, 1.8), [1.2, 3.2], 0.5);
-  for (let i = 0; i < 2; i++) visitante(abeja(true), F_TOM, rnd(0.9, 1.2), [1.5, 3.5], 0.4);
-  for (let i = 0; i < 3; i++) visitante(mariposa(), F_CIL, rnd(0.55, 0.8), [2.5, 5], 0.9);
-  visitante(colibri(), F_CIL.concat(F_TOM.slice(0, 3)), 3.2, [1.2, 2.2], 0.6);
+  const visitante = (obj, F, vel, posa, alto, k) => { if (!F.length) return; obj.position.copy(F[0]); grupo.add(obj); AG.push({ tipo: 'vis', k, obj, F, vel, posa, alto, ini: obj.position.clone(), fin: F[Math.floor(Math.random() * F.length)].clone(), u: Math.random(), espera: 0 }); };
+  for (let i = 0; i < 7; i++) visitante(abeja(), F_CIL, rnd(1.2, 1.8), [1.2, 3.2], 0.5, 'abeja');
+  for (let i = 0; i < 2; i++) visitante(abeja(true), F_TOM, rnd(0.9, 1.2), [1.5, 3.5], 0.4, 'abejorro');
+  for (let i = 0; i < 3; i++) visitante(mariposa(), F_CIL, rnd(0.55, 0.8), [2.5, 5], 0.9, 'mariposa');
+  visitante(colibri(), F_CIL.slice(0, 6), 2.6, [2.2, 3.4], 0.6, 'colibri');
   // mariquitas caminando sobre la lechuga
-  for (let i = 0; i < 4; i++) { const o = mariquita(), c = F_LEC[i % F_LEC.length]; if (!c) break; o.position.copy(c); grupo.add(o); AG.push({ tipo: 'cam', obj: o, c: c.clone(), a: rnd(0, 6.28), r: rnd(0.03, 0.07), v: rnd(0.25, 0.45) }); }
+  for (let i = 0; i < 4; i++) { const o = mariquita(), c = F_LEC[i % F_LEC.length]; if (!c) break; o.position.copy(c); grupo.add(o); AG.push({ tipo: 'cam', k: 'mariquita', obj: o, c: c.clone(), a: rnd(0, 6.28), r: rnd(0.03, 0.07), v: rnd(0.25, 0.45) }); }
   // lombrices en el suelo de la cama
-  const eL = porK.lombriz; if (eL) for (let i = 0; i < 3; i++) { const o = lombriz(); o.position.set(eL.p[0] + rnd(-0.4, 0.4), eL.p[1] + 0.02, eL.p[2] + rnd(-0.4, 0.4)); o.rotation.y = rnd(0, 6.28); grupo.add(o); AG.push({ tipo: 'lom', obj: o, f: rnd(0, 6) }); }
+  const eL = porK.lombriz; if (eL) for (let i = 0; i < 3; i++) { const o = lombriz(); o.position.set(eL.p[0] + rnd(-0.4, 0.4), eL.p[1] + 0.02, eL.p[2] + rnd(-0.4, 0.4)); o.rotation.y = rnd(0, 6.28); grupo.add(o); AG.push({ tipo: 'lom', k: 'lombriz', obj: o, f: rnd(0, 6) }); }
   // pájaros en el camino: saltan, picotean; la mirla saca una lombriz
   for (const [k, n] of [['copeton', 2], ['mirla', 1]]) { const e = porK[k]; if (!e) continue;
     for (let i = 0; i < n; i++) { const o = pajaro(k), base = V3(e.p); base.x += rnd(-0.6, 0.6); base.z += rnd(-0.6, 0.6); o.position.copy(base); grupo.add(o);
       let presa = null; if (k === 'mirla') { presa = lombriz(); presa.scale.setScalar(1.3); grupo.add(presa); }
-      AG.push({ tipo: 'paj', obj: o, base, dest: base.clone(), t: 0, est: 'mira', dur: rnd(0.6, 1.4), mirla: k === 'mirla', presa }); } }
-  const eU = porK.urapan, eM = porK.murcielago; if (eU || eM) { const o = murcielago(), c = V3((eM || eU).p); grupo.add(o); AG.push({ tipo: 'mur', obj: o, c, r: 4, a: 0 }); }
+      AG.push({ tipo: 'paj', k, obj: o, base, dest: base.clone(), t: 0, est: 'mira', dur: rnd(0.6, 1.4), mirla: k === 'mirla', presa }); } }
+  const eU = porK.urapan, eM = porK.murcielago; if (eU || eM) { const o = murcielago(), c = V3((eM || eU).p); grupo.add(o); AG.push({ tipo: 'mur', k: 'murcielago', obj: o, c, r: 4, a: 0 }); }
 
+  // pulgones sobre la lechuga: la mariquita se los come al pasar (vuelven a aparecer después)
+  const PUL = [], nPul = 90, gPul = new THREE.InstancedMesh(new THREE.SphereGeometry(0.0012 * K_INS, 6, 4).scale(1, 0.8, 1.3), std('#9acd32', { roughness: 0.5 }), nPul);
+  AG.filter(g => g.tipo === 'cam').forEach((g, j) => { for (let i = 0; i < nPul / 4; i++) { const a = Math.random() * 6.28, r = g.r + (Math.random() - 0.5) * 0.05; PUL.push({ p: new THREE.Vector3(g.c.x + Math.cos(a) * r, g.c.y + 0.004, g.c.z + Math.sin(a) * r), vivo: true, t: 0 }); } });
+  gPul.count = PUL.length; grupo.add(gPul); const oP = new THREE.Object3D();
+  const pulgones = (dt) => { PUL.forEach((p, i) => { if (!p.vivo) { p.t -= dt; if (p.t <= 0) p.vivo = true; } else for (const g of AG) if (g.tipo === 'cam' && g.obj.position.distanceToSquared(p.p) < 0.0004) { p.vivo = false; p.t = 12 + Math.random() * 10; }
+    oP.position.copy(p.p); oP.scale.setScalar(p.vivo ? 1 : 0.0001); oP.updateMatrix(); gPul.setMatrixAt(i, oP.matrix); }); gPul.instanceMatrix.needsUpdate = true; };
   /* ---------- animación ---------- */
   const tmp = new THREE.Vector3(), mira = new THREE.Vector3();
   const aletea = (o, t, amp = 0.9) => { const u = o.userData; if (!u.aI) return; const a = Math.sin(t * u.f) * amp; u.aI.rotation.z = a; u.aD.rotation.z = -a; };
   function paso(dt, t) {
+    pulgones(dt);
     for (const g of AG) {
       if (g.tipo === 'vis') {
         if (g.espera > 0) { g.espera -= dt; aletea(g.obj, t, g.obj.userData.f > 50 ? 0.9 : 0.25); if (g.obj.userData.f < 20) aletea(g.obj, t * 0.25, 0.5); g.obj.position.y = g.fin.y + Math.sin(t * 6) * 0.004; continue; }
@@ -122,5 +129,5 @@ export function crearFauna3D({ THREE, S, M, RMQ = false }) {
       else if (g.tipo === 'mur') { g.a += dt * 0.6; g.obj.position.set(g.c.x + Math.cos(g.a) * g.r, g.c.y + 1 + Math.sin(g.a * 2) * 0.6, g.c.z + Math.sin(g.a) * g.r); g.obj.rotation.y = -g.a; aletea(g.obj, t, 0.8); }
     }
   }
-  return { grupo, paso: RMQ ? () => {} : paso, n: AG.length };
+  return { grupo, paso: RMQ ? () => {} : paso, n: AG.length, agentes: AG };
 }
