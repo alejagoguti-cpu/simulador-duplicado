@@ -48,7 +48,7 @@ section.hero{align-items:center}
 body.libre main,body.libre .prog,body.libre #inset,body.libre #enc,body.libre #hilo{display:none!important}body.libre{overflow:hidden}body.libre #guiaRec{display:flex}body.libre canvas#c{cursor:grab}
 .tx .fin a{padding:11px 16px;border:1px solid rgba(255,255,255,.28);font:500 11px var(--mono);letter-spacing:.14em;color:var(--tx);text-decoration:none;text-transform:uppercase}.tx .fin a:hover{background:rgba(255,255,255,.07)}
 .pie{position:fixed;right:28px;bottom:24px;z-index:6;display:flex;gap:18px;align-items:center;font-size:10.5px;color:var(--tx3)}
-.pie .modos{display:flex;gap:2px;padding:3px;border:1px solid rgba(255,255,255,.16);background:rgba(4,7,10,.6)}.pie .modos button{padding:5px 10px;font:500 10.5px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--tx2)}.pie .modos button[aria-pressed=true]{background:var(--acc);color:#04201a}
+.pie .modos{display:flex;gap:2px;padding:3px;border:1px solid rgba(255,255,255,.16);background:rgba(4,7,10,.6)}.pie .modos{flex-wrap:wrap}.pie .modos button{padding:5px 9px;font:500 10.5px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--tx2)}.pie .modos button[aria-pressed=true]{background:var(--acc);color:#04201a}
 .pie button{all:unset;cursor:pointer;color:var(--tx2);font-size:11.5px}.pie button:hover{color:var(--tx)}.pie span{max-width:520px;text-align:right}
 .prog{position:fixed;right:14px;top:50%;transform:translateY(-50%);z-index:6;display:flex;flex-direction:column;gap:8px}
 .prog a{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.22);display:block}.prog a.on{background:var(--acc);box-shadow:0 0 8px var(--acc)}
@@ -76,7 +76,7 @@ a:focus-visible,button:focus-visible{outline:1px solid var(--acc);outline-offset
 <div id="inset" aria-hidden="true"><canvas id="ic" width="512" height="512"></canvas><span class="n"></span><div class="cap"></div></div>
 <main id="secs"></main>
 <div class="prog" id="prog" aria-hidden="true"></div>
-<div class="pie"><div class="modos" role="group" aria-label="Cómo ver la escena"><button type="button" data-m="0" aria-pressed="true">Puntos</button><button type="button" data-m="1" aria-pressed="false">Sólido</button><button type="button" data-m="2" aria-pressed="false">Profundidad</button></div><button id="pausa" type="button">Pausar movimiento</button><span id="nota"></span></div>
+<div class="pie"><div class="modos" role="group" aria-label="Tipo de visión"><button type="button" data-m="0" aria-pressed="true">Puntos</button><button type="button" data-m="1" aria-pressed="false">Sólido</button><button type="button" data-m="2" aria-pressed="false">Profundidad</button><button type="button" data-m="3" aria-pressed="false">Rayos X</button><button type="button" data-m="4" aria-pressed="false">Térmica</button><button type="button" data-m="5" aria-pressed="false">Nocturna</button></div><button id="pausa" type="button">Pausar movimiento</button><span id="nota"></span></div>
 <div id="guiaRec"><span>Arrastra para mirar · W A S D o flechas para caminar · rueda para avanzar</span><button type="button" id="b-salir">Salir</button></div>
 <div class="carga" id="carga"><span>CARGANDO PUNTOS</span><i><b id="cb"></b></i></div>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
@@ -102,7 +102,7 @@ const SEC = [
   ['murcielago', 'eucalipto', 'Refugio', 'Murciélago', 'Al anochecer sale de los refugios de los árboles y poliniza flores nocturnas.']
 ].filter(s => porK[s[0]]);
 $('secs').innerHTML = `<section class="hero" id="s0"><div class="tx"><div class="ey">Bavaria Común desde arriba · huertas de enseñanza</div><h1>Tramas de vida en la huerta</h1>
-<p>Las huertas de enseñanza de Bavaria Común vistas desde arriba: hileras de cultivos, el sendero de madera, el pabellón de la escuela, el invernadero y el bosque que se conserva. Baja con el scroll para descender a la huerta: cada parada encuadra una especie y lo que hace; al final puedes recorrerla.</p>
+<p>El predio real de Bavaria Común visto desde arriba (sus edificios, el bosque del censo y los pasajes nuevos) con las huertas de enseñanza en los claros: hileras de cultivos, el sendero de madera, el pabellón de la escuela y el invernadero. Baja con el scroll para descender a la huerta: cada parada encuadra una especie y lo que hace; al final puedes recorrerla.</p>
 <a class="baja" href="#s1">Desliza ↓</a></div></section>` +
   SEC.map(([k, b, t, n, d], i) => `<section id="s${i + 1}"><div class="tx"><div class="ey">${String(i + 1).padStart(2, '0')} · ${esc(t)}</div><h2>${esc(n)}</h2><p>${esc(d)}</p>
   <span class="rel"><i style="background:${M.tipos[t] || '#fff'}"></i>${esc(n)} → ${esc((porK[b] || {}).n || '')}</span></div></section>`).join('') +
@@ -113,7 +113,7 @@ $('prog').innerHTML = Array.from({ length: SEC.length + 2 }, (_, i) => `<a href=
 $('nav').innerHTML = [['s0', 'Inicio'], ['s1', 'Polinización'], [`s${SEC.findIndex(s => s[2] === 'Cuidado de los cultivos') + 1}`, 'Cuidado'], [`s${SEC.findIndex(s => s[2] === 'Depredación') + 1}`, 'Suelo y aves'], [`s${SEC.length + 1}`, 'La trama']].map(([h, n]) => `<a href="#${h}">${n}</a>`).join('');
 
 /* ---------- escena de huertas en puntos: se arma en el navegador (data3d/puntos/escena_huerta.js) ---------- */
-const { crearEscenaHuerta } = await import('./data3d/puntos/escena_huerta.js?v=8');
+const { crearEscenaHuerta } = await import('./data3d/puntos/escena_huerta.js?v=10');
 const ESC = await crearEscenaHuerta({ THREE, MOV, progreso: (f) => { $('cb').style.width = Math.round(f * 100) + '%'; } });
 const OJO = 1.6, n = ESC.n, pos = ESC.pos, col = ESC.col, rnd = new Float32Array(n).map(() => Math.random());
 for (let j = 1; j < pos.length; j += 3) pos[j] -= OJO; // el ojo queda en el origen
@@ -123,7 +123,7 @@ const RENOMBRA = { cilantro: ['Lavanda', 'Lavandula angustifolia', 'flor'], lech
 for (const e of ESP) { const a = ESC.anc[e.k]; if (a) e.p = [a[0], a[1] - OJO, a[2]]; const r = RENOMBRA[e.k]; if (r) { e.n = r[0]; e.sci = r[1]; e.g = r[2]; } }
 const cv = $('c'), R = new THREE.WebGLRenderer({ canvas: cv, antialias: true, powerPreference: 'high-performance' });
 R.setPixelRatio(Math.min(2, devicePixelRatio || 1)); R.setClearColor(0x04070a, 1);
-const S = new THREE.Scene(), cam = new THREE.PerspectiveCamera(M.fov, innerWidth / innerHeight, 0.05, 3000);
+const S = new THREE.Scene(), cam = new THREE.PerspectiveCamera(M.fov, innerWidth / innerHeight, 0.05, 6000);
 const U = { uT: { value: 0 }, uPx: { value: R.getPixelRatio() * innerHeight }, uIn: { value: 0 }, uZ: { value: 1 }, uModo: { value: 0 } };
 const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3)); g.setAttribute('r', new THREE.BufferAttribute(rnd, 1));
 // puntos finos, con un velo frío en la distancia (como la referencia) y brillo en los bordes de las hojas
@@ -135,12 +135,17 @@ const mat = new THREE.ShaderMaterial({ uniforms: U, vertexColors: true, transpar
       float rise = smoothstep(r * 0.6, r * 0.6 + 0.4, uIn); p.y -= (1.0 - rise) * (2.0 + r * 6.0);
       vec4 mv = modelViewMatrix * vec4(p, 1.0); gl_Position = projectionMatrix * mv; float d = -mv.z;
       gl_PointSize = clamp(uPx * 0.0021 * uZ * (0.8 + h * 0.5) / max(d, 0.1) * 6.0, 1.2, 6.0 * uZ);
-      float lejos = smoothstep(45.0, 190.0, d); vec3 c = color * (0.84 + h * 0.3);
+      float lejos = smoothstep(45.0, 900.0, d); vec3 c = color * (0.84 + h * 0.3);
       c = mix(c, vec3(0.5, 0.72, 0.7) * (0.55 + dot(color, vec3(.33))), lejos * 0.28); // velo frío a lo lejos
-      vC = c * mix(1.0, 0.6, smoothstep(80.0, 220.0, d)); vA = rise * mix(1.0, 0.6, lejos);
-      if (uModo > 0.5 && uModo < 1.5) { gl_PointSize *= 2.6; vA = rise; vC = color * (0.92 + h * 0.16) * mix(1.0, 0.75, smoothstep(60.0, 240.0, d)); }
-      if (uModo > 1.5) { float t = clamp(d / 140.0, 0.0, 1.0); vec3 cerca = vec3(1.0, 0.55, 0.18), medio = vec3(0.2, 0.85, 0.75), lejosC = vec3(0.15, 0.25, 0.75);
-        vC = (t < 0.35 ? mix(cerca, medio, t / 0.35) : mix(medio, lejosC, (t - 0.35) / 0.65)) * (0.55 + 0.45 * dot(color, vec3(0.33))) * (0.8 + 0.4 * step(0.985, fract(d * 0.25))); vA = rise; } }`,
+      vC = c * mix(1.0, 0.7, smoothstep(200.0, 1200.0, d)); vA = rise * mix(1.0, 0.6, lejos);
+      float lum = dot(color, vec3(0.3, 0.55, 0.15)), vivo = clamp((color.g - max(color.r, color.b)) * 4.0 + 0.2, 0.0, 1.0);
+      if (uModo > 0.5 && uModo < 1.5) { gl_PointSize *= 2.6; vA = rise; vC = color * (0.92 + h * 0.16) * mix(1.0, 0.8, smoothstep(200.0, 1200.0, d)); }
+      if (uModo > 1.5 && uModo < 2.5) { float t = clamp(d / 260.0, 0.0, 1.0); vec3 c1 = vec3(1.0, 0.55, 0.18), c2 = vec3(0.2, 0.85, 0.75), c3 = vec3(0.15, 0.25, 0.75);
+        vC = (t < 0.35 ? mix(c1, c2, t / 0.35) : mix(c2, c3, (t - 0.35) / 0.65)) * (0.55 + 0.45 * lum) * (0.8 + 0.4 * step(0.985, fract(d * 0.25))); vA = rise; }
+      if (uModo > 2.5 && uModo < 3.5) { vC = vec3(0.55, 0.78, 1.0) * (0.35 + 0.65 * lum); vA = rise * 0.16; }
+      if (uModo > 3.5 && uModo < 4.5) { float k = clamp(vivo * 0.75 + lum * 0.35 + h * 0.08, 0.0, 1.0);
+        vC = k < 0.33 ? mix(vec3(0.03, 0.0, 0.12), vec3(0.55, 0.0, 0.6), k / 0.33) : k < 0.66 ? mix(vec3(0.55, 0.0, 0.6), vec3(1.0, 0.35, 0.0), (k - 0.33) / 0.33) : mix(vec3(1.0, 0.35, 0.0), vec3(1.0, 0.95, 0.55), (k - 0.66) / 0.34); gl_PointSize *= 1.6; vA = rise; }
+      if (uModo > 4.5) { float g2 = (0.25 + 1.1 * lum) * (0.85 + 0.3 * fract(sin(dot(position.xz, vec2(12.9, 78.2)) + uT * 30.0) * 43758.5)); vC = vec3(0.25, 1.0, 0.35) * g2; gl_PointSize *= 1.5; vA = rise; } }`,
   fragmentShader: `varying vec3 vC; varying float vA; void main(){ vec2 q = gl_PointCoord - 0.5; float d = dot(q, q); if (d > 0.25) discard; gl_FragColor = vec4(vC, vA * smoothstep(0.25, 0.1, d));
     #include <colorspace_fragment>
   }` });
@@ -190,14 +195,14 @@ const SEL = {}; SEC.forEach(([k]) => { SEL[k] = agenteDe(k); });
 const cam0 = new THREE.PerspectiveCamera(M.fov, innerWidth / innerHeight, 0.05, 3000); cam0.lookAt(L0); cam0.updateMatrixWorld(); const vN = new THREE.Vector3();
 // la cámara no mira fuera de lo que se capturó (abajo y a los lados no hay puntos)
 const dentroCaptura = (v) => v; const _dc = (v) => { vN.copy(v).project(cam0); vN.x = Math.max(-0.38, Math.min(0.38, vN.x)); vN.y = Math.max(-0.4, Math.min(0.45, vN.y)); return v.copy(vN.unproject(cam0)); };
-const AER = new THREE.Vector3(-34, 118, -48), AERL = new THREE.Vector3(0, -1.6, 58), camPos = new THREE.Vector3(); // Bavaria desde arriba
+const CTX = ESC.ctx, AER = CTX ? new THREE.Vector3(CTX.c[0] - CTX.R * 0.18, CTX.R * 0.62, CTX.c[1] - CTX.R * 0.55) : new THREE.Vector3(-34, 118, -48), AERL = CTX ? new THREE.Vector3(CTX.c[0], -1.6, CTX.c[1]) : new THREE.Vector3(0, -1.6, 58), camPos = new THREE.Vector3(); // Bavaria real desde arriba
 const objetivo = (i) => { if (i <= 0 || i > SEC.length) return lookBase; const a = SEL[SEC[i - 1][0]]; return a ? a.obj.position : lookBase; };
 function leerScroll() { sObj = scrollY / innerHeight; }
 addEventListener('scroll', leerScroll, { passive: true });
 function tam() { R.setSize(innerWidth, innerHeight, false); cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix(); U.uPx.value = R.getPixelRatio() * innerHeight; leerScroll(); }
 addEventListener('resize', tam); tam();
 document.querySelector('.pie .modos').onclick = (e) => { const b = e.target.closest('[data-m]'); if (!b) return; const m2 = +b.dataset.m; U.uModo.value = m2;
-  mat.transparent = m2 === 0; mat.depthWrite = m2 !== 0; mat.needsUpdate = true; document.querySelectorAll('.pie .modos button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); };
+  mat.transparent = m2 === 0 || m2 === 3; mat.depthWrite = !(m2 === 0 || m2 === 3); mat.blending = m2 === 3 ? THREE.AdditiveBlending : THREE.NormalBlending; mat.needsUpdate = true; R.setClearColor(m2 === 5 ? 0x010a03 : m2 === 3 ? 0x020611 : 0x04070a, 1); document.querySelectorAll('.pie .modos button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); };
 $('pausa').onclick = () => { RMQ = !RMQ; $('pausa').textContent = RMQ ? 'Reanudar movimiento' : 'Pausar movimiento'; };
 $('nota').textContent = 'Escena de la propuesta en puntos: árboles y plantas muestreados de modelos 3D reales; especies reconstruidas con puntos desde fotografías (iNaturalist, CC) y una profundidad estimada. Representación, no un levantamiento. Animales aumentados para que se vean. ' + FZ.FAUNA_FUENTES;
 

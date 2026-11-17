@@ -103,18 +103,59 @@ export async function crearEscenaHuerta({ THREE, MOV = false, progreso = () => {
   /* ---------- árboles: muchos, alrededor del campo y al fondo ---------- */
   const ARB = [];
   const arbol = (x, z, alto) => { const N = AR[(rnd() * AR.length) | 0]; poner(N, x, z, alto, r2(0, 6.28)); ARB.push([x, z, alto]); };
-  for (let z = 2; z < 72; z += r2(5, 7)) { arbol(r2(-48, -44), z, r2(8, 12)); arbol(r2(44, 48), z, r2(8, 12)); }     // alamedas al borde de las hileras
-  for (let z = 6; z < 60; z += r2(9, 13)) { arbol(r2(-24, -20), z, r2(6, 9)); arbol(r2(20, 24), z, r2(6, 9)); }        // árboles de sombra dentro del campo
-  for (let z = 8; z < 70; z += r2(7, 10)) { arbol(r2(-62, -54), z, r2(10, 15)); arbol(r2(54, 62), z, r2(10, 15)); }
-  for (let i = 0; i < 26; i++) arbol(r2(-90, 90), r2(92, 135), r2(10, 17));                                         // bosque detrás del pabellón
-  for (let i = 0; i < 10; i++) { const s = rnd() < 0.5 ? -1 : 1; arbol(s * r2(62, 92), r2(-4, 80), r2(10, 16)); }
   arbol(-7, 66.5, 7.5); arbol(8, 67.5, 8); // dos árboles junto a la entrada del pabellón
-  // MÁS ÁRBOLES: bosquetes como el bosque de Bavaria (grupos densos), una alameda a lo largo del sendero y árboles sueltos en el campo
-  const bosquete = (cx, cz, n, rad, a0, a1) => { for (let i = 0; i < n; i++) { const a = r2(0, 6.28), r = rad * Math.sqrt(rnd()); arbol(cx + Math.cos(a) * r, cz + Math.sin(a) * r, r2(a0, a1)); } };
-  bosquete(-75, 20, 14, 18, 10, 16); bosquete(78, 35, 14, 18, 10, 16); bosquete(-70, 70, 12, 16, 11, 17); bosquete(72, 95, 12, 16, 11, 17);
-  bosquete(-35, 110, 12, 20, 12, 18); bosquete(30, 120, 12, 20, 12, 18); bosquete(-85, 120, 10, 18, 10, 16); bosquete(90, 130, 10, 18, 10, 16);
   for (let z = 8; z < 66; z += r2(9, 12)) for (const s of [-1, 1]) arbol(s * r2(3.2, 3.8), z, r2(5.5, 7.5));       // alameda junto al sendero
-  for (let i = 0; i < 14; i++) { const s = rnd() < 0.5 ? -1 : 1; arbol(s * r2(9, 40), r2(14, 60), r2(5, 8)); }        // árboles sueltos que se conservan en el campo
+
+  /* ---------- BAVARIA REAL (los mismos datos del simulador): predio, edificios con su altura, las 3.250 copas del censo,
+     pasajes nuevos y huertas en los claros. La huerta de esta vista queda en su lugar real (huerta docente de hortalizas),
+     con las hileras paralelas a los edificios. ---------- */
+  const J = (u) => fetch(u).then(r => r.json()).catch(() => null);
+  const [BV, BA, SX] = await Promise.all([J('data3d/bavaria.json?v=3'), J('data3d/bavaria_arboles.json?v=3'), J('data3d/bavaria_distrito_sx.json?v=2')]);
+  const lw = (x, y) => [x - 5341.33, 3161.9 - y];
+  let CTX = null;
+  if (BV) {
+    const e2 = BV.edif[2].p.map(q => lw(q[0], q[1])), ANG = Math.atan2(e2[1][1] - e2[0][1], e2[1][0] - e2[0][0]), du = [Math.cos(ANG), Math.sin(ANG)], dv = [-du[1], du[0]];
+    const ANCLA = [4300, 51], CAMPO = [0, 35]; // centro de la huerta docente (mundo) -> centro del campo de esta vista
+    const aE = (w) => { const rx = w[0] - ANCLA[0], rz = w[1] - ANCLA[1]; return [CAMPO[0] + rx * dv[0] + rz * dv[1], CAMPO[1] + rx * du[0] + rz * du[1]]; }; // mundo -> escena (z = a lo largo de los edificios)
+    const M2E = (x, y) => aE(lw(x, y));
+    const enCampo = (x, z) => Math.abs(x) < 47 && z > -4 && z < 90; // la huerta detallada y su pabellón
+    const dentro = (P2, x, z) => { let c = false; for (let i = 0, j = P2.length - 1; i < P2.length; j = i++) { const a = P2[i], b = P2[j]; if ((a[1] > z) !== (b[1] > z) && x < (b[0] - a[0]) * (z - a[1]) / (b[1] - a[1]) + a[0]) c = !c; } return c; };
+    const SIT = BV.sitio.map(q => M2E(q[0], q[1])); let sx0 = 1e9, sx1 = -1e9, sz0 = 1e9, sz1 = -1e9; for (const q of SIT) { sx0 = Math.min(sx0, q[0]); sx1 = Math.max(sx1, q[0]); sz0 = Math.min(sz0, q[1]); sz1 = Math.max(sz1, q[1]); }
+    const EDS = BV.edif.map(e => ({ P: e.p.map(q => M2E(q[0], q[1])), h: e.h || 8 })).filter(e => !e.P.some(q => enCampo(q[0], q[1])));
+    const enEdif = (x, z, m = 0) => EDS.some(e => dentro(e.P, x, z));
+    // suelo del predio: pasto y sotobosque
+    const nS = Math.round(260000 * K);
+    for (let i = 0; i < nS; i++) { const x = r2(sx0, sx1), z = r2(sz0, sz1); if (enCampo(x, z) || !dentro(SIT, x, z) || enEdif(x, z)) continue; pt(x, rnd() * 0.08, z, luz(mezcla(PASTO[(rnd() * 4) | 0], [0.35, 0.3, 0.2], rnd() * 0.35), UP, 0.8)); }
+    // edificios: muros con pisos y ventanas, cubierta clara (la nave grande como estructura reticulada)
+    const MURO = [0.86, 0.83, 0.78], TECHO = [0.78, 0.8, 0.82], VENT = [0.45, 0.58, 0.64];
+    for (const e of EDS) { const P2 = e.P, h = e.h;
+      for (let k = 0; k < P2.length; k++) { const a = P2[k], b = P2[(k + 1) % P2.length], Lk = Math.hypot(b[0] - a[0], b[1] - a[1]); if (Lk < 0.5) continue; const nx = (b[1] - a[1]) / Lk, nz = -(b[0] - a[0]) / Lk, nrm = new THREE.Vector3(nx, 0, nz);
+        const nP = Math.round(Lk * h * 1.6 * K) + 10; for (let i = 0; i < nP; i++) { const t = rnd(), y = rnd() * h, x = a[0] + (b[0] - a[0]) * t, z = a[1] + (b[1] - a[1]) * t; const piso = (y % 3.6) < 0.25, ven = !piso && ((t * Lk) % 3) < 1.6 && (y % 3.6) > 0.9 && (y % 3.6) < 2.6;
+          pt(x, y, z, luz(piso ? mezcla(MURO, [0.5, 0.5, 0.5], 0.3) : ven ? VENT : MURO, nrm, 0.95)); } }
+      let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const q of P2) { x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); z0 = Math.min(z0, q[1]); z1 = Math.max(z1, q[1]); }
+      const nT = Math.round((x1 - x0) * (z1 - z0) * 0.9 * K) + 20; for (let i = 0; i < nT; i++) { const x = r2(x0, x1), z = r2(z0, z1); if (!dentro(P2, x, z)) continue; const reja = (Math.abs(((x - x0) % 6)) < 0.35) || (Math.abs(((z - z0) % 6)) < 0.35); pt(x, h, z, luz(reja ? [0.62, 0.64, 0.66] : TECHO, UP)); } }
+    // pasajes nuevos: piso claro de 4 m
+    for (const sg of (SX && SX.seg || [])) { if (!sg.n) continue; const Q = sg.p.map(q => M2E(q[0], q[1])); for (let k = 1; k < Q.length; k++) { const a = Q[k - 1], b = Q[k], Lk = Math.hypot(b[0] - a[0], b[1] - a[1]), nx = -(b[1] - a[1]) / (Lk || 1), nz = (b[0] - a[0]) / (Lk || 1);
+      for (let i = 0; i < Lk * 18 * K; i++) { const t = rnd(), w = r2(-2, 2), x = a[0] + (b[0] - a[0]) * t + nx * w, z = a[1] + (b[1] - a[1]) * t + nz * w; if (enCampo(x, z)) continue; pt(x, 0.1, z, luz([0.9, 0.86, 0.78], UP)); } } }
+    // árboles reales del censo (copas que se conservan); los lejanos con menos puntos
+    const ARBR = [];
+    for (const a of (BA && BA.arboles || [])) { const [x, z] = M2E(a[0], a[1]); if (enCampo(x, z)) continue; const alto = Math.max(6, Math.min(22, a[2] || 12)); ARBR.push([x, z, alto]); }
+    for (const [x, z, alto] of ARBR) { const N = AR[(Math.abs(Math.floor(x * 7 + z * 3))) % AR.length], dd = Math.hypot(x, z), lim = dd < 70 ? 9000 : dd < 160 ? 2200 : 700, st = Math.max(1, Math.floor(N.pts.length / 3 / lim));
+      const rot = (x * 13.7 + z) % 6.28, cs = Math.cos(rot), sn = Math.sin(rot), nn = new THREE.Vector3();
+      for (let i = 0; i < N.pts.length; i += 3 * st) { const px = N.pts[i] * alto, py = N.pts[i + 1] * alto, pz = N.pts[i + 2] * alto; nn.set(N.nor[i], N.nor[i + 1], N.nor[i + 2]); let c = [N.cols[i], N.cols[i + 1], N.cols[i + 2]]; { const m = (c[0] + c[1] + c[2]) / 3; c = [m + (c[0] - m) * 1.5, m + (c[1] - m) * 1.5, m + (c[2] - m) * 1.5]; }
+        pt(x + px * cs - pz * sn, py, z + px * sn + pz * cs, luz(c, nn, 0.55 + 0.45 * Math.min(1, py / (alto * 0.6)))); } }
+    // huertas en los claros (como el distrito del simulador): celdas de 7,5 m paralelas a los edificios, sin copa encima, lejos de los edificios
+    const CELL = 7.5, ROW = ['#7fbf4d', '#6d2f4b', '#4f7a6b', '#8b6fc4', '#2f6b2a', '#8fb46a', '#7aa39a'].map(hex);
+    for (let cx = Math.floor(sx0 / CELL) * CELL; cx < sx1; cx += CELL) for (let cz = Math.floor(sz0 / CELL) * CELL; cz < sz1; cz += CELL) {
+      const mx = cx + CELL / 2, mz = cz + CELL / 2; if (enCampo(mx, mz) || !dentro(SIT, mx, mz)) continue;
+      if (EDS.some(e => e.P.some(q => Math.hypot(q[0] - mx, q[1] - mz) < 22)) || EDS.some(e => dentro(e.P, mx, mz))) continue;
+      if (ARBR.some(t => Math.abs(t[0] - mx) < 9 && Math.abs(t[1] - mz) < 9)) continue;
+      const c = ROW[(((Math.floor(cx / CELL) * 3 + Math.floor(cz / CELL)) % ROW.length) + ROW.length) % ROW.length];
+      for (let r = 0; r < 4; r++) { const x = cx + 1 + r * 1.8; for (let i = 0; i < 160 * K + 20; i++) { const z = cz + 0.5 + rnd() * (CELL - 1); pt(x + r2(-0.35, 0.35), 0.15 + rnd() * 0.3, z, luz(mezcla(c, [0.95, 0.95, 0.8], rnd() * 0.15), UP, 0.85)); } }
+      for (let i = 0; i < 60 * K + 10; i++) pt(cx + rnd() * CELL, 0.06, cz + rnd() * CELL, luz(TIERRA[(rnd() * 3) | 0], UP, 0.8));
+    }
+    CTX = { c: [(sx0 + sx1) / 2, (sz0 + sz1) / 2], R: Math.max(sx1 - sx0, sz1 - sz0) };
+  }
   progreso(0.75);
 
   /* ---------- pabellón paramétrico (referentes 1 y 4): volumen de vidrio bajo y cubierta ondulada de costillas ---------- */
@@ -145,8 +186,6 @@ export async function crearEscenaHuerta({ THREE, MOV = false, progreso = () => {
   for (let z = GZ0; z <= GZ1; z += 0.08 / K) for (let y = 0; y < GH; y += 0.1 / K) if (rnd() < 0.4) pt(GX0, y, z, luz(VID, new THREE.Vector3(-1, 0, 0)));
   for (let x = GX0 + 2; x < GX1 - 1; x += 3.2) for (let z = GZ0 + 1.5; z < GZ1 - 1; z += 0.25) { for (let y = 0; y < 0.8; y += 0.08) pt(x, y, z, luz(BL, null)); poner(PL[(Math.floor(x + z)) % PL.length], x, z, 0.45, r2(0, 6.28)); }
 
-  /* ---------- fondo: torres de la ciudad, apenas insinuadas ---------- */
-  for (const [x, z, w, h] of [[-75, 230, 14, 34], [-40, 245, 12, 44], [38, 235, 16, 38], [76, 225, 12, 30]]) for (let i = 0; i < 3500 * K; i++) { const f = rnd() < 0.5; const x2 = x + (f ? r2(-w / 2, w / 2) : (rnd() < 0.5 ? -w / 2 : w / 2)), y = r2(0, h); pt(x2, y, z - (f ? w / 2 : r2(-w / 2, w / 2)), luz([0.68, 0.7, 0.74], new THREE.Vector3(0, 0, -1), 0.8)); }
   progreso(0.95);
 
   /* ---------- anclajes de las especies (sobre su planta, cerca del ojo) ---------- */
@@ -159,5 +198,5 @@ export async function crearEscenaHuerta({ THREE, MOV = false, progreso = () => {
   ANC.copeton = [0.6, 0.13, 6.5]; ANC.mirla = [-0.5, 0.13, 9]; ANC.lombriz = [ANC.zanahoria[0] - 0.1, 0.1, 5.4];
   ANC.abeja = ANC.cilantro; ANC.mariposa = ANC.cilantro; ANC.colibri = ANC.cilantro; ANC.abejorro = ANC.tomate; ANC.mariquita = ANC.lechuga; ANC.murcielago = [ANC.eucalipto[0] + 2, ANC.eucalipto[1], ANC.eucalipto[2]];
   progreso(1);
-  return { pos: new Float32Array(P), col: new Float32Array(C), anc: ANC, n: P.length / 3 };
+  return { pos: new Float32Array(P), col: new Float32Array(C), anc: ANC, n: P.length / 3, ctx: CTX };
 }
