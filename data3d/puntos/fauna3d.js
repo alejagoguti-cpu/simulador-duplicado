@@ -5,7 +5,7 @@
    copetón que salta y picotea en el camino; mirla que saca una lombriz; murciélago al rededor del urapán.
    Insectos a escala aumentada (x9) y aves (x2,4) para que se lean a la distancia de la vista; las posiciones salen de
    bavaria_campo.json (cada especie sobre su planta). */
-export function crearFauna3D({ THREE, S, M, RMQ = false }) {
+export function crearFauna3D({ THREE, S, M, RMQ = false, modelo = null }) { // modelo(k): Object3D propio (p. ej. la especie en puntos) en vez de la malla
   const porK = Object.fromEntries(M.especies.map(e => [e.k, e]));
   const V3 = (p) => new THREE.Vector3(p[0], p[1], p[2]);
   const grupo = new THREE.Group(); S.add(grupo);
@@ -86,20 +86,21 @@ export function crearFauna3D({ THREE, S, M, RMQ = false }) {
   const F_CIL = flores('cilantro', 14, 1.0, 0.05), F_TOM = flores('tomate', 10, 1.4, 0.2), F_LEC = flores('lechuga', 10, 0.45, 0.02);
   // volador que visita flores: vuela con curva, flota, se posa y sigue
   const visitante = (obj, F, vel, posa, alto, k) => { if (!F.length) return; obj.position.copy(F[0]); grupo.add(obj); AG.push({ tipo: 'vis', k, obj, F, vel, posa, alto, ini: obj.position.clone(), fin: F[Math.floor(Math.random() * F.length)].clone(), u: Math.random(), espera: 0 }); };
-  for (let i = 0; i < 7; i++) visitante(abeja(), F_CIL, rnd(1.2, 1.8), [1.2, 3.2], 0.5, 'abeja');
-  for (let i = 0; i < 2; i++) visitante(abeja(true), F_TOM, rnd(0.9, 1.2), [1.5, 3.5], 0.4, 'abejorro');
-  for (let i = 0; i < 3; i++) visitante(mariposa(), F_CIL, rnd(0.55, 0.8), [2.5, 5], 0.9, 'mariposa');
-  visitante(colibri(), F_CIL.slice(0, 6), 2.6, [2.2, 3.4], 0.6, 'colibri');
+  const MK = (k, f) => (modelo && modelo(k)) || f();
+  for (let i = 0; i < 7; i++) visitante(MK('abeja', abeja), F_CIL, rnd(1.2, 1.8), [1.2, 3.2], 0.5, 'abeja');
+  for (let i = 0; i < 2; i++) visitante(MK('abejorro', () => abeja(true)), F_TOM, rnd(0.9, 1.2), [1.5, 3.5], 0.4, 'abejorro');
+  for (let i = 0; i < 3; i++) visitante(MK('mariposa', mariposa), F_CIL, rnd(0.55, 0.8), [2.5, 5], 0.9, 'mariposa');
+  visitante(MK('colibri', colibri), F_CIL.slice(0, 6), 2.6, [2.2, 3.4], 0.6, 'colibri');
   // mariquitas caminando sobre la lechuga
-  for (let i = 0; i < 4; i++) { const o = mariquita(), c = F_LEC[i % F_LEC.length]; if (!c) break; o.position.copy(c); grupo.add(o); AG.push({ tipo: 'cam', k: 'mariquita', obj: o, c: c.clone(), a: rnd(0, 6.28), r: rnd(0.03, 0.07), v: rnd(0.25, 0.45) }); }
+  for (let i = 0; i < 4; i++) { const o = MK('mariquita', mariquita), c = F_LEC[i % F_LEC.length]; if (!c) break; o.position.copy(c); grupo.add(o); AG.push({ tipo: 'cam', k: 'mariquita', obj: o, c: c.clone(), a: rnd(0, 6.28), r: rnd(0.03, 0.07), v: rnd(0.25, 0.45) }); }
   // lombrices en el suelo de la cama
-  const eL = porK.lombriz; if (eL) for (let i = 0; i < 3; i++) { const o = lombriz(); o.position.set(eL.p[0] + rnd(-0.4, 0.4), eL.p[1] + 0.02, eL.p[2] + rnd(-0.4, 0.4)); o.rotation.y = rnd(0, 6.28); grupo.add(o); AG.push({ tipo: 'lom', k: 'lombriz', obj: o, f: rnd(0, 6) }); }
+  const eL = porK.lombriz; if (eL) for (let i = 0; i < 3; i++) { const o = MK('lombriz', lombriz); o.position.set(eL.p[0] + rnd(-0.4, 0.4), eL.p[1] + 0.02, eL.p[2] + rnd(-0.4, 0.4)); o.rotation.y = rnd(0, 6.28); grupo.add(o); AG.push({ tipo: 'lom', k: 'lombriz', obj: o, f: rnd(0, 6) }); }
   // pájaros en el camino: saltan, picotean; la mirla saca una lombriz
   for (const [k, n] of [['copeton', 2], ['mirla', 1]]) { const e = porK[k]; if (!e) continue;
-    for (let i = 0; i < n; i++) { const o = pajaro(k), base = V3(e.p); base.x += rnd(-0.6, 0.6); base.z += rnd(-0.6, 0.6); o.position.copy(base); grupo.add(o);
-      let presa = null; if (k === 'mirla') { presa = lombriz(); presa.scale.setScalar(1.3); grupo.add(presa); }
+    for (let i = 0; i < n; i++) { const o = MK(k, () => pajaro(k)), base = V3(e.p); base.x += rnd(-0.6, 0.6); base.z += rnd(-0.6, 0.6); o.position.copy(base); grupo.add(o);
+      let presa = null; if (k === 'mirla') { presa = MK('lombriz', lombriz); if (!modelo) presa.scale.setScalar(1.3); grupo.add(presa); }
       AG.push({ tipo: 'paj', k, obj: o, base, dest: base.clone(), t: 0, est: 'mira', dur: rnd(0.6, 1.4), mirla: k === 'mirla', presa }); } }
-  const eU = porK.urapan, eM = porK.murcielago; if (eU || eM) { const o = murcielago(), c = V3((eM || eU).p); grupo.add(o); AG.push({ tipo: 'mur', k: 'murcielago', obj: o, c, r: 4, a: 0 }); }
+  const eU = porK.urapan, eM = porK.murcielago; if (eU || eM) { const o = MK('murcielago', murcielago), c = V3((eM || eU).p); grupo.add(o); AG.push({ tipo: 'mur', k: 'murcielago', obj: o, c, r: 4, a: 0 }); }
 
   // pulgones sobre la lechuga: la mariquita se los come al pasar (vuelven a aparecer después)
   const PUL = [], nPul = 90, gPul = new THREE.InstancedMesh(new THREE.SphereGeometry(0.0012 * K_INS, 6, 4).scale(1, 0.8, 1.3), std('#9acd32', { roughness: 0.5 }), nPul);
@@ -120,8 +121,8 @@ export function crearFauna3D({ THREE, S, M, RMQ = false }) {
         mira.copy(tmp).sub(g.obj.position); if (mira.lengthSq() > 1e-7) g.obj.rotation.y = Math.atan2(mira.x, mira.z); g.obj.position.copy(tmp); aletea(g.obj, t);
         if (g.u >= 1) { g.espera = rnd(g.posa[0], g.posa[1]); g.ini.copy(g.fin); g.fin.copy(g.F[Math.floor(Math.random() * g.F.length)]); g.u = 0; }
       } else if (g.tipo === 'cam') { g.a += dt * g.v * (Math.sin(t * 0.7 + g.r * 40) > -0.3 ? 1 : 0); g.obj.position.set(g.c.x + Math.cos(g.a) * g.r, g.c.y, g.c.z + Math.sin(g.a) * g.r); g.obj.rotation.y = -g.a; }
-      else if (g.tipo === 'lom') { const u = g.obj.userData, P = u.pts; for (let i = 0; i < P.length; i++) P[i].x = Math.sin(t * 2.2 + g.f + i * 0.8) * 0.006 * Math.min(1, i / 2); u.m.geometry.dispose(); u.m.geometry = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(P), 24, 0.007, 6); }
-      else if (g.tipo === 'paj') { g.t += dt; const cu = g.obj.userData.cuello;
+      else if (g.tipo === 'lom') { const u = g.obj.userData, P = u.pts; if (!P) { g.obj.position.y += Math.sin(t * 2 + g.f) * 0.0004; continue; } for (let i = 0; i < P.length; i++) P[i].x = Math.sin(t * 2.2 + g.f + i * 0.8) * 0.006 * Math.min(1, i / 2); u.m.geometry.dispose(); u.m.geometry = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(P), 24, 0.007, 6); }
+      else if (g.tipo === 'paj') { g.t += dt; const cu = g.obj.userData.cuello || new THREE.Object3D();
         if (g.est === 'mira') { cu.rotation.x = Math.sin(t * 3) * 0.1; if (g.t > g.dur) { g.t = 0; const r = Math.random(); if (r < 0.45) { g.est = 'pica'; g.dur = rnd(0.8, 1.6); } else { g.est = 'salta'; g.dur = 0.35; g.from = g.obj.position.clone(); g.dest = g.base.clone().add(new THREE.Vector3(rnd(-0.9, 0.9), 0, rnd(-0.9, 0.9))); g.obj.rotation.y = Math.atan2(g.dest.x - g.from.x, g.dest.z - g.from.z); } } }
         else if (g.est === 'pica') { cu.rotation.x = 0.9 * Math.max(0, Math.sin(g.t * 9)); if (g.mirla && g.presa) { const k2 = Math.min(1, g.t / g.dur); g.presa.visible = true; g.presa.position.copy(g.obj.position).add(new THREE.Vector3(Math.sin(g.obj.rotation.y) * 0.06, 0.005 + k2 * 0.04, Math.cos(g.obj.rotation.y) * 0.06)); g.presa.rotation.x = -k2 * 1.2; g.presa.rotation.y = g.obj.rotation.y; }
           if (g.t > g.dur) { g.t = 0; g.est = 'mira'; g.dur = rnd(0.6, 1.6); cu.rotation.x = 0; if (g.presa) g.presa.visible = false; } }
