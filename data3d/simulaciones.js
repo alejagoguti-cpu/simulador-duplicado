@@ -13,7 +13,7 @@
    SIM-02 Orgánicos y compostaje: A ruta actual · B estación de compostaje barrial · C compostaje en Bavaria Común
    SIM-03 Hábitat y fauna: A sin huertas · B huertas sin criterio de ubicación · C huertas con corredores; con y sin medida antitrampa
    Los valores de partida que no da el documento están marcados [SUP] (supuestos para discutir con el grupo). */
-import { SEM, AÑO, POB_K, PAR, SIMST, avisar, sim03, correrTodo } from './sim_modelos.js?v=1';
+import { SEM, AÑO, POB_K, PAR, SIMST, avisar, sim03, correrTodo } from './sim_modelos.js?v=2';
 export function iniciarSimulaciones({ T3, tb, verPestana }) {
   const { P1, P2, P3 } = PAR; // los mismos parámetros que el panel de escenarios del mapa (data3d/sim_modelos.js)
   const COL = { A: '#8fb0c9', B: '#7f8a93', C: '#e2a55b' } /* los mismos del simulador: hoy azul grisáceo, propuesta ámbar */, NOMBRE = { A: 'A · sin intervención', B: 'B · nodo central', C: 'C · clúster rotativo' };
@@ -144,6 +144,7 @@ export function iniciarSimulaciones({ T3, tb, verPestana }) {
           ${slider(P1, 'cupos', 'Cupos de formación (por trimestre)', 0, 40, 1)}${slider(P1, 'retardo', 'Retardo de aprendizaje (semanas)', 2, 40, 1)}
           ${slider(P1, 'c', 'm² por promotor (capacidad c)', 400, 3000, 100, v => fmt(v))}${slider(P1, 'rotacion', 'Periodo de rotación (semanas)', 4, 52, 1)}
           ${slider(P1, 'mu', 'Capacidad de decisión central (solicitudes/semana)', 1, 20, 1)}${slider(P1, 'zona', 'Población de la zona de servicio', 10000, 300000, 5000, v => fmtK(v))}
+          ${slider(P1, 'sup', 'Huertas de la propuesta: parques, techos y Bavaria (m²)', 0, 200000, 5000, v => fmtK(v))}${slider(P1, 'regional', 'Compras directas a productores de la región', 0, 0.8, 0.05, v => fmt(v * 100) + ' %')}
           <div class="chk">${[['sequia', 'Sequía (años 3-4)'], ['bloqueo', 'Bloqueo del mayorista (año 6)'], ['crece', 'Crecimiento poblacional'], ['baldios', 'Revocación de baldíos (año 6)']].map(([k, n]) => `<label><input type="checkbox" data-b="${k}" ${P1[k] ? 'checked' : ''}>${n}</label>`).join('')}</div>
           <p class="sim-nota">Fórmulas del documento (G1-G6). [SUP]: A parte de 120 hogares sin apoyo; población de Kennedy 1.034.000; 400 g/día de frutas y verduras por persona; 10 % de pérdida en huerta.</p></div></details>`;
     } else if (sim === 'S2') {

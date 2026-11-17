@@ -4,7 +4,7 @@
    'sim-cambio' (detail.origen = quién cambió). Los valores que no da el documento están marcados [SUP]. */
 export const SEM = 520, AÑO = 52, POB_K = 1034000; // 10 años; población de Kennedy (proyección DANE 2024, aprox.)
 export const PAR = {
-  P1: { rend: 6, alcance: 0.5, auto: 0.35, merma: 0.1, precio: 2600, acopio: 15000, reac: 0.5, cupos: 12, retardo: 12, c: 1000, rotacion: 12, mu: 6, zona: 50000,
+  P1: { rend: 6, alcance: 0.5, auto: 0.35, merma: 0.1, precio: 2600, acopio: 15000, reac: 0.5, cupos: 12, retardo: 12, c: 1000, rotacion: 12, mu: 6, zona: 50000, sup: 98000, regional: 0.45,
     sequia: false, bloqueo: false, crece: false, baldios: false },
   P2: { frac: 0.4, cap: 6000, mad: 10, sust: 0.2, dist: 1.5 },
   P3: { disp: 400, borde: 20, arboles: 0.4, luz: 0.5, anti: true, rec: 0.02 }
@@ -30,7 +30,10 @@ export function sim01(e, P) {
     const carga = e === 'A' ? 1.2 : Math.max(0, m2p / P.c), alivio = e === 'C' ? Math.max(0.35, 1 - 6 / P.rotacion * 0.6) : 1;
     const retiro = A_ * 0.0018 * (1 + 3 * Math.max(0, carga - 1)) * alivio;                                                  // retiro = activos × h0 × (1 + β (carga − 1))
     A_ = Math.max(0, Math.min(Nef, A_ + adop - retiro));
-    const prod = area * P.rend / AÑO * clima * cal;                                                                           // G1
+    // superficies de la propuesta que no son de hogares: huertas de parques y lotes (~2 ha), techos y balcones (~4,9 ha) y Bavaria (~2,9 ha) [SUP]
+    // se montan en ~3 años; en B solo el 60 % (sin clústeres que las sostengan)
+    const sup = e === 'A' ? 0 : P.sup * Math.min(1, t / 156) * (e === 'B' ? 0.6 : 1);
+    const prod = (area + sup) * P.rend / AÑO * clima * cal;                                                                   // G1
     const auto = prod * P.auto; let merma = prod * P.merma; let exc = prod - auto - merma;
     if (e !== 'A' && exc > P.acopio) { merma += exc - P.acopio; exc = P.acopio; } // acopio lleno: sube la merma
     if (e === 'A') { merma += exc * 0.5; exc *= 0.5; } // sin acopio la mitad del excedente se pierde [SUP]
@@ -40,7 +43,9 @@ export function sim01(e, P) {
     let espera = null; if (e !== 'A') { cola = Math.max(0, cola + lam - mu); espera = lam < mu && cola < 1 ? 1 / (mu - lam) : (cola + lam) / Math.max(0.1, mu); }
     const pc = 3000 * (bloqueo ? 1.6 : 1) * (1 - P.reac * Math.min(1, pers / P.zona) * 0.25); // precio de Corabastos [SUP]
     out.prod.push(prod); out.auto.push(auto); out.merma.push(merma); out.exc.push(exc); out.pers.push(pers); out.pct.push(pers / pob * 100);
-    out.dep.push(Math.max(0, 1 - pers / P.zona)); out.act.push(A_); out.m2p.push(isFinite(m2p) ? m2p : null); out.cal.push(cal); out.prom.push(prom); out.espera.push(espera); out.pc.push(pc);    // G3
+    // compras directas a productores de la región por el acopio de Bavaria y la red de mercados de barrio (circuito corto), en vez de Corabastos [SUP]
+    const reg = e === 'A' ? 0 : P.regional * Math.min(1, t / 208) * (e === 'B' ? 0.6 : 1) * (bloqueo ? 1.1 : 1);
+    out.dep.push(Math.max(0, 1 - pers / P.zona - reg)); out.reg = out.reg || []; out.reg.push(reg); out.act.push(A_); out.m2p.push(isFinite(m2p) ? m2p : null); out.cal.push(cal); out.prom.push(prom); out.espera.push(espera); out.pc.push(pc);    // G3
     out.carga.push(carga); out.retiro.push(retiro);
   }
   return out;

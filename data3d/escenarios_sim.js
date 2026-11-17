@@ -8,7 +8,7 @@
              con partículas proporcionales a los kilos y la ocupación de cada estación
    · SIM-03  aves -> fracción de aves visibles en la red biótica (T3.bio.ESTADO.fauna); integridad del humedal -> anillo de El Burro;
              trampas ecológicas (luz y vidrio) -> huertas del borde en rojo si no hay medida antitrampa */
-import { SEM, AÑO, PAR, SIMST, avisar, correrTodo } from './sim_modelos.js?v=1';
+import { SEM, AÑO, PAR, SIMST, avisar, correrTodo } from './sim_modelos.js?v=2';
 export async function iniciarEscenariosSim({ T3, cj }) {
   const THREE = T3.THREE, MOV = innerWidth < 760, RMQ = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const HB = await cj('data3d/huertas_barrio.json?v=3').catch(() => ({ huertas: [] }));
@@ -97,8 +97,9 @@ ${slider(P1, 'rend', 'Rendimiento (kg/m²·año)', 1, 12, 1)}${slider(P1, 'alcan
 ${slider(P1, 'precio', 'Precio de excedentes ($/kg)', 1500, 4500, 100, FMT.precio)}${slider(P1, 'acopio', 'Capacidad de acopio (kg/semana)', 2000, 40000, 1000)}${slider(P1, 'reac', 'Reacción de precio de la central', 0, 1, 0.05, FMT.reac)}
 ${slider(P1, 'cupos', 'Cupos de formación en Bavaria (por trimestre)', 0, 40, 1)}${slider(P1, 'retardo', 'Retardo de aprendizaje (semanas)', 2, 40, 1)}${slider(P1, 'c', 'm² por promotor', 400, 3000, 100)}
 ${slider(P1, 'rotacion', 'Periodo de rotación (semanas)', 4, 52, 1)}${slider(P1, 'mu', 'Capacidad de decisión central (solicitudes/semana)', 1, 20, 1)}${slider(P1, 'zona', 'Población de la zona de servicio', 10000, 300000, 5000, fmtK)}
+${slider(P1, 'sup', 'Huertas de la propuesta: parques, techos y Bavaria (m²)', 0, 200000, 5000, fmtK)}${slider(P1, 'regional', 'Compras directas a productores de la región', 0, 0.8, 0.05, pct)}
 <div class="chk">${[['sequia', 'Sequía (años 3-4)'], ['bloqueo', 'Bloqueo del mayorista (año 6)'], ['crece', 'Crecimiento poblacional'], ['baldios', 'Revocación de baldíos (año 6)']].map(([k, n]) => `<label><input type="checkbox" data-b="${k}" ${P1[k] ? 'checked' : ''}>${n}</label>`).join('')}</div>
-<p class="nota">Los estreses solo afectan B y C.</p></details>
+<p class="nota">Los estreses solo afectan B y C. [SUP] Las compras directas a productores de la región (acopio de Bavaria y mercados de barrio) también bajan la dependencia de Corabastos.</p></details>
 <details><summary>Residuos orgánicos y compost (SIM-02)</summary>
 ${slider(P2, 'frac', 'Fracción desviada', 0.05, 0.9, 0.05, pct)}${slider(P2, 'cap', 'Capacidad de la estación (kg/semana)', 1000, 30000, 500)}${slider(P2, 'mad', 'Semanas de maduración', 4, 24, 1)}
 ${slider(P2, 'sust', 'Fracción de sustrato al distrito (hongos)', 0, 0.6, 0.05, pct)}${slider(P2, 'dist', 'Distancia estación – huertas (km)', 0.2, 6, 0.1, FMT.dist)}
