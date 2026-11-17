@@ -329,8 +329,8 @@ export function crearDistritoBavaria({ T3, lw, D, ARB = [], SX = null }) {
   const SXU = { uT: TU, uMix: { value: 0 }, uDraw: { value: 0 }, uVis: { value: 0 } };
   {
     const P = [], CA = [], CB = [], AN = [], AS = [], I = [];
-    for (const s of SEG) { if (s.ib === null && s.ia === null) continue;
-      const pts = s.p.map(q => M(q[0], q[1])), w = s.n ? 8 : 4.5, y = s.n ? 1.4 : 1.1, ca = s.ia === null ? [0.3, 0.3, 0.3] : espectro(s.ia), cb = espectro(s.ib === null ? 0 : s.ib);
+    for (const s of SEG) { if (!s.n) continue; // en el distrito NO se pinta la sintaxis: solo los pasajes nuevos, como piso (la sintaxis va en el panel izquierdo con la propuesta)
+      const pts = s.p.map(q => M(q[0], q[1])), w = 7, y = 1.4, ca = [0.86, 0.82, 0.74], cb = ca;
       let Lt = 0; for (let i = 1; i < pts.length; i++) Lt += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); let acc = 0;
       for (let i = 1; i < pts.length; i++) { const a = pts[i - 1], b = pts[i], dx = b[0] - a[0], dz = b[1] - a[1], l = Math.hypot(dx, dz) || 1, nx = -dz / l * w / 2, nz = dx / l * w / 2, base = P.length / 3, s0 = acc / Lt, s1 = (acc + l) / Lt; acc += l;
         P.push(a[0] + nx, y, a[1] + nz, a[0] - nx, y, a[1] - nz, b[0] - nx, y, b[1] - nz, b[0] + nx, y, b[1] + nz);
@@ -529,7 +529,7 @@ body.bd-on #dock,body.bd-on #hid-red{display:none!important}
   pan.innerHTML = `<header><button type="button" class="cerrar" aria-label="Cerrar Bavaria Común">&#215;</button><div class="ey">Bavaria Común · distrito de tecnologías convergentes</div><h2>Nano, bio, info y cogno sobre un mismo sistema alimentario</h2>
       <p class="lead">Estudiantes, investigadores, productores y comerciantes cultivan, conservan, distribuyen y aprovechan los residuos; la fauna que llega trabaja para las huertas y todo se mide. El predio cerrado se abre al barrio con pasajes.</p>
       <div class="kp"><div><b>12</b><span>edificios con programa NBIC</span></div><div><b>${HA.toFixed(1).replace('.', ',')} ha</b><span>de huertas</span></div><div><b>${INTER.length}</b><span>interacciones bióticas</span></div><div><b>${PAS.length}</b><span>pasajes nuevos</span></div></div></header>
-    <nav class="tabs" role="tablist">${[['dist', 'Distrito NBIC'], ['sx', 'Sintaxis'], ['fauna', 'Fauna'], ['huerta', 'Huertas'], ['ciclo', 'Compost y energía']].map(([k, n], i) => `<button type="button" role="tab" data-t="${k}" aria-selected="${!i}">${n}</button>`).join('')}</nav>
+    <nav class="tabs" role="tablist">${[['dist', 'Distrito NBIC'], ['fauna', 'Fauna'], ['huerta', 'Huertas'], ['ciclo', 'Compost y energía']].map(([k, n], i) => `<button type="button" role="tab" data-t="${k}" aria-selected="${!i}">${n}</button>`).join('')}</nav>
     <div class="cuerpo" role="tabpanel"></div>
     <div class="pie"><button type="button" class="go" id="bd-go"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 1l7 4-7 4z" fill="currentColor"/></svg>Seguir una cosecha</button><a class="sec2" id="bd-pts" href="bavaria_puntos.html" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none">En puntos</a><a class="sec2" id="bd-dentro" href="bavaria_interior.html?e=bio" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none">Por dentro</a><button type="button" class="sec2" id="bd-ver">Vista general</button></div>`;
   document.body.appendChild(pan);

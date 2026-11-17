@@ -122,7 +122,7 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
   addEventListener('bav-cerrar', () => { const sp = $ley().querySelector('[data-s="bav"]'); if (solo === 'bav' && sp) sp.click(); }); // la × del panel vuelve a todas las estrategias
   function distritoBavaria() {
     const on = T3.escenario === 'proyecto' && solo === 'bav';
-    if (on && !DIST && !pDist) pDist = Promise.all([import('./bavaria_distrito.js?v=11'), cj('data3d/bavaria.json?v=3'), cj('data3d/bavaria_arboles.json?v=3').then(j => j.arboles.filter(q => q[4] === 1)).catch(() => []), cj('data3d/bavaria_distrito_sx.json?v=1').catch(() => null)])
+    if (on && !DIST && !pDist) pDist = Promise.all([import('./bavaria_distrito.js?v=12'), cj('data3d/bavaria.json?v=3'), cj('data3d/bavaria_arboles.json?v=3').then(j => j.arboles.filter(q => q[4] === 1)).catch(() => []), cj('data3d/bavaria_distrito_sx.json?v=2').catch(() => null)])
       .then(([m, D, ARB, SX]) => { DIST = m.crearDistritoBavaria({ T3, lw, D, ARB, SX }); /* ARB: bosque denso (las huertas no lo tocan) */ window.KEN_BAV = DIST; distritoBavaria(); }).catch(e => console.warn('distrito Bavaria:', e));
     if (DIST) DIST.ver(on);
   }

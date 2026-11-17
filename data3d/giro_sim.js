@@ -466,7 +466,7 @@ export async function iniciarSimulacion(cfg = {}) {
     /* escenario «con la propuesta» (T3.escenario): las calles toman la sintaxis después de abrir los pasajes de Bavaria Común y los
        pasajes aparecen como calles nuevas (data3d/sintaxis_proyecto.json, tools/sintaxis_proyecto_build.js) */
     let NUEVAS = null, SXPRO = null;
-    fetch('data3d/sintaxis_proyecto.json?v=1').then(r => r.json()).then(SP => {
+    fetch('data3d/sintaxis_proyecto.json?v=2').then(r => r.json()).then(SP => {
       const pI = COLS.i.slice(), pC = COLS.c.slice(), donde = new Map(RANGO.map(([si, b, n]) => [si, [b, n]]));
       for (const [si, iP, cP] of SP.cambios) { const r = donde.get(si); if (!r) continue; const a = rgb(iP), c = rgb(cP); for (let k = 0; k < r[1] * 2; k++) { pI.set(a, (r[0] + k) * 3); pC.set(c, (r[0] + k) * 3); } }
       COLS.iP = pI; COLS.cP = pC;
@@ -490,7 +490,7 @@ export async function iniciarSimulacion(cfg = {}) {
       { const cp = izq.querySelector('#gs-capa'); if (cp) cp.classList.remove('pro'); /* misma gama DepthmapX que «Kennedy hoy»: sin modo Cambio */
         if (st0.capa === 'd') { const b = izq.querySelector('#gs-capa button[data-c="i"]'); if (b) { b.click(); return; } }
         const ley = izq.querySelector('#gs-ley-sx'); if (ley) { const d = st0.capa === 'd'; ley.children[0].textContent = d ? 'pierde' : 'baja'; ley.children[2].textContent = d ? 'gana' : 'alta'; ley.children[1].style.background = d ? 'linear-gradient(90deg,#f2724f,#6b737f 50%,#22c55e)' : ''; }
-        const nt = izq.querySelector('#gs-sx-pro'); if (nt && ley && ley.nextElementSibling !== nt) ley.after(nt); /* la nota va justo debajo de la leyenda */ if (nt) { nt.classList.toggle('on', pro && !!st0.capa && !!SXPRO); if (SXPRO) nt.innerHTML = `<b>Con la propuesta:</b> ${SXPRO.nuevos} pasajes nuevos en Bavaria Común (${SXPRO.m.toLocaleString('es-CO')} m). ${SXPRO.sube.toLocaleString('es-CO')} calles ganan integración` + (SXPRO.baja ? ` y ${SXPRO.baja.toLocaleString('es-CO')} pierden` : '') + `: misma escala de color que hoy, compara con «Kennedy hoy».`; } }
+        const nt = izq.querySelector('#gs-sx-pro'); if (nt && ley && ley.nextElementSibling !== nt) ley.after(nt); /* la nota va justo debajo de la leyenda */ if (nt) { nt.classList.toggle('on', pro && !!st0.capa && !!SXPRO); if (SXPRO) nt.innerHTML = `<b>Con la propuesta:</b> ${SXPRO.nuevos} pasajes nuevos en Bavaria Común (${SXPRO.m.toLocaleString('es-CO')} m). ` + (SXPRO.sube || SXPRO.baja ? `${SXPRO.sube.toLocaleString('es-CO')} calles ganan integración` + (SXPRO.baja ? ` y ${SXPRO.baja.toLocaleString('es-CO')} pierden` : '') : 'Las calles vecinas casi no cambian; lo nuevo son los pasajes') + `. Misma escala de color que hoy.`; } }
       CINTAS.material.opacity = 0.82; /* colores plenos de DepthmapX (antes 0,22 y con tone mapping: salían lavados) */
       if (NUEVAS) { NUEVAS.visible = !!st0.capa && pro; if (NUEVAS.visible) { NUEVAS.geometry.attributes.color.array.set(NUEVAS.userData.C[st0.capa]); NUEVAS.geometry.attributes.color.needsUpdate = true; } }
       if (!st0.capa) { CINTAS.visible = false; return; } CINTAS.visible = true; geo.attributes.color.array.set(COLS[st0.capa + (pro && COLS.iP ? 'P' : '')]); geo.attributes.color.needsUpdate = true; };
