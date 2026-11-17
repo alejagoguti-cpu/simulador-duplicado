@@ -140,16 +140,19 @@ export function crearDistritoBavaria({ T3, lw, D, ARB = [], SX = null }) {
     fresa: { c: '#3d7a35', c2: '#c0392b', paso: 0.3, fil: 2 }, flores: { c: '#a855f7', c2: '#facc15', pal: ['#a855f7', '#facc15', '#f97316', '#f8fafc', '#ec4899', '#60a5fa'], paso: 0.28, fil: 3 }, nada: null
   };
   const ROT = ['lechuga', 'morada', 'acelga', 'cilantro', 'repollo', 'cebolla', 'lechuga', 'fresa', 'acelga', 'lechuga', 'nada'];
-  const SITIO = D.sitio.map(W), REGS = [[[9405, 2840], [9725, 2840], [9725, 3255], [9405, 3255]], [[9330, 3270], [9560, 3270], [9560, 3480], [9330, 3480]], [[9120, 3090], [9250, 3090], [9250, 3290], [9120, 3290]]].map(R => R.map(q => M(q[0], q[1]))), ARBW = (ARB || []).map(a => W(a));
+  const SITIO = D.sitio.map(W), REGS = [[[9405, 2840], [9725, 2840], [9725, 3255], [9405, 3255]], [[9330, 3270], [9560, 3270], [9560, 3480], [9330, 3480]], [[9120, 3090], [9250, 3090], [9250, 3290], [9120, 3290]]].map(R => R.map(q => M(q[0], q[1]))), ARBW = (ARB || []).map(a => [...W(a), Math.max(2.5, a[3] || 4)]);
+  { // también los árboles que se ven en el 3D dentro del predio (censo del arbolado)
+    const P = T3.trees && T3.trees.pos; if (P) { let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const q of SITIO) { x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); z0 = Math.min(z0, q[1]); z1 = Math.max(z1, q[1]); }
+      for (let i = 0; i < P.X.length; i++) if (P.X[i] > x0 && P.X[i] < x1 && P.Z[i] > z0 && P.Z[i] < z1) ARBW.push([P.X[i], P.Z[i], Math.max(2.5, (P.Hh[i] || 8) * 0.32)]); } }
   const PUNTOS_FAUNA = [[FA.apiario.p, 16], [FA.abejorro.p, 10], [FA.charca.p, 26], ...FA.murc.map(p => [p, 8]), ...FA.nidos.map(p => [p, 8]), ...FA.perchas.map(p => [p, 8]), ...FA.hoteles.map(p => [p, 9])];
   const CEL = [];
   {
     const ocupa = new Map(); for (const a of ARBW) { const k = Math.round(a[0] / 12) + '_' + Math.round(a[1] / 12); if (!ocupa.has(k)) ocupa.set(k, []); ocupa.get(k).push(a); }
-    const arbolCerca = (x, z) => { for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) for (const a of ocupa.get((Math.round(x / 12) + dx) + '_' + (Math.round(z / 12) + dz)) || []) if (Math.abs(a[0] - x) < 11 && Math.abs(a[1] - z) < 11) return true; return false; };
+    const arbolCerca = (x, z) => { for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) for (const a of ocupa.get((Math.round(x / 12) + dx) + '_' + (Math.round(z / 12) + dz)) || []) if (Math.hypot(a[0] - x, a[1] - z) < 9 + a[2]) return true; return false; }; // la copa de ningún árbol toca el módulo de 15 × 15 m
     let sem = 7; const rnd = () => (sem = (sem * 16807) % 2147483647) / 2147483647;
-    for (let i = -24; i < 24; i++) for (let j = -24; j < 24; j++) {
+    for (let i = -40; i < 40; i++) for (let j = -40; j < 40; j++) {
       const u = (i + 0.5) * 15, v = (j + 0.5) * 15, c = loc(C_CAMPO, u, v), doc = MODS.find(m => Math.abs(m.u - u) < 1 && Math.abs(m.v - v) < 1);
-      if (!doc) { if (!REGS.some(R => dentro(R, c[0], c[1])) || !dentro(SITIO, c[0], c[1]) || distBorde(SITIO, c[0], c[1]) < 16) continue;
+      if (!doc) { if (!dentro(SITIO, c[0], c[1]) || distBorde(SITIO, c[0], c[1]) < 16) continue; // en todo el predio, donde haya claro
         if (ED.some((e, k) => k !== 20 && k !== 27 && (dentro(e.W, c[0], c[1]) || distBorde(e.W, c[0], c[1]) < 18))) continue;
         if (Math.hypot(c[0] - C_COMP[0], c[1] - C_COMP[1]) < 14 || arbolCerca(c[0], c[1])) continue;
         if (PAS.some(P => distPolilinea(P, c[0], c[1]) < 9)) continue;
