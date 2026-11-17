@@ -25,28 +25,30 @@ export function crearDistritoBavaria({ T3, lw, D, ARB = [], SX = null }) {
   const COLSP = '\n#include <colorspace_fragment>\n';
 
   /* ---------- programa NBIC ---------- */
+  // programa: cada uso con su área (m²) y cuántas personas lo usan en un día típico (p). Hilo: se APRENDE a sembrar aquí y se lleva
+  // a la casa, a la terraza y a las huertas de los parques junto a los colegios. NBIC = nano (sensores), bio (suelo y semillas),
+  // info (datos de las huertas) y cogno (cómo se aprende y se decide qué comer), todos al servicio del mismo sistema de alimento.
   const PROG = [
-    { k: 'inst', n: 'Instituto de enseñanza', c: '#60a5fa', e: 3, g: 'Aulas', a: '290 m²', d: 'Aquí empieza la jornada: los grupos reciben el ensayo del día y salen por la cara interior de la L hacia laboratorios y cultivos.', x: 'Dos aulas de 60 m² (24 estudiantes c/u), recepción 35, sala de trabajo 45, sala docente 30, coordinación 25 y casilleros 35 m². 96 estudiantes por jornada en 4 grupos que rotan.' },
-    { k: 'bio', n: 'Hub de biotecnología', c: '#34d399', e: 0, g: 'B · Bio', a: 'lab. 60 m²', d: 'Biotecnología vegetal, microbiología del suelo y ADN ambiental. Bioinsumos y banco de semillas; sale directo a los invernaderos.', x: 'Seis mesas en parejas, lavado y muestras. Entrega ensayos documentados de germinación, crecimiento o bioinsumos contra camas de control, y analiza el ADN ambiental de la charca.' },
-    { k: 'nano', n: 'Centro de nanotecnología y sensores', c: '#c084fc', e: 11, g: 'N · Nano', a: 'lab. 60 m²', d: 'Materiales y nanosensores: indicadores de humedad para empaques y los sensores de colmenas, suelo y agua del distrito.', x: 'Seis puestos, banco de electrónica y ensayo de empaques, con una universidad aliada. Compara un indicador nanoestructurado con un sensor convencional; primero en banco.' },
-    { k: 'datos', n: 'Centro de datos e IA · gemelo digital', c: '#38bdf8', e: 4, g: 'I · Info', a: 'lab. 60 m²', d: 'Recibe los datos de todo el distrito: cosechas, energía, compost, pedidos y fauna. IA que cuenta polinizadores y reconoce cantos de aves y murciélagos.', x: 'Doce estaciones y pantalla común. El tablero real del distrito: qué cama se cosechó, cuánto pesó, cuánta energía, cuántos kilos a compost y a qué mercado fue el lote.' },
-    { k: 'cogn', n: 'Ciencias cognitivas y diseño', c: '#f472b6', e: 5, g: 'C · Cogno', a: 'lab. 30 m²', d: 'Cómo entienden las personas las etiquetas, alertas y datos del distrito; diseño de la divulgación para colegios y vecinos.', x: 'Mesa de prueba, muestras de etiquetas y observación por turnos: qué entiende mejor un comerciante, cuánto tarda y qué decide con la caja.' },
-    { k: 'foro', n: 'Foro y nave de innovación', c: '#e7e5e4', e: 2, g: 'Foro', a: '120 m²', d: 'Punto de encuentro antes de recorrer el predio, fab lab y exhibición de ensayos, cosechas y resultados de energía, agua, compost y fauna.', x: '120 m² iniciales con mobiliario móvil; lo que se abra al público depende del estado de la estructura. Memoria industrial de la fábrica.' },
-    { k: 'poli', n: 'Laboratorio vivo de polinizadores', c: '#fb923c', e: 23, g: 'Fauna', a: 'mariposario', d: 'Mariposario e invernadero de cría de polinizadores dentro de la estructura de la antigua nave: se estudian abejas, abejorros y mariposas.', x: 'Cámaras de conteo con IA, estaciones de flores nativas y cría de mariposas para soltar en las franjas florales.' },
-    { k: 'pos', n: 'Planta docente de poscosecha', c: '#f59e0b', e: 9, g: 'Sistema', a: '190 m²', d: 'Se recibe lo cosechado, se pesa, se selecciona, se empaca con los sensores del laboratorio y se despacha a los mercados de Kennedy.', x: 'Recepción 30, selección y lavado 40, empaque 35, cámara fría 20, canastillas 20, orgánicos 15 y despacho 30 m².' },
-    { k: 'mer', n: 'Mercado experimental', c: '#fb7185', e: 8, g: 'Sistema', a: '315 m²', d: 'Los productores venden, los estudiantes registran qué llega y qué se vende, y los compradores participan voluntariamente en pruebas.', x: 'Doce puestos de 9 m², 120 m² de circulación, 45 de demostración, 18 de pesaje y 24 de almacenamiento. Puerta barrial por la Calle 7A.' },
-    { k: 'inc', n: 'Incubadora agrotech', c: '#a3e635', e: 15, g: 'Sistema', a: '', d: 'Emprendimientos de vecinos y egresados que llevan a los mercados lo que funcionó en los ensayos: bioinsumos, empaques, sensores.', x: '' },
-    { k: 'alim', n: 'Laboratorio de alimentos', c: '#fde047', e: 7, g: 'Sistema', a: '', d: 'Conservación y vida útil: prueba los empaques con nanosensores y aprovecha lo que el mercado no vende.', x: '' },
-    { k: 'torre', n: 'Torre de monitoreo ambiental', c: '#22d3ee', e: 6, g: 'Fauna', a: 'silos', d: 'Los silos se vuelven torre de sensores (clima, aire, ruido) y mirador. Arriba, la estación meteorológica.', x: 'Estación meteorológica, antenas de la red de sensores, grabadora acústica y caja nido con cámara.' },
-    { k: 'campo', n: 'Campo experimental y huertas', c: '#4ade80', g: 'Sistema', a: '', d: 'La misma especie bajo condiciones distintas: qué cambia, cuánto cuesta y qué conviene llevar a otros mercados de Kennedy.', x: '' },
-    { k: 'comp', n: 'Compostaje y lombricultura', c: '#d4a373', g: 'Sistema', a: '60 m²', d: 'Recibe por el lado de servicio lo que sobra de cultivo, poscosecha y mercado; los estudiantes siguen cada lote del pesaje a la maduración.', x: 'Recepción y pesaje 10, material seco 10, tres composteras de ~1 m³ 18, maduración y tamizado 12, herramientas y registro 10 m².' },
-    { k: 'sol', n: 'Estación solar', c: '#facc15', g: 'Sistema', a: '10 kWp', d: '20 paneles de 500 Wp en la cubierta con mejor asoleación. Mide bombeo, sensores, iluminación y cámara fría; los datos llegan al centro de datos.', x: 'Los kWh/día y el porcentaje cubierto salen de la simulación de sombras, radiación y cargas.' }
+    { k: 'inst', n: 'Escuela de agricultura urbana', c: '#60a5fa', e: 3, g: 'Aprender', m2: 620, p: 240, d: 'Aulas y taller donde empiezan todos los cursos: vecinos, colegios y productores aprenden a sembrar, abonar y cosechar.', x: '4 aulas de 30 personas, taller de herramientas, sala de profesores y casilleros. Dos jornadas al día.' },
+    { k: 'bio', n: 'Laboratorio de suelos y semillas', c: '#34d399', e: 0, g: 'Bio', m2: 540, p: 70, d: 'Banco de semillas nativas, vida del suelo y abonos biológicos que luego se usan en las huertas de los barrios.', x: 'Banco de semillas, laboratorio de microbiología del suelo, producción de bioinsumos y cuarto de germinación.' },
+    { k: 'nano', n: 'Taller de sensores', c: '#c084fc', e: 11, g: 'Nano', m2: 320, p: 30, d: 'Arma sensores baratos de humedad del suelo, agua y frescura del alimento para las huertas y los mercados.', x: 'Banco de electrónica, ensayo de empaques que avisan si el alimento se daña y préstamo de sensores a las huertas.' },
+    { k: 'datos', n: 'Centro de datos y sensores ambientales', c: '#38bdf8', e: 4, g: 'Info', m2: 280, p: 35, d: 'Recibe las lecturas de las huertas de Bavaria, los parques y las terrazas: riego, cosechas, clima y polinizadores.', x: 'Sala de servidores pequeña, sala de lectura abierta a la comunidad y mapa de todas las huertas de Kennedy.' },
+    { k: 'cogn', n: 'Laboratorio de aprendizaje y hábitos', c: '#f472b6', e: 5, g: 'Cogno', m2: 260, p: 45, d: 'Estudia cómo aprende mejor la gente a cultivar y qué la lleva a comer distinto; diseña las cartillas y los talleres.', x: 'Sala de observación, cocina de prueba y estudio de diseño de materiales para colegios y familias.' },
+    { k: 'foro', n: 'Nave de encuentro y feria', c: '#e7e5e4', e: 2, g: 'Encuentro', m2: 1800, p: 320, d: 'La gran nave de la fábrica: llegada de los grupos, ferias de semillas, exposiciones y talleres abiertos.', x: 'Espacio libre con mobiliario móvil, fab lab de herramientas de huerta y punto de préstamo de semillas.' },
+    { k: 'poli', n: 'Casa de polinizadores', c: '#fb923c', e: 23, g: 'Bio', m2: 420, p: 60, d: 'Mariposario y cría de abejorros nativos que polinizan las huertas del distrito y de los barrios.', x: 'Invernadero de cría, sala de observación para colegios y jardín de flores nativas.' },
+    { k: 'pos', n: 'Poscosecha', c: '#f59e0b', e: 9, g: 'Producir', m2: 450, p: 30, d: 'Se pesa, se lava, se empaca y se enfría lo que se cosecha antes de ir al mercado.', x: 'Recepción, lavado, empaque, cuarto frío y despacho.' },
+    { k: 'mer', n: 'Mercado de productores', c: '#fb7185', e: 8, g: 'Producir', m2: 900, p: 600, d: 'Venden las huertas de Bavaria, de los parques y de las casas; puerta propia a la Calle 7A.', x: '24 puestos, zona de pesaje y una cocina abierta para probar recetas.' },
+    { k: 'inc', n: 'Incubadora de emprendimientos', c: '#a3e635', e: 15, g: 'Producir', m2: 360, p: 40, d: 'Acompaña a vecinos y egresados que montan su huerta, su vivero o su negocio de abono.', x: 'Oficinas compartidas, asesoría y vitrina de productos.' },
+    { k: 'alim', n: 'Cocina laboratorio', c: '#fde047', e: 7, g: 'Producir', m2: 400, p: 90, d: 'Transforma lo que no se vende: conservas, deshidratados y menús para comedores escolares.', x: 'Cocina industrial docente, cuarto de conservas y comedor de prueba.' },
+    { k: 'torre', n: 'Mirador y estación del clima', c: '#22d3ee', e: 6, g: 'Info', m2: 120, p: 80, d: 'Los silos se vuelven mirador con estación meteorológica: desde arriba se ven todas las huertas.', x: 'Escalera-mirador, estación del clima y grabadora de cantos de aves.' },
+    { k: 'campo', n: 'Huertas de enseñanza', c: '#4ade80', g: 'Practicar', m2: 0, p: 400, d: 'Diez tipos de huerta en los claros del bosque: aquí se practica lo aprendido antes de llevarlo a casa.', x: '' },
+    { k: 'comp', n: 'Planta de compostaje', c: '#d4a373', g: 'Producir', m2: 1440, p: 70, d: 'Vuelve abono los restos del mercado, la cocina y las huertas: pilas en hilera, lombrices, criba y bodega.', x: 'Nave de 640 m² con 5 pilas, lombricario de 4 camas, criba rotatoria, bodega de abono y composteras para enseñar. Unas 2 t de restos al día.' },
+    { k: 'sol', n: 'Paneles solares', c: '#facc15', g: 'Energía', m2: 100, p: 0, d: '20 paneles sobre la cubierta con más sol: bombean el riego y enfrían la poscosecha.', x: '' }
   ];
-  PROG.forEach(p => { if (p.e !== undefined && !p.a) p.a = 'huella ' + fmt(area(ED[p.e].W)) + ' m²'; });
-  const PK = Object.fromEntries(PROG.map(p => [p.k, p]));
+  PROG.forEach(p => { p.a = p.m2 ? fmt(p.m2) + ' m²' : ''; });  const PK = Object.fromEntries(PROG.map(p => [p.k, p]));
 
   /* ---------- lugares (marco del modelo -> mundo) ---------- */
-  const C_CAMPO = M(9478, 3066), C_COMP = M(9527, 3133), C_PLAZA = M(9163, 2878);
+  const C_CAMPO = M(9478, 3066), C_PLAZA = M(9163, 2878); let C_COMP = M(9527, 3133);
   const ACC = [
     { k: 'A', n: 'Entrada A · Transversal 71B', d: 'Portería Tv. 71B n.º 9-01. Plaza de entrada y recepción del instituto.', p: M(9580, 2697) },
     { k: 'B', n: 'Entrada B · Calle 7A', d: 'Puerta barrial al mercado: se compra aunque el instituto esté cerrado.', p: M(9180, 2390) },
@@ -126,256 +128,303 @@ export function crearDistritoBavaria({ T3, lw, D, ARB = [], SX = null }) {
     grupo.add(can);
   }
 
-  /* ---------- 3. huertas de ENSEÑANZA en los claros del bosque (tools/bavaria_claros.py) ----------
-     Rejilla de 15 m PARALELA a los edificios (ANG), solo en celdas sin copa de árbol, a 20 m o más de los edificios y fuera de los
-     pasajes. Seis claros, cada uno con su tipo de huerta y un aula al aire libre en la celda más cercana a su pasaje, unida a él
-     por un camino de grava. Tipos: hortalizas en camas elevadas (con los módulos docentes A-D), frutales y bayas, árboles frutales,
-     invernaderos de tomate, espiral de aromáticas y medicinales, milpa (maíz y ahuyama) y franjas de flores para polinizadores. */
-  const MODS = [ // módulos docentes del ensayo (celdas 2..3 x 0..1 del claro central)
-    { k: 'A', n: 'A · Referencia bajo cubierta', inv: true, cul: ['lechuga'], q: '¿Cuánta agua, tiempo y superficie para una caja vendible?', u: 37.5, v: 7.5 },
-    { k: 'B', n: 'B · Biotecnología', inv: true, cul: ['lechuga'], q: '¿El tratamiento biológico cambia el peso comercial o la pérdida de plantas?', u: 52.5, v: 7.5 },
-    { k: 'C', n: 'C · Cultivo exterior', inv: false, cul: ['lechuga'], q: '¿Qué cambia frente al módulo A en agua, temperatura, fauna y kilos aprovechables?', u: 37.5, v: 22.5 },
-    { k: 'D', n: 'D · Producción por pedido', inv: false, cul: ['acelga', 'acelga', 'acelga', 'acelga', 'cilantro', 'cilantro', 'cilantro', 'cilantro'], q: '¿Cuánto sembrar para cumplir un pedido real y cuánto queda sin vender? (4 acelga, 4 cilantro)', u: 52.5, v: 22.5 }
-  ];
+  /* ---------- 3. HUERTAS DE ENSEÑANZA + 4. PLANTA DE COMPOSTAJE (grupo gHu: se ven siempre con la propuesta, verHuertas) ----------
+     Rejilla de 7,5 m PARALELA a los edificios (ANG), en TODOS los claros del predio: celdas sin copa de árbol encima, a 20 m o más
+     de los edificios, a 7 m o más de los pasajes y a 12 m del borde. Cada claro es una huerta de un tipo distinto, con su aula al
+     aire libre en la celda más cercana a su pasaje. Árboles frutales con los modelos 3D de árbol del simulador y plantas medicinales
+     con modelos escaneados (data3d/models); hortalizas con hojas curvas texturizadas y fruta real. */
+  const gHu = new THREE.Group(); gHu.name = 'bavaria_huertas'; gHu.visible = false; T3.scene.add(gHu);
+  const S = 7.5, LB = 5.4; // celda y largo de bancal
   const CULT = {
-    lechuga: { c: '#86c44c', c2: '#a7d86a', paso: 0.32, fil: 2 }, morada: { c: '#7a3b52', c2: '#9b5a5f', paso: 0.32, fil: 2 },
-    acelga: { c: '#2f6b2a', c2: '#3f7f30', paso: 0.4, fil: 2 }, cilantro: { c: '#5fae3a', c2: '#7cc455', paso: 0.18, fil: 3 },
-    repollo: { c: '#6f9a86', c2: '#89b39d', paso: 0.5, fil: 2 }, cebolla: { c: '#7fae5a', c2: '#9cc275', paso: 0.15, fil: 3 },
-    fresa: { c: '#3d7a35', c2: '#4a8a3a', paso: 0.3, fil: 2, fr: '#c8232c' }, flores: { c: '#a855f7', c2: '#facc15', pal: ['#a855f7', '#facc15', '#f97316', '#f8fafc', '#ec4899', '#60a5fa'], paso: 0.28, fil: 3 },
-    tomate: { c: '#3f6f2c', c2: '#4b7f34', paso: 0.55, fil: 2, fr: '#d0261c' }, uchuva: { c: '#4f7d36', c2: '#5d8c3e', paso: 0.8, fil: 1, fr: '#f19a1a' },
+    lechuga: { c: '#86c44c', c2: '#a7d86a', paso: 0.3, fil: 2 }, morada: { c: '#7a3b52', c2: '#9b5a5f', paso: 0.3, fil: 2 },
+    acelga: { c: '#2f6b2a', c2: '#3f7f30', paso: 0.38, fil: 2 }, cilantro: { c: '#5fae3a', c2: '#7cc455', paso: 0.18, fil: 3 },
+    repollo: { c: '#6f9a86', c2: '#89b39d', paso: 0.45, fil: 2 }, cebolla: { c: '#7fae5a', c2: '#9cc275', paso: 0.15, fil: 3 },
+    zanahoria: { c: '#4f8f34', c2: '#5fa03e', paso: 0.12, fil: 3 }, kale: { c: '#3d5f4a', c2: '#4b6f55', paso: 0.4, fil: 2 },
+    fresa: { c: '#3d7a35', c2: '#4a8a3a', paso: 0.3, fil: 2, fr: '#c8232c' }, flores: { c: '#a855f7', c2: '#facc15', pal: ['#a855f7', '#facc15', '#f97316', '#f8fafc', '#ec4899', '#60a5fa'], paso: 0.26, fil: 3 },
+    tomate: { c: '#3f6f2c', c2: '#4b7f34', paso: 0.5, fil: 2, fr: '#d0261c' }, uchuva: { c: '#4f7d36', c2: '#5d8c3e', paso: 0.8, fil: 1, fr: '#f19a1a' },
     mora: { c: '#355f2a', c2: '#2f5626', paso: 0.7, fil: 1, fr: '#3a0d2a' }, maiz: { c: '#5b8a2f', c2: '#6c9a38', paso: 0.35, fil: 2, fr: '#e6c04a' },
-    ahuyama: { c: '#3f7533', c2: '#4b8338', paso: 1.1, fil: 1, fr: '#de7a1e' }, lavanda: { c: '#7d8f73', c2: '#8a9b80', paso: 0.38, fil: 2, fr: '#8b6bd6' },
+    ahuyama: { c: '#3f7533', c2: '#4b8338', paso: 1.1, fil: 1, fr: '#de7a1e' }, lavanda: { c: '#7d8f73', c2: '#8a9b80', paso: 0.36, fil: 2, fr: '#8b6bd6' },
     aromatica: { c: '#4f7f45', c2: '#6b9a5a', paso: 0.25, fil: 3 }, nada: null
   };
   const SITIO = D.sitio.map(W), ARBW = (ARB || []).map(a => [...W(a), Math.max(2.5, a[3] || 4)]);
-  { // también los árboles que se ven en el 3D dentro del predio (censo del arbolado)
-    const P = T3.trees && T3.trees.pos; if (P) { let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const q of SITIO) { x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); z0 = Math.min(z0, q[1]); z1 = Math.max(z1, q[1]); }
+  { const P = T3.trees && T3.trees.pos; if (P) { let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const q of SITIO) { x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); z0 = Math.min(z0, q[1]); z1 = Math.max(z1, q[1]); }
       for (let i = 0; i < P.X.length; i++) if (P.X[i] > x0 && P.X[i] < x1 && P.Z[i] > z0 && P.Z[i] < z1) ARBW.push([P.X[i], P.Z[i], Math.max(2.5, (P.Hh[i] || 8) * 0.32)]); } }
-  // los seis claros (celdas i, j de la rejilla de 15 m desde C_CAMPO) y la receta de cada uno
-  const ZONAS = [
-    { k: 'Z1', n: 'Huerta docente de hortalizas', c: '#86efac', d: 'Los módulos del ensayo A-D y camas elevadas de lechuga, acelga, repollo, cebolla y cilantro, con un banco de aromáticas y una franja de flores.', rec: ['camas', 'camas', 'arom', 'camas', 'flores'],
-      cel: [[1, 1], [1, 2], [2, -1], [2, 0], [2, 1], [2, 2], [2, 3], [2, 4], [3, -1], [3, 0], [3, 1], [3, 2], [3, 3], [3, 4], [4, 0], [4, 1]] },
-    { k: 'Z2', n: 'Frutales, bayas y milpa', c: '#fca5a5', d: 'Fresa, uchuva y mora en camas; huerto de tomate de árbol y feijoa; milpa de maíz con ahuyama. Los niños cosechan y prueban la fruta en el lugar.', rec: ['frutal', 'arboles', 'frutal', 'milpa', 'arboles', 'milpa', 'flores'],
-      cel: [[6, -11], [6, -10], [6, -9], [7, -11], [7, -10], [7, -5], [8, -11], [8, -10], [8, -9], [8, -8], [8, -7], [8, -6], [8, -5], [9, -8], [9, -7], [9, -6], [9, -5], [9, -4]] },
-    { k: 'Z3', n: 'Espiral de aromáticas y medicinales', c: '#c4b5fd', d: 'Espirales de piedra con romero, tomillo, hierbabuena, lavanda y caléndula: microclimas de seco (arriba) a húmedo (abajo) en 3 m.', rec: ['espiral', 'arom', 'flores', 'arom', 'espiral'],
-      cel: [[-3, 1], [-2, 0], [-2, 1], [-2, 2], [-1, 1], [-1, 2]] },
-    { k: 'Z4', n: 'Invernaderos de tomate', c: '#fda4af', d: 'Tomate chonto en tutores bajo túnel: polinización por zumbido del abejorro nativo, riego por goteo medido y control biológico.', rec: ['tomate', 'tomate', 'flores', 'tomate', 'tomate'],
-      cel: [[7, 5], [8, 5], [9, 3], [9, 4], [9, 5], [9, 6]] },
-    { k: 'Z5', n: 'Semillero y franja de polinizadores', c: '#fde68a', d: 'Plántulas bajo túnel para todas las huertas y franjas de flores nativas que alimentan abejas, abejorros, colibríes y mariposas.', rec: ['tomate', 'flores', 'camas', 'flores'],
-      cel: [[6, -1], [6, 0], [6, 1], [7, -1], [7, 0]] },
-    { k: 'Z6', n: 'Milpa: maíz, fríjol y ahuyama', c: '#fcd34d', d: 'El policultivo andino: el maíz da tutor al fríjol, el fríjol fija nitrógeno y la ahuyama cubre el suelo.', rec: ['milpa', 'milpa', 'flores', 'milpa'],
-      cel: [[-5, -24], [-5, -23], [-5, -22], [-4, -23], [-4, -22]] }
-  ];
-  const TIPO = { camas: 'Hortalizas en camas elevadas', arom: 'Aromáticas y medicinales', flores: 'Franja de flores para polinizadores', frutal: 'Fresa, uchuva y mora', arboles: 'Tomate de árbol y feijoa', milpa: 'Milpa: maíz y ahuyama', tomate: 'Invernadero de tomate', espiral: 'Espiral de aromáticas', aula: 'Aula al aire libre', doc: 'Módulo docente' };
-  const RECETA = { // cultivos de las 8 camas de cada tipo
-    camas: (r) => { const L = ['lechuga', 'morada', 'acelga', 'cilantro', 'repollo', 'cebolla'], a = L[Math.floor(r() * 6)], b = L[Math.floor(r() * 6)]; return Array.from({ length: 8 }, (_, k) => k < 4 ? a : b); },
-    arom: () => ['lavanda', 'aromatica', 'cilantro', 'aromatica', 'lavanda', 'aromatica', 'flores', 'aromatica'],
-    flores: () => Array(8).fill('flores'), frutal: () => ['fresa', 'fresa', 'fresa', 'uchuva', 'uchuva', 'mora', 'mora', 'fresa'],
-    milpa: () => ['maiz', 'maiz', 'ahuyama', 'maiz', 'maiz', 'ahuyama', 'maiz', 'maiz'], tomate: () => Array(8).fill('tomate')
-  };
+  const ocupa = new Map(); for (const a of ARBW) { const k = Math.round(a[0] / 12) + '_' + Math.round(a[1] / 12); if (!ocupa.has(k)) ocupa.set(k, []); ocupa.get(k).push(a); }
+  const arbolCerca = (x, z, m) => { for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) for (const a of ocupa.get((Math.round(x / 12) + dx) + '_' + (Math.round(z / 12) + dz)) || []) if (Math.hypot(a[0] - x, a[1] - z) < m + a[2]) return true; return false; };
+  const lejosEdif = (x, z, d) => !ED.some((e, k) => k !== 20 && k !== 27 && (dentro(e.W, x, z) || distBorde(e.W, x, z) < d));
+  const PUNTOS_FAUNA = [[FA.apiario.p, 13], [FA.abejorro.p, 8], [FA.charca.p, 22], ...FA.murc.map(p => [p, 5]), ...FA.nidos.map(p => [p, 5]), ...FA.perchas.map(p => [p, 5]), ...FA.hoteles.map(p => [p, 6])];
   const pasajeCerca = (c) => { let m = [1e9, null]; for (const P of PAS) for (let i = 1; i < P.length; i++) { const a = P[i - 1], b = P[i], dx = b[0] - a[0], dz = b[1] - a[1], L2 = dx * dx + dz * dz || 1, t = Math.max(0, Math.min(1, ((c[0] - a[0]) * dx + (c[1] - a[1]) * dz) / L2)), q = [a[0] + t * dx, a[1] + t * dz], d = Math.hypot(q[0] - c[0], q[1] - c[1]); if (d < m[0]) m = [d, q]; } return m; };
-  const CEL = [];
-  {
-    let sem = 7; const rnd = () => (sem = (sem * 16807) % 2147483647) / 2147483647;
-    for (const Z of ZONAS) {
-      const cel = Z.cel.map(([i, j]) => { const u = (i + 0.5) * 15, v = (j + 0.5) * 15, c = loc(C_CAMPO, u, v); return { i, j, u, v, c, dp: pasajeCerca(c) }; }).sort((a, b) => a.dp[0] - b.dp[0]);
-      Z.aula = cel[0]; let n = 0;
-      for (const x of cel) {
-        const doc = MODS.find(m => Math.abs(m.u - x.u) < 1 && Math.abs(m.v - x.v) < 1);
-        const tipo = x === Z.aula ? 'aula' : doc ? 'doc' : Z.rec[n++ % Z.rec.length];
-        const cul = doc ? Array.from({ length: 8 }, (_, k) => doc.cul[k % doc.cul.length]) : RECETA[tipo] ? RECETA[tipo](rnd) : null;
-        CEL.push({ c: x.c, u: x.u, v: x.v, i: x.i, j: x.j, z: Z.k, tipo, cul, flor: tipo === 'flores' || tipo === 'espiral', inv: doc ? doc.inv : tipo === 'tomate', doc: doc ? doc.k : null });
-      }
-      let cx = 0, cz = 0; for (const x of cel) { cx += x.c[0]; cz += x.c[1]; } Z.c = [cx / cel.length, cz / cel.length]; Z.ha = cel.length * 225 / 1e4;
-    }
-  }
-  const HA = CEL.length * 225 / 10000, NFLOR = CEL.filter(c => c.flor).length, CAMAS_CEL = CEL.filter(c => c.cul);
-  const C_DOC = loc(C_CAMPO, 45, 15); // centro de los módulos docentes
-  PK.campo.a = HA.toFixed(1).replace('.', ',') + ' ha';
-  PK.campo.x = `${ZONAS.length} huertas de enseñanza en los claros del bosque, paralelas a los edificios y cada una con su aula al aire libre junto al pasaje: ` + ZONAS.map(z => z.n.toLowerCase()).join(', ') + '.';
-  /* texturas: tierra con paja y el cultivo visto de lejos */
+  /* --- planta de compostaje: rectángulo de 48 x 30 m en el claro más cercano a la entrada de servicio (C, Av. Boyacá) --- */
+  const CL = 48, CW = 30;
+  const C_PLANTA = (() => { let best = null; const ref = ACC[2].p;
+    for (let i = -60; i <= 60; i++) for (let j = -60; j <= 60; j++) { const c = loc(C_CAMPO, i * 5, j * 5); if (!dentro(SITIO, c[0], c[1]) || distBorde(SITIO, c[0], c[1]) < 26) continue;
+      let ok = true; for (let a = -1; a <= 1 && ok; a += 0.5) for (let b = -1; b <= 1 && ok; b += 0.5) { const q = loc(c, a * CL / 2, b * CW / 2); if (arbolCerca(q[0], q[1], 1.5) || !lejosEdif(q[0], q[1], 10) || PAS.some(P => distPolilinea(P, q[0], q[1]) < 5) || PUNTOS_FAUNA.some(([p, r]) => Math.hypot(p[0] - q[0], p[1] - q[1]) < r)) ok = false; }
+      if (!ok) continue; const d = Math.hypot(c[0] - ref[0], c[1] - ref[1]); if (!best || d < best[0]) best = [d, c]; }
+    return best ? best[1] : C_COMP; })();
+  C_COMP = C_PLANTA;
+  const enPlanta = (x, z) => { const dx = x - C_PLANTA[0], dz = z - C_PLANTA[1], u = dx * CU + dz * SU, v = -dx * SU + dz * CU; return Math.abs(u) < CL / 2 + 10 && Math.abs(v) < CW / 2 + 10; };
+  /* --- celdas libres --- */
+  const LIB = new Map();
+  for (let i = -90; i < 90; i++) for (let j = -90; j < 90; j++) { const u = (i + 0.5) * S, v = (j + 0.5) * S, c = loc(C_CAMPO, u, v);
+    if (!dentro(SITIO, c[0], c[1]) || distBorde(SITIO, c[0], c[1]) < 12 || !lejosEdif(c[0], c[1], 20) || arbolCerca(c[0], c[1], 5.6) || enPlanta(c[0], c[1])) continue;
+    if (PAS.some(P => distPolilinea(P, c[0], c[1]) < 7) || PUNTOS_FAUNA.some(([p, r]) => Math.hypot(p[0] - c[0], p[1] - c[1]) < r + 5)) continue;
+    LIB.set(i + '_' + j, { i, j, u, v, c }); }
+  const COMP = []; { const vis = new Set(); for (const [k, x] of LIB) { if (vis.has(k)) continue; const pila = [x], L = []; vis.add(k);
+      while (pila.length) { const a = pila.pop(); L.push(a); for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const kk = (a.i + di) + '_' + (a.j + dj); if (LIB.has(kk) && !vis.has(kk)) { vis.add(kk); pila.push(LIB.get(kk)); } } }
+      if (L.length >= 4) COMP.push(L); } }
+  COMP.sort((a, b) => b.length - a.length);
+  const TIPOS = [
+    { k: 'hort', n: 'Huerta docente de hortalizas', c: '#86efac', d: 'Camas elevadas de lechuga, acelga, kale, zanahoria, cebolla y cilantro, y los cuatro módulos del ensayo A-D. Aquí se aprende a sembrar, regar y cosechar.', rec: ['camas'] },
+    { k: 'frut', n: 'Huerto de frutales', c: '#fca5a5', d: 'Tomate de árbol, feijoa y lulo entre camas de fresa, uchuva y mora: se poda, se injerta y se cosecha la fruta.', rec: ['arboles', 'frutal', 'frutal'] },
+    { k: 'med', n: 'Huerta medicinal y sensorial', c: '#c4b5fd', d: 'Ortiga, celidonia, helechos, aromáticas y una espiral de hierbas: se toca, se huele y se aprende para qué sirve cada planta.', rec: ['medic', 'medic', 'espiral', 'arom'] },
+    { k: 'inv', n: 'Invernaderos de tomate', c: '#fda4af', d: 'Tomate en tutores bajo túnel, riego por goteo y abejorro nativo como polinizador.', rec: ['tomate'] },
+    { k: 'bosq', n: 'Bosque comestible', c: '#a3e635', d: 'Tres pisos de cultivo como en el monte: frutales arriba, arbustos de bayas en medio y aromáticas cubriendo el suelo.', rec: ['bosque', 'frutal', 'bosque', 'arom'] },
+    { k: 'col', n: 'Parcelas de los colegios', c: '#7dd3fc', d: 'Cada colegio de Kennedy tiene su parcela con letrero: siembra en una visita y cosecha en la siguiente.', rec: ['colegio'] },
+    { k: 'semi', n: 'Semillero y vivero', c: '#fde68a', d: 'Plántulas bajo túnel para las huertas de Bavaria, de los parques y de las casas: aquí se lleva cada vecino su bandeja.', rec: ['semillero', 'flores'] },
+    { k: 'hidro', n: 'Hidroponía demostrativa', c: '#99f6e4', d: 'Mesas de tubos con lechuga sin tierra: lo mismo que se instala en terrazas y balcones de Kennedy.', rec: ['hidro', 'hidro', 'camas'] },
+    { k: 'milpa', n: 'Milpa: maíz, fríjol y ahuyama', c: '#fcd34d', d: 'El policultivo andino: el maíz da tutor al fríjol, el fríjol abona y la ahuyama cubre el suelo.', rec: ['milpa'] },
+    { k: 'poli', n: 'Jardín de polinizadores', c: '#f0abfc', d: 'Flores nativas en franjas que alimentan abejas, abejorros, colibríes y mariposas de todas las huertas.', rec: ['flores', 'flores', 'arom'] }
+  ];
+  const RECETA = {
+    camas: (r) => { const L = ['lechuga', 'morada', 'acelga', 'cilantro', 'repollo', 'cebolla', 'zanahoria', 'kale']; return [0, 1, 2].map(() => L[Math.floor(r() * L.length)]); },
+    colegio: (r) => { const L = ['lechuga', 'zanahoria', 'fresa', 'cilantro', 'acelga', 'flores']; return [0, 1, 2].map(() => L[Math.floor(r() * L.length)]); },
+    arom: () => ['lavanda', 'aromatica', 'aromatica'], flores: () => ['flores', 'flores', 'flores'], frutal: (r) => [['fresa', 'uchuva', 'mora'], ['fresa', 'fresa', 'uchuva'], ['mora', 'fresa', 'uchuva']][Math.floor(r() * 3)],
+    milpa: () => ['maiz', 'ahuyama', 'maiz'], tomate: () => ['tomate', 'tomate', 'tomate'], semillero: () => ['lechuga', 'kale', 'cilantro']
+  };
+  const MODS = [
+    { k: 'A', n: 'A · Bajo cubierta', inv: true, cul: ['lechuga'], q: '¿Cuánta agua y tiempo para una caja de lechuga?' }, { k: 'B', n: 'B · Con bioinsumos', inv: true, cul: ['lechuga'], q: '¿El abono biológico cambia la cosecha?' },
+    { k: 'C', n: 'C · Al aire libre', inv: false, cul: ['lechuga'], q: '¿Qué cambia frente al módulo A?' }, { k: 'D', n: 'D · Por pedido', inv: false, cul: ['acelga', 'cilantro', 'acelga'], q: '¿Cuánto sembrar para un pedido real?' }
+  ];
+  const ZONAS = [], CEL = [];
+  { let sem = 11; const rnd = () => (sem = (sem * 16807) % 2147483647) / 2147483647;
+    COMP.forEach((L, zi) => { const T = TIPOS[zi % TIPOS.length], cel = L.map(x => ({ ...x, dp: pasajeCerca(x.c) })).sort((a, b) => a.dp[0] - b.dp[0]);
+      const Z = { k: 'Z' + (zi + 1), n: T.n, c: null, d: T.d, col: T.c, tipoZ: T.k, aula: cel[0] }; let n = 0;
+      cel.forEach((x, xi) => { let tipo = x === Z.aula && L.length >= 6 ? 'aula' : T.rec[n++ % T.rec.length], doc = null;
+        if (zi === 0 && xi >= 1 && xi <= 4) { doc = MODS[xi - 1]; tipo = 'doc'; doc.c = x.c; }
+        const cul = doc ? [0, 1, 2].map(b => doc.cul[b % doc.cul.length]) : RECETA[tipo] ? RECETA[tipo](rnd) : null;
+        CEL.push({ c: x.c, u: x.u, v: x.v, z: Z.k, zi, tipo, cul, col: T.c, flor: tipo === 'flores' || tipo === 'espiral' || tipo === 'arom', inv: doc ? doc.inv : tipo === 'tomate' || tipo === 'semillero', doc: doc ? doc.k : null }); });
+      let cx = 0, cz = 0; for (const x of L) { cx += x.c[0]; cz += x.c[1]; } Z.c = [cx / L.length, cz / L.length]; Z.ha = L.length * S * S / 1e4;  ZONAS.push(Z); }); }
+  const TIPOS_H = TIPOS.map(T => { const zs = ZONAS.filter(z => z.tipoZ === T.k); return zs.length ? { n: T.n, col: T.c, d: T.d, n2: zs.length, ha: zs.reduce((a, z) => a + z.ha, 0), z: zs[0].k } : null; }).filter(Boolean);
+  const HA = CEL.length * S * S / 1e4, NFLOR = CEL.filter(c => c.flor).length, CAMAS_CEL = CEL.filter(c => c.cul);
+  const C_DOC = MODS[0].c ? [(MODS[0].c[0] + MODS[3].c[0]) / 2, (MODS[0].c[1] + MODS[3].c[1]) / 2] : C_CAMPO;
+  PK.campo.a = HA.toFixed(1).replace('.', ',') + ' ha'; PK.campo.m2 = Math.round(HA * 1e4);
+  { const z0 = ZONAS[0]; POS.campo = z0 ? [z0.c[0], 9, z0.c[1]] : POS.campo; } POS.comp = [C_PLANTA[0], 10, C_PLANTA[1]];
+  /* --- texturas: hojas con su color real (gradiente, nervadura y moteado) --- */
   const texCama = (k) => { const C = CULT[k], cv = document.createElement('canvas'); cv.width = 64; cv.height = 512; const g = cv.getContext('2d');
-    g.fillStyle = '#4a3527'; g.fillRect(0, 0, 64, 512); for (let n = 0; n < 1400; n++) { g.fillStyle = `rgba(${30 + Math.random() * 40},${20 + Math.random() * 25},${12 + Math.random() * 15},.55)`; g.fillRect(Math.random() * 64, Math.random() * 512, 2, 2); }
-    for (let n = 0; n < 260; n++) { g.strokeStyle = `rgba(${190 + Math.random() * 40},${160 + Math.random() * 30},90,.55)`; g.lineWidth = 1; const x = Math.random() * 64, y = Math.random() * 512, a = Math.random() * 3; g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a) * 6, y + Math.sin(a) * 6); g.stroke(); } // paja
-    if (C) { const filas = C.fil, pas = Math.max(6, C.paso / 9.7 * 512); for (let f = 0; f < filas; f++) { const x = (f + 0.5) * 64 / filas; for (let y = pas / 2; y < 512; y += pas) { const r = Math.min(64 / filas, pas) * 0.48 * (0.8 + Math.random() * 0.35);
-      if (C.pal) { g.fillStyle = '#3f7a35'; g.beginPath(); g.ellipse(x, y, r, r, 0, 0, 7); g.fill(); g.fillStyle = C.pal[Math.floor(Math.random() * C.pal.length)]; g.beginPath(); g.ellipse(x + (Math.random() - 0.5) * 3, y, r * 0.6, r * 0.6, 0, 0, 7); g.fill(); continue; }
-      g.fillStyle = Math.random() < 0.5 ? C.c : C.c2; g.beginPath(); g.ellipse(x + (Math.random() - 0.5) * 2, y, r, r, 0, 0, 7); g.fill();
-      if (C.fr && Math.random() < 0.45) { g.fillStyle = C.fr; g.beginPath(); g.ellipse(x + (Math.random() - 0.5) * r, y + (Math.random() - 0.5) * r, r * 0.3, r * 0.3, 0, 0, 7); g.fill(); }
-      g.fillStyle = 'rgba(255,255,255,.12)'; g.beginPath(); g.ellipse(x - r * 0.25, y - r * 0.25, r * 0.35, r * 0.35, 0, 0, 7); g.fill(); } } }
+    g.fillStyle = '#3f2e22'; g.fillRect(0, 0, 64, 512); for (let n = 0; n < 1600; n++) { g.fillStyle = `rgba(${30 + Math.random() * 40},${20 + Math.random() * 25},${12 + Math.random() * 15},.55)`; g.fillRect(Math.random() * 64, Math.random() * 512, 2, 2); }
+    for (let n = 0; n < 220; n++) { g.strokeStyle = `rgba(${190 + Math.random() * 40},${160 + Math.random() * 30},90,.45)`; g.lineWidth = 1; const x = Math.random() * 64, y = Math.random() * 512, a = Math.random() * 3; g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a) * 6, y + Math.sin(a) * 6); g.stroke(); }
+    if (C) { const filas = C.fil, pas = Math.max(6, C.paso / LB * 512); for (let f = 0; f < filas; f++) { const x = (f + 0.5) * 64 / filas; for (let y = pas / 2; y < 512; y += pas) { const r = Math.min(64 / filas, pas) * 0.42 * (0.8 + Math.random() * 0.35);
+      g.fillStyle = C.pal ? '#3f7a35' : (Math.random() < 0.5 ? C.c : C.c2); g.beginPath(); g.ellipse(x + (Math.random() - 0.5) * 2, y, r, r, 0, 0, 7); g.fill(); } } }
     const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t; };
-  /* plantas con HOJAS de verdad: tarjetas con la forma de la hoja (textura en grises con nervadura; el color lo pone cada planta) */
-  const texHoja = (tipo) => { const cv = document.createElement('canvas'); cv.width = cv.height = 256; const g = cv.getContext('2d'); g.clearRect(0, 0, 256, 256);
-    const gr = (y0, y1) => { const q = g.createLinearGradient(0, y0, 0, y1); q.addColorStop(0, '#f2f2f2'); q.addColorStop(1, '#9a9a9a'); return q; };
+  const sombra = (h, f) => { const c = new THREE.Color(h); c.multiplyScalar(f); return '#' + c.getHexString(); };
+  const texHoja = (tipo, col) => { const cv = document.createElement('canvas'); cv.width = cv.height = 256; const g = cv.getContext('2d'); g.clearRect(0, 0, 256, 256);
+    const cl = sombra(col, 1.25), cd = sombra(col, 0.62), ve = sombra(col, 1.55);
+    const gr = (y0, y1) => { const q = g.createLinearGradient(0, y0, 0, y1); q.addColorStop(0, cl); q.addColorStop(0.55, col); q.addColorStop(1, cd); return q; };
+    const mota = () => { g.globalCompositeOperation = 'source-atop'; for (let i = 0; i < 900; i++) { g.fillStyle = Math.random() < 0.5 ? 'rgba(0,0,0,.07)' : 'rgba(255,255,255,.06)'; g.fillRect(Math.random() * 256, Math.random() * 256, 2 + Math.random() * 3, 2 + Math.random() * 3); } g.globalCompositeOperation = 'source-over'; };
     if (tipo === 'rizada' || tipo === 'lisa') { g.fillStyle = gr(20, 250); g.beginPath();
-      for (let i = 0; i <= 80; i++) { const a = i / 80 * Math.PI * 2, rr = 1 + (tipo === 'rizada' ? 0.09 * Math.sin(a * 22) + 0.05 * Math.sin(a * 9) : 0.02 * Math.sin(a * 5)); g.lineTo(128 + Math.sin(a) * 100 * rr, 140 - Math.cos(a) * 112 * rr); }
-      g.fill(); g.strokeStyle = 'rgba(255,255,255,.85)'; g.lineWidth = tipo === 'lisa' ? 9 : 5; g.beginPath(); g.moveTo(128, 254); g.lineTo(128, 36); g.stroke(); g.lineWidth = 2;
-      for (let k = 0; k < 7; k++) { const y = 220 - k * 26; g.beginPath(); g.moveTo(128, y); g.quadraticCurveTo(160, y - 18, 205, y - 34); g.moveTo(128, y); g.quadraticCurveTo(96, y - 18, 51, y - 34); g.stroke(); } }
-    if (tipo === 'fina') { g.fillStyle = '#d8d8d8'; for (let k = 0; k < 9; k++) { const a = -1.2 + k * 0.3, x = 128 + Math.sin(a) * 70, y = 150 - Math.cos(a) * 80; g.beginPath(); g.ellipse(x, y, 26, 18, a, 0, 7); g.fill(); g.strokeStyle = '#bbb'; g.lineWidth = 3; g.beginPath(); g.moveTo(128, 250); g.lineTo(x, y); g.stroke(); } }
-    if (tipo === 'tira') { g.fillStyle = gr(0, 256); for (const dx of [-30, 0, 30]) { g.beginPath(); g.moveTo(128 + dx - 9, 256); g.quadraticCurveTo(128 + dx, 120, 128 + dx * 1.6, 4); g.quadraticCurveTo(128 + dx + 4, 120, 128 + dx + 9, 256); g.fill(); } }
-    if (tipo === 'larga') { g.fillStyle = gr(0, 256); g.beginPath(); g.moveTo(118, 256); g.quadraticCurveTo(70, 120, 128, 2); g.quadraticCurveTo(186, 120, 138, 256); g.fill(); g.strokeStyle = 'rgba(255,255,255,.8)'; g.lineWidth = 4; g.beginPath(); g.moveTo(128, 256); g.lineTo(128, 10); g.stroke(); }
-    if (tipo === 'trebol') { g.fillStyle = gr(30, 250); for (const a of [-0.9, 0, 0.9]) { g.save(); g.translate(128, 200); g.rotate(a); g.beginPath(); for (let i = 0; i <= 40; i++) { const t2 = i / 40 * Math.PI * 2, rr = 1 + 0.08 * Math.sin(t2 * 14); g.lineTo(Math.sin(t2) * 42 * rr, -95 - Math.cos(t2) * 58 * rr); } g.fill(); g.restore(); }
-      g.fillStyle = '#5a5a5a'; for (const [x, y] of [[70, 230], [190, 226], [128, 244]]) { g.beginPath(); g.ellipse(x, y, 16, 20, 0, 0, 7); g.fill(); } }
-    if (tipo === 'flor') { g.fillStyle = '#f0f0f0'; for (let k = 0; k < 18; k++) { const a = k / 18 * Math.PI * 2; g.beginPath(); g.ellipse(128 + Math.cos(a) * 62, 128 + Math.sin(a) * 62, 40, 16, a, 0, 7); g.fill(); } g.fillStyle = '#7a7a7a'; g.beginPath(); g.arc(128, 128, 38, 0, 7); g.fill(); }
+      for (let i = 0; i <= 120; i++) { const a = i / 120 * Math.PI * 2, rr = 1 + (tipo === 'rizada' ? 0.08 * Math.sin(a * 26) + 0.05 * Math.sin(a * 11) : 0.015 * Math.sin(a * 5)); g.lineTo(128 + Math.sin(a) * 100 * rr, 140 - Math.cos(a) * 112 * rr); }
+      g.fill(); mota(); g.strokeStyle = ve; g.globalAlpha = 0.75; g.lineWidth = tipo === 'lisa' ? 8 : 5; g.beginPath(); g.moveTo(128, 254); g.lineTo(128, 36); g.stroke(); g.lineWidth = 1.8;
+      for (let k = 0; k < 8; k++) { const y = 228 - k * 24; g.beginPath(); g.moveTo(128, y); g.quadraticCurveTo(162, y - 16, 210, y - 30); g.moveTo(128, y); g.quadraticCurveTo(94, y - 16, 46, y - 30); g.stroke(); } g.globalAlpha = 1; }
+    if (tipo === 'fina') { for (let k = 0; k < 11; k++) { const a = -1.3 + k * 0.26, x = 128 + Math.sin(a) * 74, y = 150 - Math.cos(a) * 86; g.fillStyle = k % 2 ? col : cl; g.beginPath(); g.ellipse(x, y, 24, 15, a, 0, 7); g.fill(); g.strokeStyle = cd; g.lineWidth = 3; g.beginPath(); g.moveTo(128, 252); g.lineTo(x, y); g.stroke(); } mota(); }
+    if (tipo === 'tira' || tipo === 'larga') { const xs = tipo === 'tira' ? [-30, 0, 30] : [0]; for (const dx of xs) { g.fillStyle = gr(0, 256); g.beginPath(); g.moveTo(128 + dx - (tipo === 'larga' ? 22 : 9), 256); g.quadraticCurveTo(128 + dx - 6, 110, 128 + dx * 1.5, 2); g.quadraticCurveTo(128 + dx + 6, 110, 128 + dx + (tipo === 'larga' ? 22 : 9), 256); g.fill(); } mota();
+      g.strokeStyle = ve; g.globalAlpha = 0.6; g.lineWidth = 2; for (const dx of xs) { g.beginPath(); g.moveTo(128 + dx, 256); g.lineTo(128 + dx * 1.45, 10); g.stroke(); } g.globalAlpha = 1; }
+    if (tipo === 'trebol') { g.fillStyle = gr(30, 250); for (const a of [-0.9, 0, 0.9]) { g.save(); g.translate(128, 200); g.rotate(a); g.beginPath(); for (let i = 0; i <= 50; i++) { const t2 = i / 50 * Math.PI * 2, rr = 1 + 0.07 * Math.sin(t2 * 16); g.lineTo(Math.sin(t2) * 42 * rr, -95 - Math.cos(t2) * 58 * rr); } g.fill(); g.restore(); } mota(); }
+    if (tipo === 'flor') { g.fillStyle = '#f2f2f2'; for (let k = 0; k < 18; k++) { const a = k / 18 * Math.PI * 2; g.beginPath(); g.ellipse(128 + Math.cos(a) * 62, 128 + Math.sin(a) * 62, 40, 16, a, 0, 7); g.fill(); } g.fillStyle = '#6a5a2a'; g.beginPath(); g.arc(128, 128, 36, 0, 7); g.fill(); }
     const tx = new THREE.CanvasTexture(cv); tx.colorSpace = THREE.SRGBColorSpace; tx.anisotropy = 4; return tx; };
   const unirUV = (gs) => { const P = [], N = [], U = []; for (const g0 of gs) { const g = g0.index ? g0.toNonIndexed() : g0; g.computeVertexNormals(); P.push(...g.attributes.position.array); N.push(...g.attributes.normal.array); if (g.attributes.uv) U.push(...g.attributes.uv.array); else for (let i = 0; i < g.attributes.position.count; i++) U.push(0.5, 0.5); }
     const G = new THREE.BufferGeometry(); G.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); G.setAttribute('normal', new THREE.Float32BufferAttribute(N, 3)); G.setAttribute('uv', new THREE.Float32BufferAttribute(U, 2)); return G; };
-  // roseta: n hojas que salen del centro, inclinadas (inc: 0 = parada, PI/2 = acostada); l = largo, a = ancho
-  const roseta = (n, l, a, inc, alto = 0, giro = 0) => unirUV(Array.from({ length: n }, (_, i) => { const p = new THREE.PlaneGeometry(a, l); p.translate(0, l / 2, 0); p.rotateX(-(inc + (i % 2) * 0.18)); p.rotateY(i / n * Math.PI * 2 + (i % 3) * 0.4 + giro); p.translate(0, alto, 0); return p; }));
-  const tallo = (h, r = 0.008) => new THREE.CylinderGeometry(r * 0.7, r, h, 4).translate(0, h / 2, 0);
-  // fruta: piezas sueltas (su color va aparte, en su propia malla instanciada)
+  // hoja CURVA: plano de 1 x 4 segmentos que se arquea hacia afuera (no tarjetas planas)
+  const hoja = (a, l, curva = 0.35) => { const p = new THREE.PlaneGeometry(a, l, 2, 5); p.translate(0, l / 2, 0); const P = p.attributes.position; for (let i = 0; i < P.count; i++) { const y = P.getY(i) / l, x = P.getX(i) / a; P.setZ(i, curva * l * y * y + Math.abs(x) * a * 0.25); } return p; };
+  const roseta = (n, l, a, inc, alto = 0, giro = 0, curva = 0.35) => unirUV(Array.from({ length: n }, (_, i) => { const p = hoja(a * (0.85 + (i % 3) * 0.1), l * (0.8 + (i % 4) * 0.08), curva); p.rotateX(-(inc + (i % 2) * 0.16)); p.rotateY(i / n * Math.PI * 2 + (i % 3) * 0.4 + giro); p.translate(0, alto, 0); return p; }));
+  const tallo = (h, r = 0.008) => new THREE.CylinderGeometry(r * 0.7, r, h, 5).translate(0, h / 2, 0);
   const fruto = (pts, f) => unirUV(pts.map(p => f().translate(p[0], p[1], p[2])));
   const anillo = (n, r, y0, y1, s = 1) => Array.from({ length: n }, (_, i) => { const a = i * 2.39996 * s, rr = r * (0.55 + 0.45 * ((i * 0.618) % 1)); return [Math.cos(a) * rr, y0 + (y1 - y0) * ((i * 0.37) % 1), Math.sin(a) * rr]; });
   const ahuyamaG = () => { const g = new THREE.SphereGeometry(1, 20, 12), p = g.attributes.position; for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i), z = p.getZ(i), k = 1 + 0.07 * Math.cos(Math.atan2(z, x) * 9); p.setXYZ(i, x * k * 0.24, y * 0.15, z * k * 0.24); } g.computeVertexNormals(); return g.translate(0, 0.13, 0); };
   const GEO = {
-    lechuga: roseta(10, 0.17, 0.16, 1.0), morada: roseta(10, 0.16, 0.15, 0.95), repollo: unirUV([roseta(9, 0.2, 0.2, 1.15), new THREE.SphereGeometry(0.1, 10, 8).scale(1, 0.85, 1).translate(0, 0.09, 0)]),
-    acelga: roseta(7, 0.32, 0.14, 0.35), cilantro: roseta(8, 0.17, 0.13, 0.55), cebolla: roseta(5, 0.34, 0.06, 0.12), fresa: roseta(7, 0.15, 0.13, 0.85),
-    flores: unirUV([roseta(5, 0.18, 0.08, 0.7), new THREE.CylinderGeometry(0.006, 0.008, 0.42, 4).translate(0, 0.21, 0), new THREE.PlaneGeometry(0.11, 0.11).rotateX(-Math.PI / 2).translate(0, 0.43, 0)]),
-    tomate: unirUV([tallo(1.55, 0.012), ...[0.15, 0.45, 0.75, 1.05, 1.3].map((h, i) => roseta(5, 0.24, 0.17, 1.15 - i * 0.08, h, i * 0.7))]),
-    uchuva: unirUV([tallo(0.9, 0.012), ...[0.2, 0.45, 0.7, 0.9].map((h, i) => roseta(6, 0.2, 0.16, 1.2, h, i * 0.5))]),
-    mora: unirUV([...[0, 1.2, 2.4, 3.6, 4.8].map(a => new THREE.TorusGeometry(0.55, 0.008, 3, 10, Math.PI * 0.8).rotateY(a).translate(0, 0.05, 0)), ...[0.35, 0.6, 0.85].map((h, i) => roseta(8, 0.13, 0.12, 1.35, h, i))]),
-    maiz: unirUV([tallo(2.1, 0.018), ...[0.3, 0.6, 0.9, 1.2, 1.5, 1.8].map((h, i) => roseta(2, 0.75, 0.09, 0.9, h, i * 1.1)), roseta(6, 0.25, 0.02, 0.35, 2.05)]),
+    lechuga: roseta(14, 0.17, 0.16, 1.0, 0, 0, 0.45), morada: roseta(14, 0.16, 0.15, 0.95, 0, 0, 0.45), repollo: unirUV([roseta(10, 0.22, 0.22, 1.2, 0, 0, 0.5), new THREE.SphereGeometry(0.1, 12, 9).scale(1, 0.85, 1).translate(0, 0.09, 0)]),
+    acelga: roseta(8, 0.34, 0.15, 0.32, 0, 0, 0.25), kale: roseta(9, 0.32, 0.13, 0.5, 0, 0, 0.4), cilantro: roseta(10, 0.17, 0.13, 0.55), cebolla: roseta(6, 0.36, 0.05, 0.1, 0, 0, 0.15), zanahoria: roseta(9, 0.24, 0.1, 0.35),
+    fresa: roseta(8, 0.15, 0.13, 0.85),
+    flores: unirUV([roseta(6, 0.18, 0.07, 0.7), tallo(0.42, 0.006), new THREE.PlaneGeometry(0.11, 0.11).rotateX(-Math.PI / 2).translate(0, 0.43, 0)]),
+    tomate: unirUV([tallo(1.55, 0.012), ...[0.15, 0.4, 0.65, 0.9, 1.15, 1.38].map((h, i) => roseta(5, 0.24, 0.17, 1.1 - i * 0.07, h, i * 0.7))]),
+    uchuva: unirUV([tallo(0.9, 0.012), ...[0.2, 0.42, 0.62, 0.82].map((h, i) => roseta(7, 0.2, 0.16, 1.2, h, i * 0.5))]),
+    mora: unirUV([...[0, 1.2, 2.4, 3.6, 4.8].map(a => new THREE.TorusGeometry(0.55, 0.008, 3, 10, Math.PI * 0.8).rotateY(a).translate(0, 0.05, 0)), ...[0.3, 0.55, 0.8].map((h, i) => roseta(9, 0.13, 0.12, 1.35, h, i))]),
+    maiz: unirUV([tallo(2.1, 0.018), ...[0.3, 0.6, 0.9, 1.2, 1.5, 1.8].map((h, i) => roseta(2, 0.75, 0.09, 0.9, h, i * 1.1, 0.6)), roseta(6, 0.25, 0.02, 0.35, 2.05)]),
     ahuyama: unirUV([roseta(7, 0.42, 0.4, 1.3, 0.02), roseta(5, 0.3, 0.3, 1.05, 0.12, 0.6)]),
-    lavanda: unirUV([roseta(14, 0.22, 0.03, 0.45)]), aromatica: unirUV([roseta(9, 0.16, 0.12, 0.7), roseta(7, 0.12, 0.1, 0.5, 0.1, 0.4)])
+    lavanda: unirUV([roseta(16, 0.22, 0.03, 0.45)]), aromatica: unirUV([roseta(10, 0.16, 0.12, 0.7), roseta(8, 0.12, 0.1, 0.5, 0.1, 0.4)])
   };
-  const HOJA = { lechuga: 'rizada', morada: 'rizada', repollo: 'lisa', acelga: 'lisa', cilantro: 'fina', cebolla: 'tira', fresa: 'trebol', flores: 'flor', tomate: 'fina', uchuva: 'lisa', mora: 'trebol', maiz: 'larga', ahuyama: 'lisa', lavanda: 'tira', aromatica: 'fina' };
-  const FRUTO = { // fruta real de cada planta, como malla aparte con su color
-    fresa: fruto(anillo(5, 0.16, 0.02, 0.06), () => new THREE.ConeGeometry(0.022, 0.04, 7).rotateX(Math.PI)),
-    tomate: fruto(anillo(9, 0.2, 0.35, 1.25), () => new THREE.SphereGeometry(0.038, 8, 6).scale(1, 0.88, 1)),
-    uchuva: fruto(anillo(10, 0.22, 0.25, 0.85), () => new THREE.SphereGeometry(0.02, 7, 5)),
-    mora: fruto(anillo(14, 0.4, 0.3, 0.8), () => new THREE.SphereGeometry(0.016, 6, 4).scale(1, 1.25, 1)),
+  const HOJA = { lechuga: 'rizada', morada: 'rizada', repollo: 'lisa', acelga: 'lisa', kale: 'rizada', cilantro: 'fina', cebolla: 'tira', zanahoria: 'fina', fresa: 'trebol', flores: 'flor', tomate: 'fina', uchuva: 'lisa', mora: 'trebol', maiz: 'larga', ahuyama: 'lisa', lavanda: 'tira', aromatica: 'fina' };
+  const FRUTO = {
+    fresa: fruto(anillo(6, 0.16, 0.02, 0.06), () => new THREE.ConeGeometry(0.022, 0.042, 8).rotateX(Math.PI)),
+    tomate: fruto(anillo(11, 0.2, 0.35, 1.3), () => new THREE.SphereGeometry(0.04, 10, 7).scale(1, 0.86, 1)),
+    uchuva: fruto(anillo(12, 0.22, 0.25, 0.85), () => new THREE.SphereGeometry(0.02, 8, 6)),
+    mora: fruto(anillo(16, 0.4, 0.3, 0.8), () => new THREE.SphereGeometry(0.016, 6, 5).scale(1, 1.25, 1)),
     maiz: fruto([[0.05, 1.0, 0], [-0.04, 1.25, 0.03]], () => new THREE.SphereGeometry(1, 8, 6).scale(0.035, 0.11, 0.035).rotateZ(0.35)),
-    ahuyama: fruto([[0.25, 0, 0.1]], ahuyamaG),
-    lavanda: fruto(anillo(9, 0.1, 0.25, 0.32), () => new THREE.CylinderGeometry(0.012, 0.006, 0.09, 5))
+    ahuyama: fruto([[0.25, 0, 0.1]], ahuyamaG), zanahoria: fruto([[0, 0.01, 0]], () => new THREE.ConeGeometry(0.03, 0.05, 8).translate(0, 0.02, 0)),
+    lavanda: fruto(anillo(10, 0.1, 0.25, 0.32), () => new THREE.CylinderGeometry(0.012, 0.006, 0.09, 5))
   };
-  const TXH = {}; for (const k in HOJA) TXH[HOJA[k]] = TXH[HOJA[k]] || texHoja(HOJA[k]);
-  const MATP = {}; for (const k in HOJA) MATP[k] = new THREE.MeshStandardMaterial({ color: '#ffffff', map: TXH[HOJA[k]], alphaTest: 0.45, side: THREE.DoubleSide, roughness: 0.72 });
-  // bancales de tablas, tierra con surcos y paja, caminos de viruta y de grava
+  const MATP = {}; for (const k in HOJA) MATP[k] = new THREE.MeshStandardMaterial({ color: '#ffffff', map: texHoja(HOJA[k], k === 'flores' ? '#ffffff' : CULT[k].c), alphaTest: 0.45, side: THREE.DoubleSide, roughness: 0.62 });
   const lienzoT = (w, h, f, rx = 1, ry = 1) => { const cv = document.createElement('canvas'); cv.width = w; cv.height = h; f(cv.getContext('2d'), w, h); const tx = new THREE.CanvasTexture(cv); tx.colorSpace = THREE.SRGBColorSpace; tx.wrapS = tx.wrapT = THREE.RepeatWrapping; tx.repeat.set(rx, ry); tx.anisotropy = 8; return tx; };
   const texTabla = lienzoT(128, 512, (g, w, h) => { g.fillStyle = '#7d5a3a'; g.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 64) { g.fillStyle = `rgb(${110 + Math.random() * 30},${78 + Math.random() * 20},${48 + Math.random() * 15})`; g.fillRect(0, y + 2, w, 60); g.fillStyle = 'rgba(40,25,12,.55)'; g.fillRect(0, y, w, 3); }
     for (let i = 0; i < 260; i++) { g.strokeStyle = `rgba(${60 + Math.random() * 30},${40 + Math.random() * 20},20,.35)`; g.lineWidth = 1; const y = Math.random() * h; g.beginPath(); g.moveTo(0, y); g.bezierCurveTo(40, y + 3, 90, y - 3, w, y + (Math.random() - 0.5) * 4); g.stroke(); } }, 1, 1);
-  const texViruta = lienzoT(256, 256, (g, w, h) => { g.fillStyle = '#8a6a48'; g.fillRect(0, 0, w, h); for (let i = 0; i < 3000; i++) { const v = Math.random(); g.fillStyle = v < 0.4 ? 'rgba(70,48,28,.65)' : v < 0.8 ? 'rgba(170,135,92,.6)' : 'rgba(205,180,140,.6)'; g.save(); g.translate(Math.random() * w, Math.random() * h); g.rotate(Math.random() * 3); g.fillRect(0, 0, 3 + Math.random() * 7, 1.2 + Math.random() * 1.8); g.restore(); } }, 5, 5);
-  const texGrava = lienzoT(256, 256, (g, w, h) => { g.fillStyle = '#9a9283'; g.fillRect(0, 0, w, h); for (let i = 0; i < 5000; i++) { const v = 115 + Math.random() * 80; g.fillStyle = `rgba(${v},${v - 6},${v - 16},.8)`; g.beginPath(); g.ellipse(Math.random() * w, Math.random() * h, 1 + Math.random() * 2.2, 1 + Math.random() * 1.6, Math.random() * 3, 0, 7); g.fill(); } }, 1, 1);
+  const texViruta = lienzoT(256, 256, (g, w, h) => { g.fillStyle = '#8a6a48'; g.fillRect(0, 0, w, h); for (let i = 0; i < 3000; i++) { const v = Math.random(); g.fillStyle = v < 0.4 ? 'rgba(70,48,28,.65)' : v < 0.8 ? 'rgba(170,135,92,.6)' : 'rgba(205,180,140,.6)'; g.save(); g.translate(Math.random() * w, Math.random() * h); g.rotate(Math.random() * 3); g.fillRect(0, 0, 3 + Math.random() * 7, 1.2 + Math.random() * 1.8); g.restore(); } }, 3, 3);
+  const texGrava = lienzoT(256, 256, (g, w, h) => { g.fillStyle = '#9a9283'; g.fillRect(0, 0, w, h); for (let i = 0; i < 5000; i++) { const v = 115 + Math.random() * 80; g.fillStyle = `rgba(${v},${v - 6},${v - 16},.8)`; g.beginPath(); g.ellipse(Math.random() * w, Math.random() * h, 1 + Math.random() * 2.2, 1 + Math.random() * 1.6, Math.random() * 3, 0, 7); g.fill(); } }, 2, 2);
+  const texCompost = lienzoT(256, 256, (g, w, h) => { g.fillStyle = '#3a2a1c'; g.fillRect(0, 0, w, h); for (let i = 0; i < 4000; i++) { const v = Math.random(); g.fillStyle = v < 0.5 ? 'rgba(20,14,8,.6)' : v < 0.85 ? 'rgba(92,68,44,.55)' : 'rgba(176,150,96,.6)'; g.save(); g.translate(Math.random() * w, Math.random() * h); g.rotate(Math.random() * 3); g.fillRect(0, 0, 2 + Math.random() * 6, 1 + Math.random() * 1.5); g.restore(); } }, 4, 2);
+  const texConc = lienzoT(256, 256, (g, w, h) => { g.fillStyle = '#a8a397'; g.fillRect(0, 0, w, h); for (let i = 0; i < 2500; i++) { const v = 140 + Math.random() * 60; g.fillStyle = `rgba(${v},${v - 4},${v - 12},.35)`; g.fillRect(Math.random() * w, Math.random() * h, 2, 2); } g.strokeStyle = 'rgba(60,58,52,.5)'; g.lineWidth = 2; g.strokeRect(0, 0, w, h); }, 8, 5);
   const o3 = new THREE.Object3D();
-  const instancias = (geo, mat, L, f, sombra = !MOV) => { const im = new THREE.InstancedMesh(geo, mat, Math.max(1, L.length)); im.count = L.length; L.forEach((x, k) => { f(x, o3); o3.updateMatrix(); im.setMatrixAt(k, o3.matrix); o3.scale.set(1, 1, 1); o3.rotation.set(0, 0, 0); }); im.castShadow = sombra; im.receiveShadow = true; grupo.add(im); return im; };
-  const enCel = (c, u, v, y, o, giro = 0) => { const q = loc(c.c, u, v); o.position.set(q[0], y, q[1]); o.rotation.set(0, -ANG + giro, 0); };
+  const instancias = (geo, mat, L, f, sh = !MOV, dest = gHu) => { const im = new THREE.InstancedMesh(geo, mat, Math.max(1, L.length)); im.count = L.length; L.forEach((x, k) => { f(x, o3); o3.updateMatrix(); im.setMatrixAt(k, o3.matrix); o3.scale.set(1, 1, 1); o3.rotation.set(0, 0, 0); }); im.castShadow = sh; im.receiveShadow = true; dest.add(im); return im; };
+  const enCel = (c, u, v, y, o, giro = 0) => { const q = loc(c.c || c, u, v); o.position.set(q[0], y, q[1]); o.rotation.set(0, -ANG + giro, 0); };
+  const Y0 = 0.22, BU = [-2.5, 0, 2.5]; // piso y posición de los 3 bancales de cada celda
   {
-    const o = new THREE.Object3D(), N = CAMAS_CEL.length * 8, cuenta = {}; for (const c of CAMAS_CEL) for (const k of c.cul) cuenta[k] = (cuenta[k] || 0) + 1;
-    // piso: viruta en las huertas, grava en las aulas
-    const vir = CEL.filter(c => c.tipo !== 'aula' && c.tipo !== 'espiral' && c.tipo !== 'arboles'), gra = CEL.filter(c => c.tipo === 'aula' || c.tipo === 'espiral');
-    instancias(new THREE.PlaneGeometry(14.2, 14.2).rotateX(-Math.PI / 2), mStd('#ffffff', { map: texViruta, roughness: 1 }), vir, (c, o) => enCel(c, 0, 0, 0.22, o), false);
-    const tg = texGrava.clone(); tg.repeat.set(4, 4); tg.needsUpdate = true;
-    instancias(new THREE.PlaneGeometry(14.2, 14.2).rotateX(-Math.PI / 2), mStd('#ffffff', { map: tg, roughness: 1 }), gra, (c, o) => enCel(c, 0, 0, 0.22, o), false);
-    const cama = new THREE.InstancedMesh(new THREE.BoxGeometry(1.25, 0.4, 10), mStd('#ffffff', { map: texTabla, roughness: 0.9 }), N);
-    const riego = new THREE.InstancedMesh(new THREE.BoxGeometry(0.035, 0.035, 10), mStd('#111827', { roughness: 0.6 }), N);
-    const tops = {}, idx = {}; for (const k in cuenta) { tops[k] = new THREE.InstancedMesh(new THREE.PlaneGeometry(1.1, 9.7).rotateX(-Math.PI / 2), mStd('#ffffff', { map: texCama(k), roughness: 0.9 }), cuenta[k]); idx[k] = 0; }
-    let n = 0;
-    CAMAS_CEL.forEach((c) => { c.camas = [];
-      for (let b = 0; b < 8; b++) { const q = loc(c.c, -5.6 + b * 1.6, 0); o.position.set(q[0], 0.45, q[1]); o.rotation.set(0, -ANG, 0); o.updateMatrix(); cama.setMatrixAt(n, o.matrix);
-        const k = c.cul[b]; o.position.y = 0.66; o.updateMatrix(); tops[k].setMatrixAt(idx[k]++, o.matrix);
-        o.position.y = 0.7; o.updateMatrix(); riego.setMatrixAt(n, o.matrix); c.camas.push({ q, k }); n++; }
-    });
-    cama.receiveShadow = true; cama.castShadow = !MOV; grupo.add(cama, riego); Object.values(tops).forEach(t => { t.receiveShadow = true; grupo.add(t); });
-    // invernaderos de túnel doble (tomate y módulos A-B)
+    const vir = CEL.filter(c => !['aula', 'espiral', 'arboles', 'bosque', 'medic'].includes(c.tipo)), gra = CEL.filter(c => c.tipo === 'aula' || c.tipo === 'espiral'), pasto = CEL.filter(c => ['arboles', 'bosque', 'medic'].includes(c.tipo));
+    instancias(new THREE.PlaneGeometry(S - 0.2, S - 0.2).rotateX(-Math.PI / 2), mStd('#ffffff', { map: texViruta, roughness: 1 }), vir, (c, o) => enCel(c, 0, 0, Y0, o), false);
+    instancias(new THREE.PlaneGeometry(S - 0.2, S - 0.2).rotateX(-Math.PI / 2), mStd('#ffffff', { map: texGrava, roughness: 1 }), gra, (c, o) => enCel(c, 0, 0, Y0, o), false);
+    instancias(new THREE.PlaneGeometry(S - 0.2, S - 0.2).rotateX(-Math.PI / 2), mStd('#ffffff', { map: texViruta, color: '#a99a7c', roughness: 1 }), pasto, (c, o) => enCel(c, 0, 0, Y0, o), false);
+    // bancales de tablas con tierra y riego
+    const CAMAS = []; CAMAS_CEL.filter(c => c.tipo !== 'hidro').forEach(c => { c.camas = BU.map((u, b) => ({ q: loc(c.c, u, 0), k: c.cul[b] })); c.camas.forEach(cm => CAMAS.push([c, cm])); });
+    instancias(new THREE.BoxGeometry(1.25, 0.42, LB + 0.2).translate(0, 0.21, 0), mStd('#ffffff', { map: texTabla, roughness: 0.9 }), CAMAS, ([c, cm], o) => { const q = cm.q; o.position.set(q[0], Y0, q[1]); o.rotation.set(0, -ANG, 0); });
+    const porK = {}; for (const x of CAMAS) (porK[x[1].k] = porK[x[1].k] || []).push(x);
+    for (const k in porK) if (CULT[k]) instancias(new THREE.PlaneGeometry(1.1, LB).rotateX(-Math.PI / 2), mStd('#ffffff', { map: texCama(k), roughness: 0.95 }), porK[k], ([c, cm], o) => { o.position.set(cm.q[0], Y0 + 0.43, cm.q[1]); o.rotation.set(0, -ANG, 0); }, false);
+    instancias(new THREE.CylinderGeometry(0.008, 0.008, LB, 4).rotateX(Math.PI / 2), mStd('#111827', { roughness: 0.6 }), CAMAS.flatMap(x => [[x, -0.25], [x, 0.25]]), ([[c, cm], d], o) => { const q = loc(cm.q, d, 0); o.position.set(q[0], Y0 + 0.46, q[1]); o.rotation.set(0, -ANG, 0); }, false);
+    // invernaderos de túnel (tomate, semillero y módulos A-B) del tamaño de la celda
     const INV = CEL.filter(c => c.inv);
-    if (INV.length) {
-      const piel = [], cost = [];
-      for (const s of [-3.7, 3.7]) { const p = new THREE.CylinderGeometry(3.7, 3.7, 14.8, 16, 1, true, -Math.PI / 2, Math.PI).rotateX(Math.PI / 2); p.scale(1, 0.95, 1); p.translate(s, 2.2, 0); piel.push(p);
-        for (const e of [-7.4, 7.4]) { const t = new THREE.CircleGeometry(3.7, 16, 0, Math.PI); t.scale(1, 0.95, 1); t.translate(s, 2.2, e); piel.push(t); }
-        for (let z = -7.4; z <= 7.45; z += 1.48) { const r = new THREE.TorusGeometry(3.7, 0.05, 3, 16, Math.PI); r.scale(1, 0.95, 1); r.translate(s, 2.2, z); cost.push(r); } }
-      for (const x of [-7.4, 0, 7.4]) for (let z = -7.4; z <= 7.45; z += 2.96) { const p = new THREE.BoxGeometry(0.1, 2.2, 0.1); p.translate(x, 1.1, z); cost.push(p); }
-      const lados = []; for (const x of [-7.4, 7.4]) { const p = new THREE.PlaneGeometry(14.8, 2.2).rotateY(Math.PI / 2); p.translate(x, 1.1, 0); lados.push(p); } for (const z of [-7.4, 7.4]) { const p = new THREE.PlaneGeometry(14.8, 2.2); p.translate(0, 1.1, z); lados.push(p); }
-      const gP = unir([...piel, ...lados]), gC = unir(cost);
-      const mP = new THREE.MeshStandardMaterial({ color: '#f1f7f4', roughness: 0.12, metalness: 0.05, transparent: true, opacity: 0.2, side: THREE.DoubleSide, depthWrite: false });
-      const iP = new THREE.InstancedMesh(gP, mP, INV.length), iC = new THREE.InstancedMesh(gC, mStd('#cbd2d6', { metalness: 0.6, roughness: 0.35 }), INV.length);
-      INV.forEach((c, k) => { o.position.set(c.c[0], 0.22, c.c[1]); o.rotation.set(0, -ANG, 0); o.updateMatrix(); iP.setMatrixAt(k, o.matrix); iC.setMatrixAt(k, o.matrix); });
-      iP.renderOrder = 7; iC.castShadow = !MOV; grupo.add(iC, iP);
-      // tutores y alambre del tomate
-      const tom = CEL.filter(c => c.tipo === 'tomate'), tut = [];
-      for (const c of tom) for (let b = 0; b < 8; b++) for (let s = -4.5; s <= 4.55; s += 1.5) tut.push([c, -5.6 + b * 1.6, s]);
-      instancias(new THREE.CylinderGeometry(0.015, 0.02, 1.8, 4).translate(0, 0.9, 0), mStd('#8a6a48'), tut, ([c, u, v], o) => enCel(c, u, v, 0.66, o), false);
-      instancias(new THREE.BoxGeometry(0.01, 0.01, 9.4), mStd('#9ca3af', { metalness: 0.6 }), tom.flatMap(c => Array.from({ length: 8 }, (_, b) => [c, -5.6 + b * 1.6])), ([c, u], o) => enCel(c, u, 0, 2.3, o), false);
-    }
-    // aula al aire libre: tablero didáctico con techito, bancas de tronco y mesa de trabajo
+    if (INV.length) { const R = S / 2 - 0.15, piel = [], cost = [];
+      { const p = new THREE.CylinderGeometry(R, R, S - 0.3, 18, 1, true, -Math.PI / 2, Math.PI).rotateX(Math.PI / 2); p.scale(1, 0.78, 1); piel.push(p); for (const e of [-(S - 0.3) / 2, (S - 0.3) / 2]) { const t = new THREE.CircleGeometry(R, 18, 0, Math.PI); t.scale(1, 0.78, 1); t.translate(0, 0, e); piel.push(t); }
+        for (let z = -(S - 0.3) / 2; z <= (S - 0.3) / 2 + 0.01; z += (S - 0.3) / 5) { const r = new THREE.TorusGeometry(R, 0.035, 4, 18, Math.PI); r.scale(1, 0.78, 1); r.translate(0, 0, z); cost.push(r); } }
+      const mP = new THREE.MeshStandardMaterial({ color: '#f1f7f4', roughness: 0.15, metalness: 0.05, transparent: true, opacity: 0.18, side: THREE.DoubleSide, depthWrite: false });
+      const iP = instancias(unir(piel), mP, INV, (c, o) => enCel(c, 0, 0, Y0, o), false); iP.renderOrder = 7;
+      instancias(unir(cost), mStd('#cbd2d6', { metalness: 0.6, roughness: 0.35 }), INV, (c, o) => enCel(c, 0, 0, Y0, o));
+      const tom = CEL.filter(c => c.tipo === 'tomate'), tut = []; for (const c of tom) for (const u of BU) for (let s = -2.4; s <= 2.45; s += 0.8) tut.push([c, u, s]);
+      instancias(new THREE.CylinderGeometry(0.012, 0.016, 1.7, 4).translate(0, 0.85, 0), mStd('#8a6a48'), tut, ([c, u, v], o) => enCel(c, u, v, Y0 + 0.42, o), false); }
+    // hidroponía: mesas con 4 tubos blancos y lechugas sembradas en los huecos
+    const HID = CEL.filter(c => c.tipo === 'hidro');
+    if (HID.length) { const mesas = HID.flatMap(c => [[c, -1.6], [c, 1.6]]), lech = [];
+      for (const [c, u] of mesas) for (const du of [-0.45, -0.15, 0.15, 0.45]) for (let s = -2.5; s <= 2.51; s += 0.25) lech.push([c, u + du, s]);
+      instancias(unir([new THREE.BoxGeometry(1.4, 0.05, 6).translate(0, 0.78, 0), ...[-0.65, 0.65].flatMap(x => [-2.8, 0, 2.8].map(z => new THREE.BoxGeometry(0.05, 0.78, 0.05).translate(x, 0.39, z)))]), mStd('#9aa3a8', { metalness: 0.6, roughness: 0.4 }), mesas, ([c, u], o) => enCel(c, u, 0, Y0, o));
+      instancias(unir([-0.45, -0.15, 0.15, 0.45].map(x => new THREE.CylinderGeometry(0.055, 0.055, 6, 10).rotateX(Math.PI / 2).translate(x, 0.86, 0))), mStd('#f4f4f2', { roughness: 0.35 }), mesas, ([c, u], o) => enCel(c, u, 0, Y0, o));
+      const im = instancias(GEO.lechuga, MATP.lechuga, lech, ([c, u, v], o) => { enCel(c, u, v, Y0 + 0.9, o, (u * 7 + v * 3) % 6); o.scale.setScalar(0.85); }, false);
+      const cc = new THREE.Color(); lech.forEach((x, i) => im.setColorAt(i, cc.setScalar(0.85 + ((i * 0.37) % 0.3))));
+      instancias(new THREE.BoxGeometry(0.8, 0.7, 0.8).translate(0, 0.35, 0), mStd('#1f2937', { roughness: 0.5 }), HID, (c, o) => enCel(c, 0, -3.1, Y0, o)); }
+    // aula al aire libre: tablero con techito, bancas y mesa
     const AU = CEL.filter(c => c.tipo === 'aula'), banc = [], mad = mStd('#8a6a48', { map: texTabla, roughness: 0.9 });
-    for (const c of AU) for (let f = 0; f < 3; f++) for (let s = -1; s <= 1; s++) banc.push([c, -1 + f * 2.4, s * 3.6]);
-    instancias(new THREE.BoxGeometry(0.45, 0.45, 2.8).translate(0, 0.45, 0), mad, banc, ([c, u, v], o) => enCel(c, u, v, 0.22, o));
-    instancias(new THREE.BoxGeometry(0.12, 2.4, 0.12).translate(0, 1.2, 0), mStd('#5b4636'), AU.flatMap(c => [[c, -4.6, -1.5], [c, -4.6, 1.5]]), ([c, u, v], o) => enCel(c, u, v, 0.22, o));
-    instancias(new THREE.BoxGeometry(0.06, 1.2, 3.1).translate(0, 1.55, 0), mStd('#244236', { roughness: 0.6 }), AU, (c, o) => enCel(c, -4.55, 0, 0.22, o));
-    instancias(new THREE.BoxGeometry(0.9, 0.05, 3.6).translate(0, 2.5, 0), mStd('#56615a', { metalness: 0.3, roughness: 0.5 }), AU, (c, o) => enCel(c, -4.5, 0, 0.22, o));
-    instancias(new THREE.BoxGeometry(1.4, 0.08, 2.6).translate(0, 0.9, 0), mad, AU, (c, o) => enCel(c, 4.6, 0, 0.22, o));
-    // letrero didáctico en la esquina de cada módulo
-    const LET = CEL.filter(c => c.tipo !== 'aula');
-    instancias(new THREE.BoxGeometry(0.06, 1.0, 0.06).translate(0, 0.5, 0), mStd('#5b4636'), LET, (c, o) => enCel(c, -7.2, -7.2, 0.22, o), false);
-    instancias(new THREE.BoxGeometry(0.04, 0.42, 0.62).translate(0, 1.1, 0).rotateZ(-0.35), mStd('#e7e1d2', { roughness: 0.7 }), LET, (c, o) => enCel(c, -7.2, -7.2, 0.22, o), false);
+    for (const c of AU) for (let f = 0; f < 2; f++) for (let s = -1; s <= 1; s++) banc.push([c, -0.6 + f * 2.2, s * 2.2]);
+    instancias(new THREE.BoxGeometry(0.42, 0.45, 1.8).translate(0, 0.22, 0), mad, banc, ([c, u, v], o) => enCel(c, u, v, Y0, o));
+    instancias(new THREE.BoxGeometry(0.1, 2.3, 0.1).translate(0, 1.15, 0), mStd('#5b4636'), AU.flatMap(c => [[c, -3.2, -1.3], [c, -3.2, 1.3]]), ([c, u, v], o) => enCel(c, u, v, Y0, o));
+    instancias(new THREE.BoxGeometry(0.06, 1.1, 2.7).translate(0, 1.5, 0), mStd('#244236', { roughness: 0.6 }), AU, (c, o) => enCel(c, -3.15, 0, Y0, o));
+    instancias(new THREE.BoxGeometry(0.8, 0.05, 3.1).translate(0, 2.35, 0), mStd('#56615a', { metalness: 0.3, roughness: 0.5 }), AU, (c, o) => enCel(c, -3.1, 0, Y0, o));
+    // letreros: uno por celda, del color de su huerta (en las parcelas de colegio, un color por colegio)
+    const LET = CEL.filter(c => c.tipo !== 'aula'), PALC = ['#60a5fa', '#f472b6', '#facc15', '#34d399', '#fb923c', '#a78bfa'];
+    instancias(new THREE.BoxGeometry(0.05, 0.9, 0.05).translate(0, 0.45, 0), mStd('#5b4636'), LET, (c, o) => enCel(c, -3.4, -3.4, Y0, o), false);
+    const ilet = instancias(new THREE.BoxGeometry(0.03, 0.36, 0.55).translate(0, 1.0, 0).rotateZ(-0.35), mStd('#ffffff', { roughness: 0.7 }), LET, (c, o) => enCel(c, -3.4, -3.4, Y0, o), false);
+    { const cc = new THREE.Color(); LET.forEach((c, i) => ilet.setColorAt(i, cc.set(c.tipo === 'colegio' ? PALC[i % PALC.length] : c.col))); }
     // caminos de grava: del aula de cada huerta a su pasaje
-    for (const Z of ZONAS) { const a = Z.aula, d = a.dp; if (!d[1] || d[0] < 6) continue; const q0 = a.c, q1 = d[1], L = d[0] - 6, dx = (q1[0] - q0[0]) / d[0], dz = (q1[1] - q0[1]) / d[0];
-      const g = new THREE.PlaneGeometry(2.4, L).rotateX(-Math.PI / 2); const uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setY(i, uv.getY(i) * L / 2.4); g.attributes.uv.needsUpdate = true;
-      const m = new THREE.Mesh(g, mStd('#ffffff', { map: texGrava, roughness: 1 })); m.position.set(q0[0] + dx * (6 + L / 2), 0.24, q0[1] + dz * (6 + L / 2)); m.rotation.y = Math.atan2(dx, dz); m.receiveShadow = true; grupo.add(m); }
-    // árboles frutales: tomate de árbol (fruto rojo) y feijoa, 3 x 3 por celda con su plato de viruta
-    const ARBF = []; CEL.filter(c => c.tipo === 'arboles').forEach((c, ci) => { for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) ARBF.push([c, a * 4.6, b * 4.6, (a + b + ci) % 2 === 0 ? 'tomarbol' : 'feijoa', ((a * 3 + b * 7 + ci) % 5) * 0.1]); });
-    if (ARBF.length) {
-      const copa = []; let s2 = 3; const r2 = () => (s2 = (s2 * 16807) % 2147483647) / 2147483647;
-      for (let i = 0; i < 260; i++) { const th = r2() * 6.283, ph = Math.acos(2 * r2() - 1), rr = 0.55 + r2() * 0.5, p = new THREE.PlaneGeometry(0.27, 0.36); p.rotateX(-0.6 - r2()); p.rotateY(r2() * 6.28); p.translate(Math.sin(ph) * Math.cos(th) * rr * 1.1, 2.3 + Math.cos(ph) * rr * 0.75, Math.sin(ph) * Math.sin(th) * rr * 1.1); copa.push(p); }
-      const gCopa = unirUV(copa), gTronco = unir([new THREE.CylinderGeometry(0.05, 0.08, 1.9, 6).translate(0, 0.95, 0), ...[0, 2.1, 4.2].map(a => new THREE.CylinderGeometry(0.025, 0.04, 0.9, 5).translate(0, 0.45, 0).rotateZ(0.55).rotateY(a).translate(0, 1.6, 0))]);
-      const FR = anillo(16, 0.95, 1.65, 2.25).map(p => [p[0] * 1.05, p[1], p[2] * 1.05]);
-      const mH = MATP.uchuva.clone(); mH.color.set('#4e7a34');
-      instancias(gTronco, mStd('#6b5340', { roughness: 0.95 }), ARBF, ([c, u, v, , e], o) => { enCel(c, u, v, 0.22, o, e * 9); o.scale.setScalar(0.9 + e); });
-      instancias(gCopa, mH, ARBF, ([c, u, v, , e], o) => { enCel(c, u, v, 0.22, o, e * 9); o.scale.setScalar(0.9 + e); });
-      for (const [k, col, f] of [['tomarbol', '#d2452b', () => new THREE.SphereGeometry(1, 8, 6).scale(0.055, 0.085, 0.055)], ['feijoa', '#6f8f3a', () => new THREE.SphereGeometry(1, 8, 6).scale(0.05, 0.075, 0.05)]]) {
-        const L = ARBF.filter(a => a[3] === k); instancias(fruto(FR, f), mStd(col, { roughness: 0.45 }), L, ([c, u, v, , e], o) => { enCel(c, u, v, 0.22, o, e * 9); o.scale.setScalar(0.9 + e); }, false); }
-      instancias(new THREE.CircleGeometry(1.3, 20).rotateX(-Math.PI / 2), mStd('#ffffff', { map: texViruta, roughness: 1 }), ARBF, ([c, u, v], o) => enCel(c, u, v, 0.25, o), false);
-      instancias(new THREE.PlaneGeometry(14.2, 14.2).rotateX(-Math.PI / 2), mStd('#7f9a58', { roughness: 1 }), CEL.filter(c => c.tipo === 'arboles'), (c, o) => enCel(c, 0, 0, 0.22, o), false);
-    }
-    // espirales de aromáticas: muro de piedra que sube hacia el centro, tierra en cono y hierbas en la rampa
+    for (const Z of ZONAS) { const a = Z.aula, d = a.dp; if (!d[1] || d[0] < 4) continue; const q0 = a.c, q1 = d[1], L = d[0] - 3, dx = (q1[0] - q0[0]) / d[0], dz = (q1[1] - q0[1]) / d[0];
+      const g = new THREE.PlaneGeometry(2.2, L).rotateX(-Math.PI / 2); const uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setY(i, uv.getY(i) * L / 2.2);
+      const m = new THREE.Mesh(g, mStd('#ffffff', { map: texGrava, roughness: 1 })); m.position.set(q0[0] + dx * (3 + L / 2), Y0 + 0.02, q0[1] + dz * (3 + L / 2)); m.rotation.y = Math.atan2(dx, dz); m.receiveShadow = true; gHu.add(m); }
+    // espiral de aromáticas
     const ESP = CEL.filter(c => c.tipo === 'espiral');
-    if (ESP.length) {
-      const pie = [], hier = []; const TM = 2.6 * Math.PI * 2;
-      for (const c of ESP) for (let t = 0.6; t < TM; t += 0.07) { const r = 4.7 - (t / TM) * 4.0, h = 0.3 + (t / TM) * 1.1, u = Math.cos(t) * r, v = Math.sin(t) * r; for (let y = 0; y < h; y += 0.2) pie.push([c, u, v, y, t]);
-        if ((t * 10 | 0) % 3 === 0) { const ri = r - 0.55, k = ['aromatica', 'lavanda', 'aromatica', 'flores', 'cilantro'][(t * 7 | 0) % 5]; hier.push([c, Math.cos(t) * ri, Math.sin(t) * ri, h * 0.85, k, t]); } }
-      instancias(new THREE.DodecahedronGeometry(0.17, 0).scale(1.3, 0.75, 1), mStd('#a39a8c', { roughness: 0.95 }), pie, ([c, u, v, y, t], o) => { enCel(c, u, v, 0.32 + y, o, t * 3.1); });
-      instancias(new THREE.CylinderGeometry(0.5, 4.5, 1.15, 28).translate(0, 0.58, 0), mStd('#4a3527', { roughness: 1 }), ESP, (c, o) => enCel(c, 0, 0, 0.22, o), false);
-      for (const k of ['aromatica', 'lavanda', 'flores', 'cilantro']) { const L = hier.filter(h => h[4] === k), col = new THREE.Color(); if (!L.length) continue;
-        const im = instancias(GEO[k], MATP[k], L, ([c, u, v, y, , t], o) => { enCel(c, u, v, 0.3 + y, o, t * 5); o.scale.setScalar(1.3); }, false);
-        L.forEach(([, , , , , t], i) => im.setColorAt(i, col.set(CULT[k].pal ? CULT[k].pal[(t * 13 | 0) % CULT[k].pal.length] : CULT[k].c)));
-        if (FRUTO[k]) instancias(FRUTO[k], mStd(CULT[k].fr), L, ([c, u, v, y, , t], o) => { enCel(c, u, v, 0.3 + y, o, t * 5); o.scale.setScalar(1.3); }, false); }
-    }
-    { const bordes = CAMAS_CEL.filter((c, k) => !c.doc && k % 9 === 4), cas = new THREE.InstancedMesh(new THREE.BoxGeometry(3, 2.6, 2.4).translate(0, 1.5, 0), mStd('#8d6e4f'), Math.max(1, bordes.length)), tan = new THREE.InstancedMesh(new THREE.CylinderGeometry(1, 1, 2.2, 16).translate(0, 1.3, 0), mStd('#1f2937', { roughness: 0.5 }), Math.max(1, bordes.length));
-      cas.count = tan.count = bordes.length;
-      bordes.forEach((c, k) => { const q = loc(c.c, 6.4, 6.2); o.position.set(q[0], 0.2, q[1]); o.rotation.set(0, -ANG, 0); o.updateMatrix(); cas.setMatrixAt(k, o.matrix); const r = loc(c.c, 3, 6.6); o.position.set(r[0], 0.2, r[1]); o.updateMatrix(); tan.setMatrixAt(k, o.matrix); });
-      grupo.add(cas, tan); }
-    grupo.add(lineas(rect(C_DOC, 30, 30), 0.75, '#4ade80', 0.95));
+    if (ESP.length) { const pie = [], hier = [], TM = 2.4 * Math.PI * 2;
+      for (const c of ESP) for (let t = 0.6; t < TM; t += 0.08) { const r = 3.2 - (t / TM) * 2.7, h = 0.25 + (t / TM) * 0.9, u = Math.cos(t) * r, v = Math.sin(t) * r; for (let y = 0; y < h; y += 0.18) pie.push([c, u, v, y, t]);
+        if ((t * 10 | 0) % 3 === 0) { const ri = r - 0.45; hier.push([c, Math.cos(t) * ri, Math.sin(t) * ri, h * 0.85, ['aromatica', 'lavanda', 'aromatica', 'flores'][(t * 7 | 0) % 4], t]); } }
+      instancias(new THREE.DodecahedronGeometry(0.15, 0).scale(1.3, 0.75, 1), mStd('#a39a8c', { roughness: 0.95 }), pie, ([c, u, v, y, t], o) => enCel(c, u, v, Y0 + 0.1 + y, o, t * 3.1));
+      instancias(new THREE.CylinderGeometry(0.4, 3.1, 0.95, 28).translate(0, 0.48, 0), mStd('#4a3527', { roughness: 1 }), ESP, (c, o) => enCel(c, 0, 0, Y0, o), false);
+      for (const k of ['aromatica', 'lavanda', 'flores']) { const L = hier.filter(h => h[4] === k); if (!L.length) continue; const col = new THREE.Color();
+        const im = instancias(GEO[k], MATP[k], L, ([c, u, v, y, , t], o) => { enCel(c, u, v, Y0 + 0.08 + y, o, t * 5); o.scale.setScalar(1.3); }, false);
+        L.forEach(([, , , , , t], i) => im.setColorAt(i, k === 'flores' ? col.set(CULT.flores.pal[(t * 13 | 0) % 6]) : col.setScalar(0.9 + ((t * 7) % 0.2))));
+        if (FRUTO[k]) instancias(FRUTO[k], mStd(CULT[k].fr), L, ([c, u, v, y, , t], o) => { enCel(c, u, v, Y0 + 0.08 + y, o, t * 5); o.scale.setScalar(1.3); }, false); } }
+    // compostera de 3 cajones de listones en las huertas grandes
+    const CB = ZONAS.filter(z => z.aula && CEL.filter(c => c.z === z.k).length >= 8).map(z => z.aula);
+    instancias(unir([-1.4, 0, 1.4].map(x => new THREE.BoxGeometry(1.2, 0.95, 1.2).translate(x, 0.475, 0))), mStd('#ffffff', { map: texTabla }), CB, (c, o) => enCel(c, 2.6, 0, Y0, o, Math.PI / 2));
+    instancias(unir([-1.4, 0, 1.4].map(x => new THREE.SphereGeometry(0.55, 10, 6, 0, 6.29, 0, 1.4).scale(1, 0.5, 1).translate(x, 0.8, 0))), mStd('#ffffff', { map: texCompost, roughness: 1 }), CB, (c, o) => enCel(c, 2.6, 0, Y0, o, Math.PI / 2), false);
   }
+  /* --- modelos reales: árboles del simulador (frutales y bosque comestible) y plantas escaneadas (huerta medicinal) --- */
+  { const ARBC = CEL.filter(c => c.tipo === 'arboles' || c.tipo === 'bosque'), MED = CEL.filter(c => c.tipo === 'medic');
+    const PT = []; ARBC.forEach((c, ci) => { const pos = c.tipo === 'arboles' ? [[-1.9, -1.9], [1.9, 1.9], [-1.9, 1.9], [1.9, -1.9]] : [[0, 0], [-2.6, 2.4], [2.5, -2.3]]; pos.forEach(([u, v], k) => PT.push({ c, u, v, e: 0.85 + ((ci * 3 + k * 7) % 5) * 0.08, fr: ['#d2452b', '#6f8f3a', '#e8a33a'][(ci + k) % 3], g: (ci + k) % 2 })); });
+    const ARB2 = []; CEL.filter(c => c.tipo === 'bosque').forEach((c, ci) => { for (let k = 0; k < 7; k++) { const a = k * 0.9 + ci, r = 1.4 + (k % 3) * 0.9; ARB2.push([c, Math.cos(a) * r, Math.sin(a) * r, k]); } });
+    if (ARB2.length) { instancias(GEO.mora, MATP.mora, ARB2, ([c, u, v, k], o) => { enCel(c, u, v, Y0, o, k); o.scale.setScalar(1.4); }, false); instancias(FRUTO.mora, mStd(CULT.mora.fr, { roughness: 0.4 }), ARB2, ([c, u, v, k], o) => { enCel(c, u, v, Y0, o, k); o.scale.setScalar(1.4); }, false); }
+    Promise.all([import('three/addons/loaders/GLTFLoader.js'), import('three/addons/libs/meshopt_decoder.module.js')]).then(([{ GLTFLoader }, { MeshoptDecoder }]) => {
+      const ld = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder), L = (n) => ld.loadAsync('data3d/models/' + n + '.glb').catch(e => { console.warn('modelo', n, e); return null; });
+      // los modelos comprimidos (meshopt) traen enteros normalizados: a decimales ANTES de transformar (como real3d.js)
+      const aF = (g) => { for (const k of Object.keys(g.attributes)) { const a = g.attributes[k]; if (!a.isInterleavedBufferAttribute && a.array instanceof Float32Array) continue; const n = a.count, s = a.itemSize, F = new Float32Array(n * s), get = [a.getX, a.getY, a.getZ, a.getW]; for (let i = 0; i < n; i++) for (let j = 0; j < s; j++) F[i * s + j] = get[j].call(a, i); g.setAttribute(k, new THREE.BufferAttribute(F, s)); } return g; };
+      const plantar = (gls, lista, alto, f) => { gls = [].concat(gls).filter(Boolean); if (!gls.length || !lista.length) return null; const MS = []; gls.forEach(gl => { gl.scene.updateMatrixWorld(true); gl.scene.traverse(m => { if (m.isMesh) MS.push([m, aF(m.geometry.clone()).applyMatrix4(m.matrixWorld)]); }); });
+        const b = new THREE.Box3(); MS.forEach(([, g]) => { g.computeBoundingBox(); b.union(g.boundingBox); }); const h = (b.max.y - b.min.y) || 1, k = alto / h, out = [];
+        MS.forEach(([m, g0]) => { const geo = g0.translate(-(b.min.x + b.max.x) / 2, -b.min.y, -(b.min.z + b.max.z) / 2).scale(k, k, k);
+          const mat = m.material; mat.side = THREE.DoubleSide; if (mat.transparent) { mat.transparent = false; mat.alphaTest = 0.45; }
+          out.push(instancias(geo, mat, lista, f, !MOV)); }); return { out, alto: (b.max.y - b.min.y) * k, ancho: Math.max(b.max.x - b.min.x, b.max.z - b.min.z) * k }; };
+      Promise.all([L('arbolpeq_L1_madera'), L('arbolpeq_L1_hojas'), L('island_tree_02_L1_madera'), L('island_tree_02_L1_hojas'), L('nettle_plant'), L('celandine_01'), L('fern_02'), L('periwinkle_plant')]).then(([am, ah, im, ih, ort, cel, hel, per]) => {
+        const T1 = PT.filter(p => !p.g), T2 = PT.filter(p => p.g), fT = (p, o) => { enCel(p.c, p.u, p.v, Y0, o, p.e * 9); o.scale.setScalar(p.e); };
+        const i1 = plantar([am, ah], T1, 4.2, fT), i2 = plantar([im, ih], T2, 4.6, fT);
+        // fruta colgando de la copa: tomate de árbol (rojo), feijoa (verde) y lulo (naranja)
+        for (const [lista, info] of [[T1, i1], [T2, i2]]) { if (!info || !lista.length) continue; const FR = anillo(22, info.ancho * 0.36, info.alto * 0.45, info.alto * 0.8);
+          for (const col of ['#d2452b', '#6f8f3a', '#e8a33a']) { const Lc = lista.filter(p => p.fr === col); if (!Lc.length) continue; instancias(fruto(FR, () => new THREE.SphereGeometry(1, 9, 7).scale(0.06, 0.085, 0.06)), mStd(col, { roughness: 0.4 }), Lc, fT, false); } }
+        instancias(new THREE.CircleGeometry(1.2, 22).rotateX(-Math.PI / 2), mStd('#ffffff', { map: texViruta, roughness: 1 }), PT, (p, o) => enCel(p.c, p.u, p.v, Y0 + 0.02, o), false);
+        // huerta medicinal: matas escaneadas en grupos
+        const MP = []; MED.forEach((c, ci) => { for (let k = 0; k < 16; k++) { const a = k * 2.4 + ci, r = 0.6 + (k % 5) * 0.62; MP.push({ c, u: Math.cos(a) * r, v: Math.sin(a) * r, m: k % 4, e: 0.8 + ((k * 7) % 5) * 0.1, g: k * 1.3 }); } });
+        [[ort, 0.9], [cel, 0.55], [hel, 0.8], [per, 0.35]].forEach(([gl, alto], m) => plantar(gl, MP.filter(p => p.m === m), alto, (p, o) => { enCel(p.c, p.u, p.v, Y0, o, p.g); o.scale.setScalar(p.e); }));
+      });
+    }).catch(e => console.warn('modelos huertas Bavaria', e));
+  }
+  /* --- planta de compostaje y lombricultura (48 x 30 m, entrada de servicio): nave abierta con 5 pilas en hilera (windrows),
+     lombricario, criba rotatoria, bodega de abono, recepción con canecas y composteras didácticas --- */
+  {
+    const g = new THREE.Group(); g.position.set(C_PLANTA[0], 0, C_PLANTA[1]); g.rotation.y = -ANG; gHu.add(g);
+    const add = (geo, mat, x, y, z, ry = 0, sh = !MOV) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.rotation.y = ry; m.castShadow = sh; m.receiveShadow = true; g.add(m); return m; };
+    add(new THREE.BoxGeometry(CL, 0.25, CW), mStd('#ffffff', { map: texConc, roughness: 0.95 }), 0, Y0, 0, 0, false);
+    // nave: 32 x 20 m, columnas cada 8 m, cubierta a dos aguas con franjas traslúcidas
+    const mAc = mStd('#7b8288', { metalness: 0.55, roughness: 0.45 }), NX = -6, NL = 32, NW = 20, HC = 6;
+    for (let x = -NL / 2; x <= NL / 2 + 0.01; x += 8) for (const z of [-NW / 2, NW / 2]) add(new THREE.BoxGeometry(0.3, HC, 0.3).translate(0, HC / 2, 0), mAc, NX + x, Y0, z);
+    for (let x = -NL / 2; x <= NL / 2 + 0.01; x += 8) { add(new THREE.BoxGeometry(0.25, 0.4, NW / 2 / Math.cos(0.18) + 0.4).translate(0, 0, NW / 4), mAc, NX + x, Y0 + HC + NW / 4 * Math.tan(0.18), 0).rotation.x = 0.18; add(new THREE.BoxGeometry(0.25, 0.4, NW / 2 / Math.cos(0.18) + 0.4).translate(0, 0, -NW / 4), mAc, NX + x, Y0 + HC + NW / 4 * Math.tan(0.18), 0).rotation.x = -0.18; }
+    const mTe = mStd('#c9ced1', { metalness: 0.5, roughness: 0.4, side: THREE.DoubleSide }), mTr = new THREE.MeshStandardMaterial({ color: '#eef4f2', transparent: true, opacity: 0.45, roughness: 0.2, side: THREE.DoubleSide, depthWrite: false });
+    for (const s of [1, -1]) { const ag = add(new THREE.BoxGeometry(NL + 1.2, 0.06, NW / 2 / Math.cos(0.18) + 0.8).translate(0, 0, s * NW / 4), mTe, NX, Y0 + HC + NW / 4 * Math.tan(0.18) + 0.25, 0); ag.rotation.x = s * 0.18;
+      for (let x = -12; x <= 12; x += 8) { const t = add(new THREE.BoxGeometry(2, 0.08, NW / 2 / Math.cos(0.18)).translate(0, 0, s * NW / 4), mTr, NX + x, Y0 + HC + NW / 4 * Math.tan(0.18) + 0.29, 0, 0, false); t.rotation.x = s * 0.18; } }
+    // 5 pilas en hilera bajo la nave: perfil de campana extruido, textura de compost con paja
+    const perfil = new THREE.Shape(); perfil.moveTo(-1.6, 0); for (let i = 0; i <= 16; i++) { const t = i / 16, x = -1.6 + t * 3.2; perfil.lineTo(x, 1.55 * Math.pow(Math.sin(Math.PI * t), 0.75)); } perfil.lineTo(1.6, 0);
+    const pila = new THREE.ExtrudeGeometry(perfil, { depth: 26, bevelEnabled: true, bevelThickness: 1.2, bevelSize: 0.3, bevelSegments: 4, curveSegments: 4 }).translate(0, 0, -13).rotateY(Math.PI / 2);
+    { const P = pila.attributes.position, U = pila.attributes.uv; for (let i = 0; i < P.count; i++) U.setXY(i, P.getX(i) / 3, (P.getY(i) + P.getZ(i)) / 2); }
+    const mPila = mStd('#ffffff', { map: texCompost, roughness: 1 });
+    for (let k = 0; k < 5; k++) add(pila, mPila, NX, Y0 + 0.12, -8 + k * 4);
+    for (let k = 0; k < 5; k++) for (let s = -1; s <= 1; s += 2) add(new THREE.CylinderGeometry(0.02, 0.02, 1.6, 4).translate(0, 0.8, 0), mStd('#9ca3af', { metalness: 0.7 }), NX + s * 6, Y0 + 0.5, -8 + k * 4, 0, false); // sondas de temperatura
+    // volteadora (tractor pequeño)
+    add(new THREE.BoxGeometry(2.6, 1.6, 1.8).translate(0, 0.8, 0), mStd('#c2410c', { roughness: 0.5 }), NX + 12, Y0 + 0.4, -6); for (const [x, z] of [[-0.9, 1], [0.9, 1], [-0.9, -1], [0.9, -1]]) add(new THREE.CylinderGeometry(0.45, 0.45, 0.3, 14).rotateX(Math.PI / 2), mStd('#1f2328'), NX + 12 + x, Y0 + 0.55, -6 + z);
+    // lombricario: 4 camas de concreto de 12 x 1,2 m con humus
+    for (let k = 0; k < 4; k++) { add(new THREE.BoxGeometry(12, 0.7, 1.4).translate(0, 0.35, 0), mStd('#b7b2a7', { roughness: 0.9 }), 15, Y0 + 0.12, -11 + k * 2.4); add(new THREE.BoxGeometry(11.6, 0.05, 1.05), mStd('#ffffff', { map: texCompost, color: '#5c4636', roughness: 1 }), 15, Y0 + 0.8, -11 + k * 2.4, 0, false); }
+    { const tl = add(new THREE.BoxGeometry(13, 0.05, 10), mStd('#2f4f3a', { transparent: true, opacity: 0.6, side: THREE.DoubleSide }), 15, Y0 + 2.6, -7.4, 0, false); for (const [x, z] of [[-6.4, -4.8], [6.4, -4.8], [-6.4, 4.8], [6.4, 4.8]]) add(new THREE.CylinderGeometry(0.06, 0.06, 2.4, 6).translate(0, 1.2, 0), mAc, 15 + x, Y0 + 0.12, -7.4 + z); } // malla de sombra
+    // criba rotatoria (trommel) y montón de abono cernido
+    { const tr = add(new THREE.CylinderGeometry(0.9, 0.9, 5, 20, 1, true).rotateZ(Math.PI / 2 - 0.12), mStd('#6b7280', { metalness: 0.6, roughness: 0.4, side: THREE.DoubleSide }), 13, Y0 + 1.7, 5); for (const x of [-2, 2]) add(new THREE.BoxGeometry(0.2, 1.6, 1.8).translate(0, 0.8, 0), mAc, 13 + x, Y0 + 0.12, 5);
+      add(new THREE.ConeGeometry(2.2, 1.6, 24).translate(0, 0.8, 0), mStd('#ffffff', { map: texCompost, color: '#4a3527', roughness: 1 }), 17, Y0 + 0.12, 5); }
+    // bodega de abono con bultos y estiba
+    add(new THREE.BoxGeometry(8, 3.6, 6).translate(0, 1.8, 0), mStd('#ffffff', { map: texTabla, roughness: 0.9 }), 18, Y0 + 0.12, 11); add(new THREE.BoxGeometry(8.8, 0.12, 6.8), mStd('#56615a', { metalness: 0.3 }), 18, Y0 + 3.85, 11);
+    { const b = []; for (let i = 0; i < 4; i++) for (let j = 0; j < 3; j++) for (let k = 0; k < 3; k++) b.push([12.2 + i * 0.65, Y0 + 0.3 + k * 0.28, 9.6 + j * 0.45]); const im = new THREE.InstancedMesh(new THREE.BoxGeometry(0.6, 0.26, 0.42), mStd('#e8dcc2', { roughness: 0.85 }), b.length), o = new THREE.Object3D(); b.forEach((p, i) => { o.position.set(...p); o.updateMatrix(); im.setMatrixAt(i, o.matrix); }); g.add(im); add(new THREE.BoxGeometry(2.8, 0.15, 1.5), mStd('#8a6a48'), 13.2, Y0 + 0.16, 10.1); }
+    // recepción: báscula y canecas (verde: orgánicos de huerta y mercado; café: material seco)
+    add(new THREE.BoxGeometry(6, 0.12, 3.2), mStd('#4b5563', { metalness: 0.5 }), -20, Y0 + 0.12, 10);
+    for (let i = 0; i < 8; i++) add(new THREE.CylinderGeometry(0.4, 0.36, 1.05, 14).translate(0, 0.52, 0), mStd(i % 2 ? '#7c5a3a' : '#2f7d44', { roughness: 0.5 }), -21 + (i % 4) * 1.1, Y0 + 0.12, 12.6 + Math.floor(i / 4) * 1.1, 0, false);
+    // composteras didácticas y aula de compost
+    for (let i = 0; i < 4; i++) { add(new THREE.BoxGeometry(1.2, 1, 1.2).translate(0, 0.5, 0), mStd('#ffffff', { map: texTabla }), -10 + i * 1.6, Y0 + 0.12, 13); add(new THREE.SphereGeometry(0.55, 10, 6, 0, 6.29, 0, 1.4).scale(1, 0.45, 1), mStd('#ffffff', { map: texCompost, roughness: 1 }), -10 + i * 1.6, Y0 + 1.1, 13, 0, false); }
+    for (let i = 0; i < 3; i++) add(new THREE.BoxGeometry(2.2, 0.45, 0.45).translate(0, 0.22, 0), mStd('#8a6a48', { map: texTabla }), -2 + i * 0, Y0 + 0.12, 9.5 + i * 1.3);
+    add(new THREE.BoxGeometry(0.06, 1.1, 2.6).translate(0, 1.5, 0), mStd('#244236'), -3.6, Y0 + 0.12, 10.8); add(new THREE.BoxGeometry(0.1, 2.2, 0.1).translate(0, 1.1, 0), mStd('#5b4636'), -3.6, Y0 + 0.12, 9.5); add(new THREE.BoxGeometry(0.1, 2.2, 0.1).translate(0, 1.1, 0), mStd('#5b4636'), -3.6, Y0 + 0.12, 12.1);
+  }
+  /* --- plantas de las camas: solo cerca de la cámara --- */
   const PLANTAS = (() => {
-    const CAP = MOV ? 6000 : 22000, ims = {}, frs = {}, o = new THREE.Object3D(), cc = new THREE.Color();
-    for (const k in GEO) { const n = Math.round(CAP / (['maiz', 'tomate', 'ahuyama', 'uchuva', 'mora'].includes(k) ? 6 : 3)); ims[k] = new THREE.InstancedMesh(GEO[k], MATP[k] || new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.75 }), n); ims[k].castShadow = false; ims[k].count = 0; ims[k].receiveShadow = true; ims[k].frustumCulled = false; grupo.add(ims[k]);
-      if (FRUTO[k]) { frs[k] = new THREE.InstancedMesh(FRUTO[k], mStd(CULT[k].fr, { roughness: 0.4 }), n); frs[k].count = 0; frs[k].frustumCulled = false; grupo.add(frs[k]); } }
+    const CAP = MOV ? 7000 : 26000, ims = {}, frs = {}, o = new THREE.Object3D(), cc = new THREE.Color();
+    for (const k in GEO) { const n = Math.round(CAP / (['maiz', 'tomate', 'ahuyama', 'uchuva', 'mora'].includes(k) ? 6 : 3)); ims[k] = new THREE.InstancedMesh(GEO[k], MATP[k], n); ims[k].castShadow = false; ims[k].count = 0; ims[k].receiveShadow = true; ims[k].frustumCulled = false; gHu.add(ims[k]);
+      if (FRUTO[k]) { frs[k] = new THREE.InstancedMesh(FRUTO[k], mStd(k === 'zanahoria' ? '#e8742a' : CULT[k].fr, { roughness: 0.4 }), n); frs[k].count = 0; frs[k].frustumCulled = false; gHu.add(frs[k]); } }
     let ux = 1e9, uz = 1e9;
     return function actualizar(forzar) {
-      const t = T3.orbit.target, cam = T3.camera.position; if (cam.y > 420) { for (const k in ims) ims[k].count = 0; for (const k in frs) frs[k].count = 0; ux = 1e9; return; }
-      if (!forzar && Math.hypot(t.x - ux, t.z - uz) < 30) return; ux = t.x; uz = t.z;
-      const R = Math.min(170, 60 + cam.y * 0.6), cerca = CAMAS_CEL.filter(c => Math.hypot(c.c[0] - t.x, c.c[1] - t.z) < R).sort((a, b) => Math.hypot(a.c[0] - t.x, a.c[1] - t.z) - Math.hypot(b.c[0] - t.x, b.c[1] - t.z));
+      if (!gHu.visible) return; const t = T3.orbit.target, cam = T3.camera.position; if (cam.y > 420) { if (ux < 1e8) { for (const k in ims) ims[k].count = 0; for (const k in frs) frs[k].count = 0; ux = 1e9; } return; }
+      if (!forzar && Math.hypot(t.x - ux, t.z - uz) < 25) return; ux = t.x; uz = t.z;
+      const R = Math.min(170, 60 + cam.y * 0.6), cerca = CAMAS_CEL.filter(c => c.camas && Math.hypot(c.c[0] - t.x, c.c[1] - t.z) < R).sort((a, b) => Math.hypot(a.c[0] - t.x, a.c[1] - t.z) - Math.hypot(b.c[0] - t.x, b.c[1] - t.z));
       const n = {}; for (const k in ims) n[k] = 0;
-      for (const c of cerca) for (const cm of c.camas || []) { const C = CULT[cm.k], im = ims[cm.k]; if (!C || !im) continue;
+      for (const c of cerca) for (const cm of c.camas) { const C = CULT[cm.k], im = ims[cm.k]; if (!C || !im) continue;
         const pas = C.paso * (MOV ? 1.6 : 1), fil = C.fil, cap = im.instanceMatrix.count, fr = frs[cm.k];
-        for (let f = 0; f < fil; f++) { const du = (f + 0.5) / fil * 1.1 - 0.55; for (let s = -4.8; s < 4.85 && n[cm.k] < cap; s += pas) {
-          const h = Math.sin((cm.q[0] + s) * 12.9898 + (cm.q[1] + f) * 78.233) * 43758.5453, r = h - Math.floor(h), q = loc(cm.q, du + (r - 0.5) * 0.04, s);
-          o.position.set(q[0], 0.86, q[1]); o.rotation.set(0, r * 6.28, 0); const e = 0.75 + r * 0.5; o.scale.set(e, e * (0.9 + r * 0.2), e); o.updateMatrix(); im.setMatrixAt(n[cm.k], o.matrix); if (fr) fr.setMatrixAt(n[cm.k], o.matrix);
-          im.setColorAt(n[cm.k], cc.set(C.pal ? C.pal[Math.floor(r * 997) % C.pal.length] : (r < 0.5 ? C.c : C.c2)).multiplyScalar(0.85 + r * 0.3)); n[cm.k]++; } } }
+        for (let f = 0; f < fil; f++) { const du = (f + 0.5) / fil * 1.05 - 0.525; for (let s = -LB / 2 + 0.15; s < LB / 2 - 0.1 && n[cm.k] < cap; s += pas) {
+          const h = Math.sin((cm.q[0] + s) * 12.9898 + (cm.q[1] + f) * 78.233) * 43758.5453, r = h - Math.floor(h), q = loc(cm.q, du + (r - 0.5) * 0.05, s);
+          o.position.set(q[0], Y0 + 0.43, q[1]); o.rotation.set(0, r * 6.28, 0); const e = 0.72 + r * 0.55; o.scale.set(e, e * (0.88 + r * 0.24), e); o.updateMatrix(); im.setMatrixAt(n[cm.k], o.matrix); if (fr) fr.setMatrixAt(n[cm.k], o.matrix);
+          if (C.pal) cc.set(C.pal[Math.floor(r * 997) % C.pal.length]); else cc.setRGB(0.82 + r * 0.3, 0.86 + r * 0.24, 0.8 + r * 0.25); im.setColorAt(n[cm.k], cc); n[cm.k]++; } } }
       for (const k in ims) { ims[k].count = n[k]; ims[k].instanceMatrix.needsUpdate = true; if (ims[k].instanceColor) ims[k].instanceColor.needsUpdate = true; if (frs[k]) { frs[k].count = n[k]; frs[k].instanceMatrix.needsUpdate = true; } }
     };
   })();
+  setInterval(() => { if (gHu.visible && !raf) PLANTAS(); }, 600);
 
-  /* ---------- 4. compostaje y estación solar ---------- */
-  {
-    const g = new THREE.Group(); g.position.set(C_COMP[0], 0, C_COMP[1]); g.rotation.y = -ANG;
-    g.add(new THREE.Mesh(new THREE.BoxGeometry(10, 0.3, 6).translate(0, 0.3, 0), mStd('#9ca3af')));
-    const poste = new THREE.BoxGeometry(0.18, 3.6, 0.18), mp = mStd('#4b5563', { metalness: 0.4 });
-    for (const x of [-4.9, 0, 4.9]) for (const z of [-2.9, 2.9]) { const m = new THREE.Mesh(poste, mp); m.position.set(x, 2.1, z); g.add(m); }
-    const techo = new THREE.Mesh(new THREE.BoxGeometry(10.6, 0.08, 6.6), mStd('#6b7f6a', { transparent: true, opacity: 0.85 })); techo.position.set(0, 3.9, 0); techo.rotation.x = 0.06; g.add(techo);
-    for (let i = 0; i < 3; i++) { const caja = new THREE.Mesh(new THREE.BoxGeometry(1.3, 1.0, 1.3), mStd('#8b5a2b')); caja.position.set(-2.6 + i * 2.2, 0.95, -1); g.add(caja);
-      const tope = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.05, 1.15), mStd('#3b2a1a')); tope.position.set(-2.6 + i * 2.2, 1.46, -1); g.add(tope); }
-    grupo.add(g);
-  }
+  /* ---------- estación solar ---------- */
   {
     const pm = new THREE.InstancedMesh(new THREE.BoxGeometry(1.05, 0.05, 2.1), new THREE.MeshStandardMaterial({ color: '#1d3557', roughness: 0.25, metalness: 0.5, emissive: '#0b1a2e' }), 20), o = new THREE.Object3D();
     const e = ED[8], c = centro(e.W); let L0 = 0, a = 0; for (let i = 0; i < e.W.length; i++) { const p = e.W[i], q = e.W[(i + 1) % e.W.length], l = Math.hypot(q[0] - p[0], q[1] - p[1]); if (l > L0) { L0 = l; a = Math.atan2(q[1] - p[1], q[0] - p[0]); } }
@@ -529,68 +578,56 @@ export function crearDistritoBavaria({ T3, lw, D, ARB = [], SX = null }) {
   const css = document.createElement('style');
   css.textContent = `
 .bd-lb{position:fixed;left:0;top:0;z-index:7;display:none;cursor:pointer;font-family:Inter,system-ui,sans-serif;color:#eef1f3;white-space:nowrap}
-.bd-lb .cj{display:flex;align-items:stretch;background:rgba(10,13,17,.8);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.1);border-radius:6px;overflow:hidden;box-shadow:0 6px 18px rgba(0,0,0,.35)}
-.bd-lb .k{display:flex;align-items:center;padding:0 6px;font:600 10px 'JetBrains Mono',ui-monospace,monospace;color:#0b0d10;background:var(--c)}
+.bd-lb .cj{display:flex;align-items:stretch;border-radius:9px!important;background:rgba(10,13,17,.72);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.1);border-radius:6px;overflow:hidden;box-shadow:0 6px 18px rgba(0,0,0,.35)}
+.bd-lb .k{display:flex;align-items:center;padding:0 6px;font:600 10px var(--ui-sans,Inter,system-ui,sans-serif);color:#0b0d10;background:var(--c)}
 .bd-lb .t{padding:4px 8px 4px 7px;line-height:1.15}
 .bd-lb b{display:block;font-weight:600;font-size:11px}
-.bd-lb small{display:block;font:400 9.5px 'JetBrains Mono',ui-monospace,monospace;color:#9aa4ab;letter-spacing:.04em;margin-top:1px}
+.bd-lb small{display:block;font:400 10px var(--ui-sans,Inter,system-ui,sans-serif);color:#a3acb1;margin-top:1px}
 .bd-lb .pt{position:absolute;left:10px;top:100%;width:1px;height:18px;background:linear-gradient(var(--c),transparent)}
 .bd-lb.act .cj,.bd-lb:hover .cj{border-color:var(--c);box-shadow:0 0 0 1px var(--c),0 8px 22px rgba(0,0,0,.45)}
 .bd-lb.dim{opacity:.35}
 .bd-lb.ret .cj{border-style:dashed;border-color:#ef4444}.bd-lb.ret .k{background:#ef4444;color:#fff}
 @media(max-width:760px){.bd-lb small{display:none}.bd-lb b{font-size:10px}.bd-lb .t{padding:3px 6px}}
-#bd{position:fixed;z-index:32;right:14px;top:14px;width:390px;max-height:calc(100vh - 118px);display:none;flex-direction:column;font-family:Inter,system-ui,sans-serif;color:#e9ebec;
-  background:rgba(12,14,17,.86);-webkit-backdrop-filter:blur(18px) saturate(1.1);backdrop-filter:blur(18px) saturate(1.1);border:1px solid rgba(255,255,255,.08);border-radius:12px;box-shadow:0 18px 44px rgba(0,0,0,.4);overflow:hidden}
+#bd{position:fixed;z-index:32;right:14px;top:14px;width:372px;max-height:calc(100vh - 118px);display:none;flex-direction:column;font-family:var(--ui-sans,Inter,system-ui,sans-serif);color:#eef1f2;border-radius:18px;overflow:hidden}
 #bd.on{display:flex;animation:bdIn .45s cubic-bezier(.2,.8,.2,1)}
 @keyframes bdIn{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:none}}
 body.bd-on #dock,body.bd-on #hid-red{display:none!important}
 #bd header,#bd .tabs,#bd .pie{flex:none}#bd .cuerpo{flex:1 1 auto;min-height:0}
-#bd header{position:relative;padding:14px 16px 10px;border-bottom:1px solid rgba(255,255,255,.06)}
-#bd .cerrar{position:absolute;right:10px;top:10px;width:28px;height:28px;border-radius:7px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#cfd5d9;font:400 17px/1 Inter,system-ui,sans-serif;cursor:pointer}
-#bd .cerrar:hover{background:rgba(255,255,255,.1);color:#fff}#bd .cerrar:focus-visible{outline:2px solid #34d399;outline-offset:1px}
-#bd .ey{font:500 9.5px 'JetBrains Mono',ui-monospace,monospace;letter-spacing:.16em;text-transform:uppercase;color:#34d399;padding-right:34px}
-#bd h2{margin:5px 0 6px;font:600 18px Inter,system-ui,sans-serif;letter-spacing:-.01em}
-#bd .lead{margin:0;font-size:12.5px;line-height:1.5;color:#b9c1c6}
-#bd .kp{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}
-#bd .kp div{background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:7px 8px}
-#bd .kp b{display:block;font:500 14px 'JetBrains Mono',ui-monospace,monospace;color:#fff}
-#bd .kp span{font-size:10px;color:#8e979d;line-height:1.25;display:block;margin-top:2px}
-#bd .tabs{display:flex;gap:2px;padding:6px 8px 0;overflow-x:auto;scrollbar-width:none}
-#bd .tabs button{flex:none;border:0;background:none;color:#8e979d;font:500 11.5px Inter,system-ui,sans-serif;padding:7px 9px;border-radius:7px 7px 0 0;cursor:pointer;border-bottom:2px solid transparent}
-#bd .tabs button[aria-selected="true"]{color:#fff;border-bottom-color:#34d399}
-#bd .tabs button:focus-visible{outline:2px solid #34d399;outline-offset:-2px}
-#bd .cuerpo{overflow:auto;padding:10px 12px 12px;border-top:1px solid rgba(255,255,255,.06);overscroll-behavior:contain}
-#bd .it{display:grid;grid-template-columns:22px 1fr auto;gap:2px 9px;align-items:start;padding:8px 6px;border-radius:8px;cursor:pointer}
-#bd .it:hover,#bd .it.act{background:rgba(255,255,255,.05)}
-#bd .it:focus-visible{outline:2px solid #34d399;outline-offset:-2px}
-#bd .it i{grid-row:span 2;width:22px;height:22px;border-radius:6px;background:var(--c);display:flex;align-items:center;justify-content:center;font:600 9.5px 'JetBrains Mono',ui-monospace,monospace;color:#0b0d10;font-style:normal}
-#bd .it b{font-size:12.5px;font-weight:600}
-#bd .it em{font:500 10px 'JetBrains Mono',ui-monospace,monospace;color:#cfd5d9;font-style:normal;text-align:right}
-#bd .it p{grid-column:2 / 4;margin:0;font-size:11.5px;line-height:1.45;color:#9aa4ab}
-#bd .it .x{display:none;color:#cfd5d9;margin-top:4px}
-#bd .it.act .x{display:block}
-#bd .it .tec{display:block;margin-top:4px;font:500 10px 'JetBrains Mono',ui-monospace,monospace;color:#7dd3fc;letter-spacing:.02em}
-#bd .sub{font:500 9.5px 'JetBrains Mono',ui-monospace,monospace;letter-spacing:.14em;text-transform:uppercase;color:#7b858c;margin:12px 6px 4px}
-#bd .nota{font-size:10.5px;color:#7b858c;line-height:1.45;margin:10px 6px 0}
-#bd .ind{margin:6px 6px 0;padding:10px;border-radius:8px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);font-size:11.5px;color:#b9c1c6;line-height:1.45}
-#bd .sw2{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:2px 6px 8px;padding:3px;border-radius:9px;background:rgba(255,255,255,.04)}
-#bd .sw2 button{height:30px;border:0;border-radius:7px;background:none;color:#9aa4ab;font:500 12px Inter,system-ui,sans-serif;cursor:pointer}
-#bd .sw2 button[aria-pressed="true"]{background:rgba(52,211,153,.16);color:#fff;box-shadow:inset 0 0 0 1px rgba(52,211,153,.45)}
-#bd .rampa{height:8px;border-radius:4px;margin:4px 6px 2px;background:linear-gradient(90deg,#2942b8,#1fa6db,#3dc75c,#fad633,#eb3829)}
-#bd .rampa-t{display:flex;justify-content:space-between;margin:0 6px;font:500 9.5px 'JetBrains Mono',ui-monospace,monospace;color:#7b858c}
-#bd table{width:calc(100% - 12px);margin:8px 6px 0;border-collapse:collapse;font-size:11.5px}
-#bd th{font:500 9.5px 'JetBrains Mono',ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase;color:#7b858c;text-align:right;padding:5px 4px;border-bottom:1px solid rgba(255,255,255,.08)}
-#bd th:first-child,#bd td:first-child{text-align:left}
-#bd td{padding:6px 4px;border-bottom:1px solid rgba(255,255,255,.05);text-align:right;font-family:'JetBrains Mono',ui-monospace,monospace;color:#e9ebec}
-#bd td:first-child{font-family:Inter,system-ui,sans-serif;color:#b9c1c6}
-#bd td.up{color:#4ade80}
-#bd .pie{display:flex;gap:6px;padding:10px 12px;border-top:1px solid rgba(255,255,255,.06)}
-#bd .pie button{flex:1;height:34px;border-radius:8px;cursor:pointer;font:500 12px Inter,system-ui,sans-serif;display:inline-flex;align-items:center;justify-content:center;gap:7px}
-#bd .go{border:1px solid rgba(74,222,128,.5);background:linear-gradient(180deg,rgba(74,222,128,.22),rgba(74,222,128,.08));color:#dcfce7}
-#bd .go:hover{background:rgba(74,222,128,.3);color:#fff}
-#bd .sec2{border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#cfd5d9}
-#bd .pie button:focus-visible{outline:2px solid #34d399;outline-offset:1px}
-#bd-cap{position:fixed;z-index:33;left:50%;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 84px);transform:translateX(-50%);width:min(480px,calc(100vw - 24px));display:none;
+#bd header{position:relative;padding:16px 18px 12px}
+#bd .cerrar{position:absolute;right:12px;top:12px;width:28px;height:28px;border-radius:50%;border:0;background:rgba(255,255,255,.08);color:#dfe4e6;font-size:16px;line-height:1;font-family:inherit;cursor:pointer}
+#bd .cerrar:hover{background:rgba(255,255,255,.16)}#bd .cerrar:focus-visible{outline:2px solid #86efac;outline-offset:1px}
+#bd h2{margin:0 36px 4px 0;font-weight:600;font-size:20px;letter-spacing:-.01em}
+#bd .lead{margin:0;font-size:13px;line-height:1.45;color:#c3cace}
+#bd .ruta{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:12px 0 0;padding:0;list-style:none}
+#bd .ruta li{position:relative;padding:9px 9px 8px;border-radius:12px;background:rgba(255,255,255,.06)}
+#bd .ruta li b{display:block;font-size:12.5px;font-weight:600}#bd .ruta li span{display:block;font-size:10.5px;line-height:1.3;color:#aab3b8;margin-top:2px}
+#bd .ruta li i{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:#86efac;color:#0d1a12;font-size:10.5px;font-weight:600;line-height:1;font-style:normal;margin-bottom:5px}
+#bd .tot{margin:10px 0 0;font-size:11.5px;color:#aab3b8}#bd .tot b{color:#fff;font-weight:600}
+#bd .tabs{display:flex;gap:4px;padding:0 14px 8px}
+#bd .tabs button{flex:1;border:0;background:none;color:#aab3b8;font-size:12px;font-weight:500;font-family:inherit;padding:7px 4px;border-radius:999px;cursor:pointer}
+#bd .tabs button[aria-selected="true"]{background:rgba(255,255,255,.12);color:#fff}
+#bd .tabs button:focus-visible{outline:2px solid #86efac;outline-offset:-2px}
+#bd .cuerpo{overflow:auto;padding:4px 10px 12px;overscroll-behavior:contain;scrollbar-width:thin}
+#bd .it{display:grid;grid-template-columns:10px 1fr auto;gap:1px 10px;align-items:baseline;padding:9px 8px;border-radius:12px;cursor:pointer}
+#bd .it:hover,#bd .it.act{background:rgba(255,255,255,.07)}
+#bd .it:focus-visible{outline:2px solid #86efac;outline-offset:-2px}
+#bd .it i{width:9px;height:9px;border-radius:50%;background:var(--c);align-self:center;font-size:0}
+#bd .it b{font-size:13px;font-weight:500}
+#bd .it em{font-size:11px;color:#c3cace;font-style:normal;text-align:right;white-space:nowrap}
+#bd .it p{grid-column:2 / 4;margin:2px 0 0;font-size:11.5px;line-height:1.4;color:#a3acb1}
+#bd .it .x{display:none;color:#d3d9dc;margin-top:4px}#bd .it.act .x{display:block}
+#bd .it .tec{display:block;margin-top:3px;color:#9fd8f5}
+#bd .sub{font-size:11px;font-weight:600;color:#8e989e;margin:12px 8px 2px}
+#bd .nota{font-size:11px;color:#8e989e;line-height:1.45;margin:10px 8px 0}
+#bd .ind{margin:4px 6px 6px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.05);font-size:12px;color:#c3cace;line-height:1.45}
+#bd .pasos{margin:4px 8px;padding:0;list-style:none;counter-reset:p}#bd .pasos li{counter-increment:p;display:grid;grid-template-columns:20px 1fr;gap:8px;padding:6px 0;font-size:12px;color:#c3cace;line-height:1.4}
+#bd .pasos li::before{content:counter(p);display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:rgba(212,163,115,.25);color:#f2d3b1;font-size:11px;font-weight:600}
+#bd .pasos li b{color:#fff;font-weight:500}
+#bd .pie{display:flex;gap:6px;padding:10px 12px;flex-wrap:wrap}
+#bd .pie button,#bd .pie a{flex:1;min-width:0;height:34px;border-radius:999px;cursor:pointer;font-size:12px;font-weight:500;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;gap:7px;white-space:nowrap;padding:0 10px}
+#bd .go{flex:1 1 100%!important;border:0;background:#86efac;color:#0d1a12}#bd .go:hover{background:#a7f3c4}
+#bd .sec2{border:0;background:rgba(255,255,255,.08);color:#dfe4e6;text-decoration:none}#bd .sec2:hover{background:rgba(255,255,255,.14)}
+#bd .pie button:focus-visible,#bd .pie a:focus-visible{outline:2px solid #86efac;outline-offset:1px}#bd-cap{position:fixed;z-index:33;left:50%;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 84px);transform:translateX(-50%);width:min(480px,calc(100vw - 24px));display:none;
   font-family:Inter,system-ui,sans-serif;color:#eef1f3;background:rgba(10,13,17,.86);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.09);border-radius:12px;padding:11px 14px 12px;box-shadow:0 16px 40px rgba(0,0,0,.4)}
 #bd-cap.on{display:block;animation:bdCap .4s cubic-bezier(.2,.8,.2,1)}
 @keyframes bdCap{from{opacity:0;transform:translate(-50%,8px)}to{opacity:1;transform:translate(-50%,0)}}
@@ -603,9 +640,9 @@ body.bd-on #dock,body.bd-on #hid-red{display:none!important}
 @media(max-width:1100px){#bd-cap{bottom:auto;top:calc(max(10px,env(safe-area-inset-top)) + 10px)}}
 @media(max-width:760px){
   #bd{left:8px;right:8px;width:auto;top:auto;bottom:calc(max(8px,env(safe-area-inset-bottom)) + 66px);max-height:52vh}
-  #bd.min .cuerpo,#bd.min .tabs,#bd.min .kp,#bd.min .lead{display:none}
+  #bd.min .cuerpo,#bd.min .tabs,#bd.min .ruta,#bd.min .tot,#bd.min .lead{display:none}
   #bd.min h2::after{content:' ▴';color:#7b858c;font-size:12px}
-  #bd header{padding:10px 12px 8px;cursor:pointer}#bd h2{font-size:15px;margin:3px 0 4px}#bd .kp{grid-template-columns:repeat(2,1fr)}
+  #bd header{padding:12px 14px 8px;cursor:pointer}#bd h2{font-size:16px;margin:0 36px 3px 0}#bd .ruta li span{display:none}
   body.bd-on #esc{display:none}
 }
 @media(prefers-reduced-motion:reduce){#bd.on,#bd-cap.on{animation:none}}`;
@@ -626,45 +663,35 @@ body.bd-on #dock,body.bd-on #hid-red{display:none!important}
   const verGrupoEtq = () => { const g = { dist: ['dist'], sx: ['sx'], fauna: ['fauna'], huerta: ['huerta', 'fauna'], ciclo: ['huerta', 'sx'] }[tab] || ['dist']; ETQ.forEach(e => { e.on = g.includes(e.g); }); };
 
   const pan = document.createElement('section'); pan.id = 'bd'; pan.setAttribute('aria-label', 'Bavaria Común, distrito de tecnologías convergentes');
-  const fila = (num, col, n, a, d, x, data, tec) => `<div class="it" ${data} tabindex="0" role="button" style="--c:${col}"><i>${num}</i><b>${n}</b><em>${a || ''}</em><p>${d}${tec ? `<span class="tec">◉ ${tec}</span>` : ''}${x ? `<span class="x">${x}</span>` : ''}</p></div>`;
-  const pct = (a, b, mejor = 1) => { const d = (b - a) / a * 100; return `<td class="${d * mejor > 0.05 ? 'up' : ''}">${d > 0 ? '+' : ''}${d.toFixed(1).replace('.', ',')} %</td>`; };
-  const nf = (v, d = 3) => v.toFixed(d).replace('.', ',');
+  const fila = (num, col, n, a, d, x, data, tec) => `<div class="it" ${data} tabindex="0" role="button" style="--c:${col}"><i>${num}</i><b>${n}</b><em>${a || ''}</em><p>${d}${tec ? `<span class="tec">${tec}</span>` : ''}${x ? `<span class="x">${x}</span>` : ''}</p></div>`;
+  const per = (p) => p.p ? `${fmt(p.p)} pers./día` : '';
+  const uso = (p) => fila('', p.c, p.n, [p.a, per(p)].filter(Boolean).join(' · '), p.d, p.x, `data-k="${p.k}"`);
+  const PER_DIA = PROG.reduce((s, p) => s + (p.p || 0), 0);
   const TABS = {
-    dist: () => `<div class="sub" style="margin-top:2px">Laboratorios NBIC</div>` + PROG.filter(p => ['bio', 'nano', 'datos', 'cogn'].includes(p.k)).map(p => fila(p.g[0], p.c, p.n, p.a, p.d, p.x, `data-k="${p.k}"`)).join('') +
-      `<div class="sub">Formación y encuentro</div>` + PROG.filter(p => ['inst', 'foro', 'poli', 'torre'].includes(p.k)).map(p => fila(String(PROG.indexOf(p) + 1).padStart(2, '0'), p.c, p.n, p.a, p.d, p.x, `data-k="${p.k}"`)).join('') +
-      `<div class="sub">Del cultivo al mercado</div>` + PROG.filter(p => ['pos', 'mer', 'alim', 'inc'].includes(p.k)).map(p => fila(String(PROG.indexOf(p) + 1).padStart(2, '0'), p.c, p.n, p.a, p.d, p.x, `data-k="${p.k}"`)).join('') +
-      `<div class="sub">Se propone retirar</div>` + RET.map(r => fila(r.k, '#ef4444', r.n, '', `<b style="font-weight:600;color:#fca5a5">Se retira:</b> ${r.se}`, `<b style="font-weight:600;color:#e9ebec">Aparece:</b> ${r.pone}`, `data-ret="${r.k}"`)).join('') +
-      `<p class="nota">Se conservan y adaptan los volúmenes recuperables de la fábrica; la obra nueva son invernaderos, cubiertas livianas, plazas y módulos de fauna. Antes de usar una cubierta o un suelo se cruza con las antiguas áreas de combustible y las cubiertas de asbesto-cemento del estudio ambiental. Áreas: metas de anteproyecto.</p>`,
-    sx: () => `<div class="sw2" role="group" aria-label="Estado de la red"><button type="button" data-sx="0" aria-pressed="${SXU.uMix.value < 0.5}">Hoy · predio cerrado</button><button type="button" data-sx="1" aria-pressed="${SXU.uMix.value >= 0.5}">Con el distrito</button></div>
-      <div class="rampa"></div><div class="rampa-t"><span>menos integrado</span><span>integración angular 800 m</span><span>más</span></div>
-      <div class="ind" style="margin-top:10px">Hoy el predio es un vacío de <b style="color:#fff">71 ha</b> que corta la red: hay que rodearlo. El distrito abre <b style="color:#fff">${PAS.length} pasajes peatonales (${fmt(PAS_M)} m)</b> que unen las puertas del borde con la plaza central, siguiendo la retícula de las naves y sin pasar por el bosque. <b style="color:#fff">${fmt(SUBEN)}</b> tramos de la zona quedan más integrados.</div>` +
-      (SXR ? `<table><thead><tr><th>A 600 m del predio</th><th>Hoy</th><th>Distrito</th><th>Cambio</th></tr></thead><tbody>
-        <tr><td>Integración 800 m (NAIN)</td><td>${nf(SXR.antes_600m.nain8)}</td><td>${nf(SXR.despues_600m.nain8)}</td>${pct(SXR.antes_600m.nain8, SXR.despues_600m.nain8)}</tr>
-        <tr><td>Integración global (NAIN)</td><td>${nf(SXR.antes_600m.nain)}</td><td>${nf(SXR.despues_600m.nain)}</td>${pct(SXR.antes_600m.nain, SXR.despues_600m.nain)}</tr>
-        <tr><td>Profundidad media</td><td>${nf(SXR.antes_600m.prof, 2)}</td><td>${nf(SXR.despues_600m.prof, 2)}</td>${pct(SXR.antes_600m.prof, SXR.despues_600m.prof, -1)}</tr>
-        <tr><td>Sinergia (local–global)</td><td>${nf(SXR.antes_600m.sinergia)}</td><td>${nf(SXR.despues_600m.sinergia)}</td>${pct(SXR.antes_600m.sinergia, SXR.despues_600m.sinergia)}</tr>
-        <tr><td>Red caminable (km)</td><td>${nf(SXR.antes_600m.km, 1)}</td><td>${nf(SXR.despues_600m.km, 1)}</td>${pct(SXR.antes_600m.km, SXR.despues_600m.km)}</tr></tbody></table>` : '') +
-      `<div class="sub">Accesos</div>` + ACC.map(a => fila(a.k, '#fbbf24', a.n, '', a.d, '', `data-acc="${a.k}"`)).join('') +
-      `<p class="nota">Análisis angular de segmentos (método DepthmapX) de toda la red de Kennedy, antes y después de abrir los pasajes. Para la entrega faltan los objetivos de diseño: minutos a pie desde 71B y 7A al mercado, giros hasta la recepción, metros de una canastilla de la cama a poscosecha y cruces entre compradores y carga.</p>`,
-    fauna: () => `<div class="ind" style="margin-top:0">Cada módulo atrae fauna que <b style="color:#fff">trabaja para las huertas</b> (poliniza, controla plagas y roedores, hace suelo) y cada interacción se <b style="color:#fff">mide con tecnología</b> del distrito: es material de clase para los colegios y dato para los laboratorios.</div>` +
-      INTER.map((I, i) => fila('F' + (i + 1), I.c, I.n, I.sp, `<b style="font-weight:500;color:#cfd5d9">${I.mod}.</b> ${I.serv}`, '', `data-f="${I.k}"`, I.tec)).join('') +
-      `<p class="nota">La mirla (Turdus fuscater) se come la fruta y las semillas: por eso la fresa y los semilleros van bajo malla o invernadero. El bosque no se interviene.</p>`,
-    huerta: () => `<div class="ind" style="margin-top:0"><b style="color:#fff">${ZONAS.length} huertas de enseñanza · ${HA.toFixed(1).replace('.', ',')} ha</b> en los claros entre los parches de bosque: no se tala ningún árbol. Van paralelas a los edificios, lejos de ellos, y cada una se recorre desde su pasaje: un camino de grava lleva a su aula al aire libre (tablero y bancas) y de ahí a los módulos de 15 × 15 m, cada uno con su letrero.</div>` +
-      `<div class="sub">Huertas de enseñanza</div>` + ZONAS.map((z, i) => fila('H' + (i + 1), z.c, z.n, z.ha.toFixed(2).replace('.', ',') + ' ha', z.d, '', `data-zona="${z.k}"`)).join('') +
-      `<div class="sub">Módulos docentes (huerta de hortalizas)</div>` + MODS.map(m => fila(m.k, m.inv ? '#86efac' : '#4ade80', m.n, m.inv ? 'invernadero' : 'exterior', m.q, '', `data-mod="${m.k}"`)).join('') +
-      `<div class="ind">Los 300 m² de lechuga docente podrían entregar <b style="color:#fff">unas 90–200 unidades de 250 g por semana</b> (siembra escalonada y 15 % de merma supuesta). La cifra se comprueba pesando cosechas.</div>`,
-    ciclo: () => PROG.filter(p => ['comp', 'sol'].includes(p.k)).map(p => fila(p.k === 'sol' ? '☀' : '♻', p.c, p.n, p.a, p.d, p.x, `data-k="${p.k}"`)).join('') +
-      `<div class="sub">Compostaje paso a paso</div>` + ['Separación: en cultivo, poscosecha y mercado se recogen aparte los restos vegetales aptos.', 'Pesaje: se registran los kilos de cada actividad.', 'Proceso: mezcla con material seco; temperatura, humedad y manejo por lote.', 'Maduración y destino: primero jardinería demostrativa; en camas alimentarias solo con controles de calidad.', 'Ajuste: cuatro semanas pesando entradas para saber si alcanzan las tres composteras.']
-        .map((t, i) => fila(i + 1, '#d4a373', t.split(':')[0], '', t.split(':').slice(1).join(':'), '', '')).join('') +
-      `<div class="ind"><b style="color:#fff">Indicador:</b> de cada 100 kg que recibe el mercado, cuántos se venden, cuántos siguen siendo alimento y cuántos van a compost (se mide en el piloto).</div>`
+    dist: () => `<div class="sub" style="margin-top:2px">Aprender</div>` + PROG.filter(p => ['inst', 'cogn', 'foro', 'torre'].includes(p.k)).map(uso).join('') +
+      `<div class="sub">Investigar (nano, bio, info)</div>` + PROG.filter(p => ['bio', 'nano', 'datos', 'poli'].includes(p.k)).map(uso).join('') +
+      `<div class="sub">Producir y vender</div>` + PROG.filter(p => ['comp', 'pos', 'mer', 'alim', 'inc', 'sol'].includes(p.k)).map(uso).join('') +
+      `<div class="sub">Se retira</div>` + RET.map(r => fila('', '#ef4444', r.n, '', r.pone, '', `data-ret="${r.k}"`)).join('') +
+      `<p class="nota">Se reutilizan las naves de la fábrica; lo nuevo son invernaderos, cubiertas livianas y plazas. Áreas y personas son metas de anteproyecto.</p>`,
+    huerta: () => `<div class="ind">${TIPOS_H.length} tipos de huerta en ${ZONAS.length} claros · ${HA.toFixed(1).replace('.', ',')} ha en los claros del bosque, sin talar ningún árbol. Cada una tiene su aula al aire libre junto al pasaje.</div>` +
+      TIPOS_H.map(t => fila('', t.col, t.n, (t.n2 > 1 ? t.n2 + ' lugares · ' : '') + t.ha.toFixed(2).replace('.', ',') + ' ha', t.d, '', `data-zona="${t.z}"`)).join('') +
+      `<div class="sub">Ensayos de la huerta docente</div>` + MODS.filter(m => m.c).map(m => fila('', '#86efac', m.n, '', m.q, '', `data-mod="${m.k}"`)).join(''),
+    ciclo: () => `<div class="ind"><b style="color:#fff">${PK.comp.n} · ${PK.comp.a}.</b> ${PK.comp.d}</div><ol class="pasos">
+      <li><span><b>Llega</b> lo que sobra del mercado, la cocina y las huertas; se pesa en la báscula.</span></li>
+      <li><span><b>Se apila</b> en hileras con material seco y se voltea cada semana; las sondas miden la temperatura.</span></li>
+      <li><span><b>Las lombrices</b> terminan el trabajo en el lombricario: sale humus.</span></li>
+      <li><span><b>Se cierne</b> en la criba y se empaca en la bodega.</span></li>
+      <li><span><b>Vuelve a la tierra:</b> abono para las huertas de Bavaria, de los parques y de las casas.</span></li></ol>` + uso(PK.sol),
+    fauna: () => `<div class="ind">La fauna que llega trabaja para las huertas: poliniza, controla plagas y hace suelo.</div>` +
+      INTER.map(I => fila('', I.c, I.n, '', `${I.mod}. ${I.serv}`, '', `data-f="${I.k}"`)).join('')
   };
-  pan.innerHTML = `<header><button type="button" class="cerrar" aria-label="Cerrar Bavaria Común">&#215;</button><div class="ey">Bavaria Común · distrito de tecnologías convergentes</div><h2>Nano, bio, info y cogno sobre un mismo sistema alimentario</h2>
-      <p class="lead">Estudiantes, investigadores, productores y comerciantes cultivan, conservan, distribuyen y aprovechan los residuos; la fauna que llega trabaja para las huertas y todo se mide. El predio cerrado se abre al barrio con pasajes.</p>
-      <div class="kp"><div><b>12</b><span>edificios con programa NBIC</span></div><div><b>${HA.toFixed(1).replace('.', ',')} ha</b><span>de huertas</span></div><div><b>${INTER.length}</b><span>interacciones bióticas</span></div><div><b>${PAS.length}</b><span>pasajes nuevos</span></div></div></header>
-    <nav class="tabs" role="tablist">${[['dist', 'Distrito NBIC'], ['fauna', 'Fauna'], ['huerta', 'Huertas'], ['ciclo', 'Compost y energía']].map(([k, n], i) => `<button type="button" role="tab" data-t="${k}" aria-selected="${!i}">${n}</button>`).join('')}</nav>
+  pan.innerHTML = `<header><button type="button" class="cerrar" aria-label="Cerrar Bavaria Común">&#215;</button><h2>Bavaria Común</h2>
+      <p class="lead">Aquí se aprende a cultivar. Después, cada quien lo lleva a su casa, a su colegio y a su parque.</p>
+      <ol class="ruta"><li><i>1</i><b>Aprendo</b><span>escuela, laboratorios y cocina</span></li><li><i>2</i><b>Practico</b><span>${TIPOS_H.length} tipos de huerta para enseñar</span></li><li><i>3</i><b>Lo llevo a casa</b><span>terrazas, parques y colegios</span></li></ol>
+      <p class="tot"><b>${fmt(PER_DIA)}</b> personas al día · <b>${HA.toFixed(1).replace('.', ',')} ha</b> de huertas · <b>${fmt(PK.comp.m2)} m²</b> de compostaje</p></header>
+    <nav class="tabs" role="tablist">${[['dist', 'Usos'], ['huerta', 'Huertas'], ['ciclo', 'Compost'], ['fauna', 'Fauna']].map(([k, n], i) => `<button type="button" role="tab" data-t="${k}" aria-selected="${!i}">${n}</button>`).join('')}</nav>
     <div class="cuerpo" role="tabpanel"></div>
-    <div class="pie"><button type="button" class="go" id="bd-go"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 1l7 4-7 4z" fill="currentColor"/></svg>Seguir una cosecha</button><a class="sec2" id="bd-pts" href="bavaria_puntos.html" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none">En puntos</a><a class="sec2" id="bd-dentro" href="bavaria_interior.html?e=bio" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none">Por dentro</a><button type="button" class="sec2" id="bd-ver">Vista general</button></div>`;
-  document.body.appendChild(pan);
+    <div class="pie"><button type="button" class="go" id="bd-go">Seguir una cosecha</button><a class="sec2" id="bd-dentro" href="bavaria_interior.html?e=bio">Por dentro</a><a class="sec2" id="bd-pts" href="bavaria_puntos.html">En puntos</a><button type="button" class="sec2" id="bd-ver">Vista general</button></div>`;  document.body.appendChild(pan);
   const cuerpo = pan.querySelector('.cuerpo');
   let sxObj = 1, focoFauna = null;
   const pintar = () => { cuerpo.innerHTML = TABS[tab](); pan.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.t === tab))); cuerpo.scrollTop = 0; verGrupoEtq(); };
@@ -673,7 +700,7 @@ body.bd-on #dock,body.bd-on #hid-red{display:none!important}
   const clicFila = (e) => { const sw = e.target.closest('[data-sx]'); if (sw) { sxObj = +sw.dataset.sx; cuerpo.querySelectorAll('[data-sx]').forEach(b => b.setAttribute('aria-pressed', String(b === sw))); return; }
     const it = e.target.closest('.it'); if (!it) return; cuerpo.querySelectorAll('.it.act').forEach(x => x !== it && x.classList.remove('act')); it.classList.toggle('act');
     if (it.dataset.k) enfocar(it.dataset.k, true); else if (it.dataset.f) enfocarFauna(it.dataset.f, true); else if (it.dataset.ret) { const r = RET.find(q => q.k === it.dataset.ret); volarA(r.c, 90); }
-    else if (it.dataset.mod) { const m = MODS.find(q => q.k === it.dataset.mod); volarA(loc(C_CAMPO, m.u, m.v), 60); } else if (it.dataset.zona) { const z = ZONAS.find(q => q.k === it.dataset.zona); volarA(z.c, 120); } else if (it.dataset.acc) volarA(ACC.find(a => a.k === it.dataset.acc).p, 160); };
+    else if (it.dataset.mod) { const m = MODS.find(q => q.k === it.dataset.mod); if (m.c) volarA(m.c, 50); } else if (it.dataset.zona) { const z = ZONAS.find(q => q.k === it.dataset.zona); volarA(z.c, 120); } else if (it.dataset.acc) volarA(ACC.find(a => a.k === it.dataset.acc).p, 160); };
   cuerpo.addEventListener('click', clicFila); cuerpo.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); clicFila(e); } });
   pan.querySelector('.cerrar').onclick = (e) => { e.stopPropagation(); window.dispatchEvent(new CustomEvent('bav-cerrar')); };
   pan.querySelector('header').addEventListener('click', () => { if (innerWidth < 760) pan.classList.toggle('min'); });
@@ -697,7 +724,7 @@ body.bd-on #dock,body.bd-on #hid-red{display:none!important}
   function resaltar(k) { SHELL.forEach(s => { s.dim = !!k && s.k !== k; }); Object.entries(LBP).forEach(([kk, o]) => { o.d.classList.toggle('act', kk === k); o.d.classList.toggle('dim', !!k && kk !== k); }); }
   function enfocar(k, desdePanel) { { const pd = document.getElementById('bd-dentro'); if (pd && ['inst', 'bio', 'nano', 'datos', 'cogn', 'foro', 'poli', 'pos', 'mer', 'inc', 'alim', 'torre'].includes(k)) { pd.href = 'bavaria_interior.html?e=' + k; pd.textContent = 'Entrar: ' + (PK[k] ? PK[k].n.split(' ')[0] : 'edificio'); } }
     resaltar(k); const ps = POS[k]; if (!ps) return;
-    const dist = { inst: 190, bio: 220, nano: 140, datos: 190, cogn: 180, foro: 260, poli: 150, pos: 150, mer: 140, inc: 140, alim: 140, torre: 160, campo: 260, comp: 60, sol: 70 }[k] || 160;
+    const dist = { inst: 190, bio: 220, nano: 140, datos: 190, cogn: 180, foro: 260, poli: 150, pos: 150, mer: 140, inc: 140, alim: 140, torre: 160, campo: 260, comp: 95, sol: 70 }[k] || 160;
     volarA([ps[0], ps[2]], dist);
     if (!desdePanel) { const t = ['campo'].includes(k) ? 'huerta' : ['comp', 'sol'].includes(k) ? 'ciclo' : 'dist'; if (t !== tab) { tab = t; pintar(); } const it = cuerpo.querySelector(`[data-k="${k}"]`); if (it) { it.classList.add('act'); it.scrollIntoView({ block: 'nearest', behavior: RMQ.matches ? 'auto' : 'smooth' }); } }
   }
@@ -720,9 +747,9 @@ body.bd-on #dock,body.bd-on #hid-red{display:none!important}
     cajaDe = pts.length > 1 ? new THREE.CatmullRomCurve3(pts, false, 'centripetal') : null; caja.visible = true; if (!cajaDe) caja.position.copy(pts[0]);
     resaltar(P.k); const fin = P.p[P.p.length - 1], w = M(fin[0], fin[1]);
     if (P.k === 'datos') enfocar('datos', true); else volarA(w, P.k === 'pos' ? 150 : P.k === 'mer' ? 120 : P.k === 'bio' ? 200 : 90);
-    tPaso = performance.now(); pan.querySelector('#bd-go').lastChild.textContent = 'Detener recorrido';
+    tPaso = performance.now(); pan.querySelector('#bd-go').textContent = 'Detener recorrido';
   }
-  function parar() { if (paso < 0) return; paso = -1; cap.classList.remove('on'); caja.visible = false; resaltar(null); pan.querySelector('#bd-go').lastChild.textContent = 'Seguir una cosecha'; }
+  function parar() { if (paso < 0) return; paso = -1; cap.classList.remove('on'); caja.visible = false; resaltar(null); pan.querySelector('#bd-go').textContent = 'Seguir una cosecha'; }
   addEventListener('keydown', (e) => { if (paso >= 0 && e.key === 'Escape') parar(); });
 
   /* ---------- animación ---------- */
@@ -747,14 +774,18 @@ body.bd-on #dock,body.bd-on #hid-red{display:none!important}
       e.d.style.display = ok ? 'block' : 'none'; if (ok) e.d.style.transform = `translate(${((V.x + 1) / 2 * Wd - 10).toFixed(1)}px,${((1 - V.y) / 2 * H - e.d.offsetHeight - 18).toFixed(1)}px)`; }
   }
 
+  let hOn = false;
+  const verHu = () => { gHu.visible = on || hOn; if (gHu.visible) PLANTAS(true); };
   return {
     ver(v) {
-      if (v === on) return; on = v; grupo.visible = v;
-      const bv = T3.bavaria; if (bv && bv.userData) { if (bv.userData.demoler) bv.userData.demoler.visible = !v; if (bv.userData.mallasHuerta && v) bv.userData.mallasHuerta.forEach(m => { m.visible = false; }); }
+      if (v === on) return; on = v; grupo.visible = v; verHu();
+      const bv = T3.bavaria; if (bv && bv.userData) { if (bv.userData.demoler) bv.userData.demoler.visible = !v; if (bv.userData.mallasHuerta) bv.userData.mallasHuerta.forEach(m => { m.visible = false; }); }
       pan.classList.toggle('on', v); document.body.classList.toggle('bd-on', v);
       if (v) { pan.classList.toggle('min', innerWidth < 760); tab = 'dist'; sxObj = 1; focoFauna = null; pintar(); tOn = ult = performance.now(); SXU.uMix.value = 0; if (!raf) cuadro(); PLANTAS(true); general(); }
       else { parar(); cancelAnimationFrame(raf); raf = 0; ETQ.forEach(e => { e.d.style.display = 'none'; }); }
     },
-    get on() { return on; }, grupo
+    // solo las huertas de enseñanza y la planta de compostaje (con la propuesta se ven siempre, aunque la estrategia escogida sea otra)
+    verHuertas(v) { hOn = !!v; const bv = T3.bavaria; if (hOn && bv && bv.userData && bv.userData.mallasHuerta) bv.userData.mallasHuerta.forEach(m => { m.visible = false; }); verHu(); },
+    get on() { return on; }, grupo, gHuertas: gHu, sitio: SITIO, ha: HA, zonas: ZONAS.map(z => ({ n: z.n, c: z.c, ha: z.ha })), compost: C_PLANTA
   };
 }
