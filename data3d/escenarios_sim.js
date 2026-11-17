@@ -30,8 +30,8 @@ export async function iniciarEscenariosSim({ T3, cj }) {
   /* ---------------- 3D ---------------- */
   const grupo = new THREE.Group(); grupo.name = 'escenarios_sim'; T3.scene.add(grupo);
   const anillo = (r0, r1, c) => { const m = new THREE.Mesh(new THREE.RingGeometry(r0, r1, 96).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: 0.55, depthWrite: false, toneMapped: false, side: THREE.DoubleSide })); m.renderOrder = 7; grupo.add(m); return m; };
-  const aHum = anillo(300, 312, '#59a14f'); aHum.position.set(BURRO[0], Y + 1.2, BURRO[1]);
-  const aCor = anillo(330, 342, '#e15759'); aCor.position.set(CORA[0], Y + 1.2, CORA[1]);
+  const aHum = anillo(300, 312, '#59a14f'); aHum.visible = false; aHum.position.set(BURRO[0], Y + 1.2, BURRO[1]);
+  const aCor = anillo(330, 342, '#e15759'); aCor.visible = false; aCor.position.set(CORA[0], Y + 1.2, CORA[1]);
   // estaciones barriales: caseta + tres pilas de compost cuya altura sigue la ocupación (G12)
   const mMad = new THREE.MeshStandardMaterial({ color: '#7b5a3c', roughness: 0.9 }), mPila = new THREE.MeshStandardMaterial({ color: '#3b2b1f', roughness: 1 }), mTecho = new THREE.MeshStandardMaterial({ color: '#59615c', roughness: 0.6, metalness: 0.3 });
   const ESTM = EST.map(p => { const g = new THREE.Group(); g.position.set(p[0] + 14, Y, p[1] + 10);
@@ -44,7 +44,7 @@ export async function iniciarEscenariosSim({ T3, cj }) {
   const RUTAS = { rell: EST.map((p, i) => curva(FUENTE[i], DJ, 0.05)), est: EST.map((p, i) => curva(FUENTE[i], p, 0.25)), bav: EST.map((p, i) => curva(FUENTE[i], BAVC(), 0.08)) };
   const NP = MOV ? 260 : 520, PP = new Float32Array(NP * 3), PC = new Float32Array(NP * 3), gp = new THREE.BufferGeometry();
   gp.setAttribute('position', new THREE.BufferAttribute(PP, 3)); gp.setAttribute('color', new THREE.BufferAttribute(PC, 3));
-  const puntos = new THREE.Points(gp, new THREE.PointsMaterial({ size: MOV ? 5 : 6, sizeAttenuation: false, vertexColors: true, transparent: true, depthWrite: false, toneMapped: false })); puntos.renderOrder = 11; grupo.add(puntos);
+  const puntos = new THREE.Points(gp, new THREE.PointsMaterial({ size: MOV ? 5 : 6, sizeAttenuation: false, vertexColors: true, transparent: true, depthWrite: false, toneMapped: false })); puntos.renderOrder = 11; puntos.visible = false; // (los puntos que viajaban confundían: el cambio de los residuos se lee en las etiquetas)
   const PART = Array.from({ length: NP }, (_, i) => ({ r: 'rell', k: i % Math.max(1, EST.length), f: Math.random(), on: false }));
   const COLR = { rell: new THREE.Color('#9aa1a6'), est: new THREE.Color('#c8a26a'), bav: new THREE.Color('#e2a55b') };
   // trampas ecológicas: huertas del borde del humedal en rojo (luz y vidrio sin medida antitrampa)
@@ -79,7 +79,7 @@ export async function iniciarEscenariosSim({ T3, cj }) {
     via = new THREE.Points(gv, new THREE.PointsMaterial({ size: 9, sizeAttenuation: false, color: '#e15759', transparent: true, opacity: 0.9, depthTest: false, depthWrite: false, toneMapped: false }));
     via.renderOrder = 12; via.frustumCulled = false; grupo.add(via); };
   let fMarcas = 0;
-  const TR = BORDE.map(p => { const m = anillo(16, 22, '#ff5a4f'); m.position.set(p[0], Y + 1.5, p[1]); m.visible = false; return m; });
+  const TR = BORDE.map(p => { const m = anillo(16, 22, '#ff5a4f'); m.position.set(p[0], Y + 1.5, p[1]); m.visible = false; m.userData.nunca = true; return m; });
 
   /* ---------------- etiquetas sobre el territorio ---------------- */
   const css = document.createElement('style'); css.textContent = `
@@ -126,7 +126,7 @@ body.tb-abierto #esim{display:none}
   const el = document.createElement('section'); el.id = 'esim'; el.setAttribute('aria-label', 'Escenarios de la simulación');
   el.innerHTML = `<div class="cab"><b>Escenarios · 10 años de la propuesta</b><button type="button" data-guia aria-label="Cómo se usa" title="Cómo se usa">?</button><button type="button" data-min aria-label="Plegar" title="Plegar">–</button></div>
 <p class="exp">Escoge un escenario y dale ▶: corren 10 años y el mapa cambia. Mueve las variables de abajo y mira qué pasa en el territorio.</p>
-<p class="exp ley2"><i style="background:#8fd18a"></i>huertas abiertas <i style="background:#e15759;margin-left:10px"></i>Av. Ciudad de Cali: rojo = mucho tráfico a Corabastos, verde = menos</p>
+<p class="exp ley2"><i style="background:#8fd18a"></i>cada punto verde fijo en el mapa es una huerta que se abrió </p>
 <div class="seg" role="group" aria-label="Escenario"><button type="button" data-e="A"><b>A</b>Kennedy hoy</button><button type="button" data-e="B"><b>B</b>Nodo central</button><button type="button" data-e="C"><b>C</b>Clúster rotativo</button></div>
 <div class="tl"><button type="button" data-play aria-label="Correr 10 años">▶</button><input type="range" min="0" max="${SEM - 1}" value="${SIMST.t}" data-t aria-label="Semana de la simulación"><output data-año></output></div>
 <div class="aviso" data-aviso hidden></div><div class="cuerpo"><ul data-kpi></ul>
@@ -174,7 +174,6 @@ ${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, FMT.luz)}${slider(
     const f = e === 'A' ? 0 : s1.act[t] / R.S1.C.N; let ab = null;
     const HBAR = window.KEN_HBAR; if (HBAR && HBAR.fraccion && Math.abs(f - ultHB) > 0.004) { ab = HBAR.fraccion(f); ultHB = f; }
     { const vis = e === 'A' ? 0 : f; if (Math.abs(vis - fMarcas) > 0.002 || e === 'A') { fMarcas = vis; MK.forEach((m, i) => { mO[i] = e === 'A' ? 0 : (m[3] === 'par' ? (m[4] < vis ? 1 : 0) : m[3] === 'lote' ? (vis > 0.06 ? 1 : 0) : 1); }); gm.attributes.on.needsUpdate = true; } }
-    armarVia();
     const dep = s1.dep[t], al = T3.alivio; if (al) { al.KEEP = e === 'A' ? 1 : 0.3 + 0.7 * dep; al.KEEP_CAM = e === 'A' ? 1 : 0.1 + 0.9 * dep; }
     aCor.material.color.set(dep > 0.66 ? '#e15759' : dep > 0.33 ? '#f28e2b' : '#59a14f');
     if (via) { const k2 = e === 'A' ? 1 : Math.max(0, Math.min(1, (dep - 0.2) / 0.8)); via.material.color.setRGB(0.35 + 0.53 * k2, 0.63 - 0.29 * k2, 0.31 + 0.04 * k2); } aCor.material.opacity = 0.35 + 0.4 * dep;
@@ -188,7 +187,7 @@ ${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, FMT.luz)}${slider(
     // SIM-03 · aves, humedal y trampas
     const BI = T3.bio && T3.bio.ESTADO; if (BI) BI.fauna = Math.max(0.12, Math.min(1, s3.aves[t] / 1400));
     const hum = s3.hum[t] / 100; aHum.material.color.setRGB(0.88 - 0.55 * hum, 0.35 + 0.45 * hum, 0.3); aHum.material.opacity = 0.4 + 0.3 * hum;
-    const nTr = e === 'A' || P3.anti ? 0 : Math.round(TR.length * Math.min(1, P3.borde / 40) * P3.luz * 1.6); TR.forEach((m, i) => { m.visible = i < nTr; });
+    const nTr = e === 'A' || P3.anti ? 0 : Math.round(TR.length * Math.min(1, P3.borde / 40) * P3.luz * 1.6); TR.forEach((m) => { m.visible = false; });
     // etiquetas
     const año = Math.floor(t / AÑO) + 1;
     ET.cora.innerHTML = `<b><i style="background:${aCor.material.color.getStyle()}"></i>Corabastos</b>Dependencia ${fmt(dep * 100)} %${e === 'A' ? '' : ` · <em>vías ${al && al.hoy > 0.5 ? '−' + fmt((1 - al.pro / al.hoy) * 100) + ' % carros' : 'con menos carros'}</em>`}`;
@@ -257,6 +256,6 @@ ${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, FMT.luz)}${slider(
   requestAnimationFrame(cuadro);
   aplicar();
   setTimeout(() => import('./guia.js?v=2').then(m => m.abrirGuia(false)).catch(() => {}), 2500); // la primera vez: cómo se usa
-  import('./capas_escenario.js?v=1').then(m => m.iniciarCapasEscenario({ T3 })).catch(e => console.warn('capas:', e)); // sintaxis, ruido, usos e indicadores cambian con la propuesta
+  import('./capas_escenario.js?v=2').then(m => m.iniciarCapasEscenario({ T3 })).catch(e => console.warn('capas:', e)); // sintaxis, ruido, usos e indicadores cambian con la propuesta
   return { aplicar, arrancar, get R() { return R; }, get via() { return via; }, marcas, mO };
 }

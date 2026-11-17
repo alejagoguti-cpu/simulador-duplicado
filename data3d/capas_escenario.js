@@ -11,7 +11,7 @@ export function iniciarCapasEscenario({ T3, ES }) {
   const fmt = (v, d = 0) => (v == null || !isFinite(v)) ? '–' : v.toLocaleString('es-CO', { maximumFractionDigits: d, minimumFractionDigits: d });
   const pro = () => T3.escenario === 'proyecto';
   const css = document.createElement('style'); css.textContent = `
-#ci-ind{margin-top:8px}#ci-ind .h{display:flex;justify-content:space-between;font:500 9.5px var(--ui-mono,monospace);letter-spacing:.14em;color:var(--ui-tx3,#949da3);text-transform:uppercase;margin:6px 0 4px}
+#ci-ind{margin:4px 0 6px}#ci-ind .ci-ir{margin:0 0 0 4px;font-size:10px}#ci-ind .h{display:flex;justify-content:space-between;font:500 9.5px var(--ui-mono,monospace);letter-spacing:.14em;color:var(--ui-tx3,#949da3);text-transform:uppercase;margin:6px 0 4px}
 #ci-ind .r{display:grid;grid-template-columns:1fr auto auto;gap:0 8px;align-items:baseline;padding:4px 0;border-top:1px solid rgba(255,255,255,.06);font-size:11px}
 #ci-ind .r span{color:var(--ui-tx2,#c3cace)}#ci-ind .r b{font-weight:500;color:#9aa4aa;font-variant-numeric:tabular-nums;text-align:right}#ci-ind .r strong{font-weight:600;font-variant-numeric:tabular-nums;text-align:right;min-width:56px}
 #ci-ind .r small{grid-column:1/-1;color:var(--ui-tx3,#949da3);font-size:10px;line-height:1.35;margin-top:1px}#ci-ind .bien{color:#8fd18a}#ci-ind .mal{color:#ff8a80}
@@ -68,10 +68,11 @@ export function iniciarCapasEscenario({ T3, ES }) {
   }
   /* ---------- indicadores: hoy -> propuesta ---------- */
   function indicadores() {
-    const der = document.getElementById('gs-der'), S = window.KEN_ESIM; if (!der || !S || !S.R) return;
-    let x = document.getElementById('ci-ind'); if (!x) { x = document.createElement('div'); x.id = 'ci-ind'; der.appendChild(x); }
+    const der = document.querySelector('#esim .cuerpo'), S = window.KEN_ESIM; if (!der || !S || !S.R) return; // un solo panel: los indicadores van en el de escenarios
+    let x = document.getElementById('ci-ind'); if (!x) { x = document.createElement('div'); x.id = 'ci-ind'; der.prepend(x); const k = der.querySelector('[data-kpi]'); if (k) k.style.display = 'none'; }
     const R = S.R, e = pro() ? SIMST.esc : 'C', t = Math.max(0, Math.min(SEM - 1, Math.floor(SIMST.t))), A = R.S1.A, P = R.S1[e], A2 = R.S2.A, P2 = R.S2[e], A3 = R.S3.A, P3 = R.S3[e], ru = ruidoCali();
-    const fila = (n, hoy, prop, mejor, por) => `<div class="r"><span>${n}</span><b>${hoy}</b><strong class="${pro() ? (mejor ? 'bien' : 'mal') : ''}">${pro() ? prop : '–'}</strong><small>${por}</small></div>`;
+    let ii = 0; const IR = ['huertas', 'trafico', 'trafico', 'trafico', 'compost', 'humedal', null];
+    const fila = (n, hoy, prop, mejor, por) => { const ir = IR[ii++]; return `<div class="r"><span>${n}</span><b>${hoy}</b><strong class="${pro() ? (mejor ? 'bien' : 'mal') : ''}">${pro() ? prop : '–'}</strong><small>${por}${ir ? ` <button type="button" class="ci-ir" data-ir="${ir}">Ver en el mapa →</button>` : ''}</small></div>`; };
     x.innerHTML = `<div class="h"><span>Indicadores · año ${Math.floor(t / AÑO) + 1}</span><span>hoy → propuesta</span></div>` +
       fila('Hogares con huerta', fmt(A.act[t]), fmt(P.act[t]), true, 'Bavaria forma promotores que abren y acompañan huertas.') +
       fila('Dependencia de Corabastos', fmt(A.dep[t] * 100) + ' %', fmt(P.dep[t] * 100) + ' %', true, 'Huertas y compras directas a la región abastecen tiendas y comedores.') +
