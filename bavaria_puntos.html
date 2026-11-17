@@ -18,7 +18,7 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:0}
 /* recuadro grande con la especie en puntos */
 #inset{position:fixed;z-index:4;width:var(--s);height:var(--s);--s:min(46vh,36vw);left:52%;top:50%;transform:translateY(-55%);pointer-events:none;opacity:0;transition:opacity .5s,left .6s cubic-bezier(.2,.8,.2,1)}
 #inset.on{opacity:1}
-#inset canvas{width:100%;height:100%;display:block;background:radial-gradient(circle at 50% 45%,#16211f,#05080a 75%);border:1px solid rgba(255,255,255,.22)}
+#inset canvas{display:none}#inset{border:1px solid rgba(255,255,255,.35);box-shadow:0 0 0 1px rgba(0,0,0,.4),0 20px 50px rgba(0,0,0,.45)}#inset::after{content:'EN VIVO · 3D';position:absolute;left:8px;top:6px;font:500 9.5px var(--mono);letter-spacing:.14em;color:var(--acc)}
 #inset .n{position:absolute;right:8px;top:6px;font:500 10px var(--mono);color:var(--tx2)}
 #inset .cap{position:absolute;left:0;top:calc(100% + 8px);font:500 11px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--tx)}
 #inset .cap i{display:block;font:italic 400 11px var(--sans);letter-spacing:0;text-transform:none;color:var(--tx2);margin-top:3px}
@@ -152,11 +152,14 @@ const geoEsp = (k, max) => { const E = NUBE[k], st = Math.max(1, Math.floor(E.n 
   for (let i = 0, j = 0; j < m; i += st, j++) { for (let a = 0; a < 3; a++) { P[j * 3 + a] = E.q[i * 3 + a] / 1000; C[j * 3 + a] = Math.pow(E.c[i * 3 + a] / 255, 2.2); } } // los colores de la foto vienen en sRGB
   const gg = new THREE.BufferGeometry(); gg.setAttribute('position', new THREE.BufferAttribute(P, 3)); gg.setAttribute('color', new THREE.BufferAttribute(C, 3)); return gg; };
 // tamaño en la escena (m): real × aumento para que se lea a la distancia de la vista
-const TAM = { colibri: 0.11 * 1.4, abeja: 0.018 * 3.5, abejorro: 0.025 * 3, mariposa: 0.06 * 2, mariquita: 0.009 * 4, mirla: 0.26 * 1.1, copeton: 0.15 * 1.2, lombriz: 0.12 * 1.2, murcielago: 0.1 * 2.2 };
+const TAM = { colibri: 0.12 * 1.6, abeja: 0.02 * 4, abejorro: 0.028 * 3.5, mariposa: 0.08 * 2, mariquita: 0.009 * 5, mirla: 0.27 * 1.2, copeton: 0.15 * 1.3, lombriz: 0.12 * 1.2, murcielago: 0.1 * 2.2 };
 const SUELO = { mirla: 1, copeton: 1, lombriz: 1, mariquita: 1 }, BILL = [];
-const modelo = (k) => { if (!NUBE[k]) return null; const w = new THREE.Group(), s = TAM[k] || 0.2, pts = new THREE.Points(geoEsp(k, MOV ? 2500 : 6000), matEsp(U.uPx, 0.0016 * s * 6));
-  pts.scale.setScalar(s); if (SUELO[k]) pts.position.y = s * 0.5; w.add(pts); BILL.push(pts); return w; };
-const { crearFauna3D } = await import('./data3d/puntos/fauna3d.js?v=7');
+const FZ = await import('./data3d/puntos/fauna_puntos.js?v=2'); await FZ.cargarFauna(THREE);
+const MATF = []; // materiales de la fauna 3D (su reloj de aleteo)
+const modelo = (k) => { if (FZ.tieneFauna(k)) { const w = new THREE.Group(), s = TAM[k] || 0.2, p = FZ.puntosFauna(THREE, k, U.uPx, 0.012 * s, MOV ? 9000 : 40000); p.scale.multiplyScalar(s); w.add(p); MATF.push(p.material); return w; }
+  if (!NUBE[k]) return null; const w = new THREE.Group(), s = TAM[k] || 0.2, pts = new THREE.Points(geoEsp(k, MOV ? 2500 : 6000), matEsp(U.uPx, 0.0016 * s * 6));
+  pts.scale.setScalar(s); if (SUELO[k]) pts.position.y = s * 0.5; w.add(pts); BILL.push(pts); return w; }; // (la fauna 3D no entra a BILL)
+const { crearFauna3D } = await import('./data3d/puntos/fauna3d.js?v=8');
 const FAUNA = crearFauna3D({ THREE, S, M, RMQ, modelo });
 
 // sensores de la huerta (suelo, riego, polinizadores): puntos que titilan sobre las camas
@@ -168,9 +171,9 @@ const FAUNA = crearFauna3D({ THREE, S, M, RMQ, modelo });
     fragmentShader: 'varying float vA; void main(){ vec2 q = gl_PointCoord - 0.5; float d = dot(q,q); if (d > 0.25) discard; gl_FragColor = vec4(0.5, 1.0, 0.86, vA * smoothstep(0.25, 0.0, d));\n#include <colorspace_fragment>\n}' }))); }
 
 /* ---------- recuadro grande: la especie en puntos, girando despacio ---------- */
-const RI = new THREE.WebGLRenderer({ canvas: $('ic'), antialias: true, alpha: true }); RI.setPixelRatio(Math.min(2, devicePixelRatio || 1)); RI.setSize(512, 512, false); RI.setClearColor(0x000000, 0);
+const camZ = new THREE.PerspectiveCamera(32, 1, 0.01, 400); const zoomV = new THREE.Vector3(); let zA = 0; // cámara del recuadro
 const SI = new THREE.Scene(), camI = new THREE.PerspectiveCamera(30, 1, 0.01, 50); camI.position.set(0, 0, 2.3); const uPxI = { value: 512 * Math.min(2, devicePixelRatio || 1) };
-const INS = {}; for (const [k] of SEC) if (NUBE[k]) { const p = new THREE.Points(geoEsp(k, 90000), matEsp(uPxI, 0.0032)); p.visible = false; SI.add(p); INS[k] = p; }
+const INS = {}; for (const [k] of SEC) if (false && NUBE[k]) { const p = new THREE.Points(geoEsp(k, 90000), matEsp(uPxI, 0.0032)); p.visible = false; SI.add(p); INS[k] = p; }
 
 /* ---------- cámara guiada por el scroll ---------- */
 const L0 = new THREE.Vector3(M.look[0] - M.eye[0], M.look[1] - M.eye[1], M.look[2] - M.eye[2]).normalize();
@@ -189,7 +192,7 @@ addEventListener('scroll', leerScroll, { passive: true });
 function tam() { R.setSize(innerWidth, innerHeight, false); cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix(); U.uPx.value = R.getPixelRatio() * innerHeight; leerScroll(); }
 addEventListener('resize', tam); tam();
 $('pausa').onclick = () => { RMQ = !RMQ; $('pausa').textContent = RMQ ? 'Reanudar movimiento' : 'Pausar movimiento'; };
-$('nota').textContent = 'Escena de la propuesta en puntos: árboles y plantas muestreados de modelos 3D reales; especies reconstruidas con puntos desde fotografías (iNaturalist, CC) y una profundidad estimada. Representación, no un levantamiento. Animales aumentados para que se vean.';
+$('nota').textContent = 'Escena de la propuesta en puntos: árboles y plantas muestreados de modelos 3D reales; especies reconstruidas con puntos desde fotografías (iNaturalist, CC) y una profundidad estimada. Representación, no un levantamiento. Animales aumentados para que se vean. ' + FZ.FAUNA_FUENTES;
 
 /* ---------- RECORRER: caminar libre por la huerta ---------- */
 const lib = { on: false, x: 0, z: 0, yaw: 0, pitch: -0.1, k: {}, drag: null };
@@ -211,7 +214,7 @@ $('carga').style.opacity = 0; setTimeout(() => $('carga').remove(), 900);
 function cuadro(t) {
   requestAnimationFrame(cuadro); const dt = Math.min(0.05, (t - tPrev) / 1000); tPrev = t; const tt = (t - t0) / 1000;
   U.uT.value = RMQ ? 0 : tt; U.uIn.value = Math.min(1, tt / 2.2);
-  if (!RMQ) FAUNA.paso(dt, tt);
+  if (!RMQ) FAUNA.paso(dt, tt); for (const m of MATF) m.uniforms.uT.value = RMQ ? 0 : tt;
   if (lib.on) { caminar(dt); for (const p of BILL) { p.getWorldPosition(V); p.lookAt(V2.copy(cam.position)); } R.render(S, cam); return; }
   s += (sObj - s) * (1 - Math.exp(-dt * 4)); const i0 = Math.floor(s), f = s - i0, k = f * f * (3 - 2 * f);
   // mira hacia la especie de la parada (y entre paradas, mezcla las dos); se acerca con el zoom
@@ -228,9 +231,14 @@ function cuadro(t) {
     if (sec >= 1 && sec <= SEC.length) { const [kk, , , nn] = SEC[sec - 1], e = porK[kk]; if (INS[kk]) INS[kk].visible = true;
       $('inset').querySelector('.n').textContent = String(sec).padStart(2, '0'); $('inset').querySelector('.cap').innerHTML = `${esc(nn)}<i>${esc(e.sci)}</i>`; $('enc').querySelector('em').textContent = nn;
       $('inset').style.left = '55%'; } }
-  $('inset').classList.toggle('on', dentro && !!INS[(SEC[sec - 1] || [])[0]]); $('enc').classList.toggle('on', dentro);
+  $('inset').classList.toggle('on', dentro); $('enc').classList.toggle('on', dentro);
   if (dentro) { const kk = SEC[sec - 1][0], ins = INS[kk];
-    if (ins) { const a = RMQ ? 0 : tt * 0.35; ins.rotation.y = Math.sin(a) * 0.55; ins.rotation.x = Math.sin(a * 0.7) * 0.08; ins.position.y = Math.sin(tt * 1.2) * 0.015; RI.render(SI, camI); }
+    { const ag2 = SEL[kk]; if (ag2) { const r = $('inset').getBoundingClientRect(), dpr = R.getPixelRatio(), s2 = TAM[kk] || 0.2, d = Math.max(0.35, s2 * 4.5);
+        zA += RMQ ? 0 : dt * 0.25; ag2.obj.getWorldPosition(zoomV);
+        camZ.position.set(zoomV.x + Math.sin(zA) * d, zoomV.y + d * 0.35, zoomV.z - Math.cos(zA) * d); camZ.lookAt(zoomV); camZ.aspect = r.width / r.height; camZ.updateProjectionMatrix();
+        const u0 = U.uPx.value, uz = U.uZ.value; U.uPx.value = r.height * dpr * 0.9; U.uZ.value = 1.6;
+        R.setScissorTest(true); const H = innerHeight; R.setViewport(r.left, H - r.bottom, r.width, r.height); R.setScissor(r.left, H - r.bottom, r.width, r.height);
+        R.setClearColor(0x0b100e, 1); R.clear(); R.render(S, camZ); R.setScissorTest(false); R.setViewport(0, 0, innerWidth, innerHeight); R.setClearColor(0x04070a, 1); U.uPx.value = u0; U.uZ.value = uz; } }
     const ag = SEL[kk]; if (ag) { V.copy(ag.obj.position).project(cam); const x = (V.x + 1) / 2 * innerWidth, y = (1 - V.y) / 2 * innerHeight, enc = $('enc');
       const d = cam.position.distanceTo(ag.obj.position), px = Math.max(34, Math.min(140, (TAM[kk] || 0.2) * 2.4 / (2 * d * Math.tan(fov * Math.PI / 360)) * innerHeight));
       enc.style.width = enc.style.height = px + 'px'; enc.style.transform = `translate(${x - px / 2}px,${y - px / 2}px)`;
