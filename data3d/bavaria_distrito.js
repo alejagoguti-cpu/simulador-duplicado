@@ -7,7 +7,7 @@
    3. la red de datos une el centro de datos con los edificios y los sensores;
    4. salen las INTERACCIONES BIÓTICAS que el distrito fomenta: abejas, abejorros, colibríes, mariposas, aves insectívoras, cernícalo,
       lechuza, murciélagos, ranas y libélulas, mariquitas y lombrices, cada una con su módulo de fauna y la tecnología que la mide.
-   Huertas en todo el claro al oriente de la nave grande (módulos de 8 camas, invernaderos, franjas de flores), plantas 3D de cerca.
+   Huertas de enseñanza de seis tipos en los claros entre los parches de bosque, paralelas a los edificios y con aula junto a su pasaje.
    Retiros D1 (27) y D2 (20): bavaria.js los deja en un grupo aparte que aquí se esconde.
    Marco: bavaria.json y la sintaxis en el marco del modelo; lw() los pasa al mundo. */
 export function crearDistritoBavaria({ T3, lw, D, ARB = [], SX = null }) {
@@ -103,7 +103,7 @@ export function crearDistritoBavaria({ T3, lw, D, ARB = [], SX = null }) {
   };
   PROG.forEach(p => { if (p.e !== undefined) envolver(p.e, p); });
   const POS = {}; PROG.forEach(p => { if (p.e !== undefined) { const c = centro(ED[p.e].W); POS[p.k] = [c[0], ED[p.e].h + 5, c[1]]; } });
-  POS.campo = [C_CAMPO[0], 9, C_CAMPO[1]]; POS.comp = [C_COMP[0], 7, C_COMP[1]];
+  { const q = loc(C_CAMPO, 45, 15); POS.campo = [q[0], 9, q[1]]; } POS.comp = [C_COMP[0], 7, C_COMP[1]];
 
   /* ---------- 2. retiros D1 y D2 ---------- */
   const RET = [
@@ -126,56 +126,83 @@ export function crearDistritoBavaria({ T3, lw, D, ARB = [], SX = null }) {
     grupo.add(can);
   }
 
-  /* ---------- 3. huertas en todo el claro (módulos de 15 x 15 m con 8 camas; respetan bosque, pasajes y módulos de fauna) ---------- */
-  const MODS = [
-    { k: 'A', n: 'A · Referencia bajo cubierta', inv: true, cul: ['lechuga'], q: '¿Cuánta agua, tiempo y superficie para una caja vendible?', u: -7.5, v: -7.5 },
-    { k: 'B', n: 'B · Biotecnología', inv: true, cul: ['lechuga'], q: '¿El tratamiento biológico cambia el peso comercial o la pérdida de plantas?', u: 7.5, v: -7.5 },
-    { k: 'C', n: 'C · Cultivo exterior', inv: false, cul: ['lechuga'], q: '¿Qué cambia frente al módulo A en agua, temperatura, fauna y kilos aprovechables?', u: -7.5, v: 7.5 },
-    { k: 'D', n: 'D · Producción por pedido', inv: false, cul: ['acelga', 'acelga', 'acelga', 'acelga', 'cilantro', 'cilantro', 'cilantro', 'cilantro'], q: '¿Cuánto sembrar para cumplir un pedido real y cuánto queda sin vender? (4 acelga, 4 cilantro)', u: 7.5, v: 7.5 }
+  /* ---------- 3. huertas de ENSEÑANZA en los claros del bosque (tools/bavaria_claros.py) ----------
+     Rejilla de 15 m PARALELA a los edificios (ANG), solo en celdas sin copa de árbol, a 20 m o más de los edificios y fuera de los
+     pasajes. Seis claros, cada uno con su tipo de huerta y un aula al aire libre en la celda más cercana a su pasaje, unida a él
+     por un camino de grava. Tipos: hortalizas en camas elevadas (con los módulos docentes A-D), frutales y bayas, árboles frutales,
+     invernaderos de tomate, espiral de aromáticas y medicinales, milpa (maíz y ahuyama) y franjas de flores para polinizadores. */
+  const MODS = [ // módulos docentes del ensayo (celdas 2..3 x 0..1 del claro central)
+    { k: 'A', n: 'A · Referencia bajo cubierta', inv: true, cul: ['lechuga'], q: '¿Cuánta agua, tiempo y superficie para una caja vendible?', u: 37.5, v: 7.5 },
+    { k: 'B', n: 'B · Biotecnología', inv: true, cul: ['lechuga'], q: '¿El tratamiento biológico cambia el peso comercial o la pérdida de plantas?', u: 52.5, v: 7.5 },
+    { k: 'C', n: 'C · Cultivo exterior', inv: false, cul: ['lechuga'], q: '¿Qué cambia frente al módulo A en agua, temperatura, fauna y kilos aprovechables?', u: 37.5, v: 22.5 },
+    { k: 'D', n: 'D · Producción por pedido', inv: false, cul: ['acelga', 'acelga', 'acelga', 'acelga', 'cilantro', 'cilantro', 'cilantro', 'cilantro'], q: '¿Cuánto sembrar para cumplir un pedido real y cuánto queda sin vender? (4 acelga, 4 cilantro)', u: 52.5, v: 22.5 }
   ];
   const CULT = {
     lechuga: { c: '#86c44c', c2: '#a7d86a', paso: 0.32, fil: 2 }, morada: { c: '#7a3b52', c2: '#9b5a5f', paso: 0.32, fil: 2 },
     acelga: { c: '#2f6b2a', c2: '#3f7f30', paso: 0.4, fil: 2 }, cilantro: { c: '#5fae3a', c2: '#7cc455', paso: 0.18, fil: 3 },
     repollo: { c: '#6f9a86', c2: '#89b39d', paso: 0.5, fil: 2 }, cebolla: { c: '#7fae5a', c2: '#9cc275', paso: 0.15, fil: 3 },
-    fresa: { c: '#3d7a35', c2: '#c0392b', paso: 0.3, fil: 2 }, flores: { c: '#a855f7', c2: '#facc15', pal: ['#a855f7', '#facc15', '#f97316', '#f8fafc', '#ec4899', '#60a5fa'], paso: 0.28, fil: 3 }, nada: null
+    fresa: { c: '#3d7a35', c2: '#4a8a3a', paso: 0.3, fil: 2, fr: '#c8232c' }, flores: { c: '#a855f7', c2: '#facc15', pal: ['#a855f7', '#facc15', '#f97316', '#f8fafc', '#ec4899', '#60a5fa'], paso: 0.28, fil: 3 },
+    tomate: { c: '#3f6f2c', c2: '#4b7f34', paso: 0.55, fil: 2, fr: '#d0261c' }, uchuva: { c: '#4f7d36', c2: '#5d8c3e', paso: 0.8, fil: 1, fr: '#f19a1a' },
+    mora: { c: '#355f2a', c2: '#2f5626', paso: 0.7, fil: 1, fr: '#3a0d2a' }, maiz: { c: '#5b8a2f', c2: '#6c9a38', paso: 0.35, fil: 2, fr: '#e6c04a' },
+    ahuyama: { c: '#3f7533', c2: '#4b8338', paso: 1.1, fil: 1, fr: '#de7a1e' }, lavanda: { c: '#7d8f73', c2: '#8a9b80', paso: 0.38, fil: 2, fr: '#8b6bd6' },
+    aromatica: { c: '#4f7f45', c2: '#6b9a5a', paso: 0.25, fil: 3 }, nada: null
   };
-  const ROT = ['lechuga', 'morada', 'acelga', 'cilantro', 'repollo', 'cebolla', 'lechuga', 'fresa', 'acelga', 'lechuga', 'nada'];
-  const SITIO = D.sitio.map(W), REGS = [[[9405, 2840], [9725, 2840], [9725, 3255], [9405, 3255]], [[9330, 3270], [9560, 3270], [9560, 3480], [9330, 3480]], [[9120, 3090], [9250, 3090], [9250, 3290], [9120, 3290]]].map(R => R.map(q => M(q[0], q[1]))), ARBW = (ARB || []).map(a => [...W(a), Math.max(2.5, a[3] || 4)]);
+  const SITIO = D.sitio.map(W), ARBW = (ARB || []).map(a => [...W(a), Math.max(2.5, a[3] || 4)]);
   { // también los árboles que se ven en el 3D dentro del predio (censo del arbolado)
     const P = T3.trees && T3.trees.pos; if (P) { let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const q of SITIO) { x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); z0 = Math.min(z0, q[1]); z1 = Math.max(z1, q[1]); }
       for (let i = 0; i < P.X.length; i++) if (P.X[i] > x0 && P.X[i] < x1 && P.Z[i] > z0 && P.Z[i] < z1) ARBW.push([P.X[i], P.Z[i], Math.max(2.5, (P.Hh[i] || 8) * 0.32)]); } }
-  const PUNTOS_FAUNA = [[FA.apiario.p, 16], [FA.abejorro.p, 10], [FA.charca.p, 26], ...FA.murc.map(p => [p, 8]), ...FA.nidos.map(p => [p, 8]), ...FA.perchas.map(p => [p, 8]), ...FA.hoteles.map(p => [p, 9])];
+  // los seis claros (celdas i, j de la rejilla de 15 m desde C_CAMPO) y la receta de cada uno
+  const ZONAS = [
+    { k: 'Z1', n: 'Huerta docente de hortalizas', c: '#86efac', d: 'Los módulos del ensayo A-D y camas elevadas de lechuga, acelga, repollo, cebolla y cilantro, con un banco de aromáticas y una franja de flores.', rec: ['camas', 'camas', 'arom', 'camas', 'flores'],
+      cel: [[1, 1], [1, 2], [2, -1], [2, 0], [2, 1], [2, 2], [2, 3], [2, 4], [3, -1], [3, 0], [3, 1], [3, 2], [3, 3], [3, 4], [4, 0], [4, 1]] },
+    { k: 'Z2', n: 'Frutales, bayas y milpa', c: '#fca5a5', d: 'Fresa, uchuva y mora en camas; huerto de tomate de árbol y feijoa; milpa de maíz con ahuyama. Los niños cosechan y prueban la fruta en el lugar.', rec: ['frutal', 'arboles', 'frutal', 'milpa', 'arboles', 'milpa', 'flores'],
+      cel: [[6, -11], [6, -10], [6, -9], [7, -11], [7, -10], [7, -5], [8, -11], [8, -10], [8, -9], [8, -8], [8, -7], [8, -6], [8, -5], [9, -8], [9, -7], [9, -6], [9, -5], [9, -4]] },
+    { k: 'Z3', n: 'Espiral de aromáticas y medicinales', c: '#c4b5fd', d: 'Espirales de piedra con romero, tomillo, hierbabuena, lavanda y caléndula: microclimas de seco (arriba) a húmedo (abajo) en 3 m.', rec: ['espiral', 'arom', 'flores', 'arom', 'espiral'],
+      cel: [[-3, 1], [-2, 0], [-2, 1], [-2, 2], [-1, 1], [-1, 2]] },
+    { k: 'Z4', n: 'Invernaderos de tomate', c: '#fda4af', d: 'Tomate chonto en tutores bajo túnel: polinización por zumbido del abejorro nativo, riego por goteo medido y control biológico.', rec: ['tomate', 'tomate', 'flores', 'tomate', 'tomate'],
+      cel: [[7, 5], [8, 5], [9, 3], [9, 4], [9, 5], [9, 6]] },
+    { k: 'Z5', n: 'Semillero y franja de polinizadores', c: '#fde68a', d: 'Plántulas bajo túnel para todas las huertas y franjas de flores nativas que alimentan abejas, abejorros, colibríes y mariposas.', rec: ['tomate', 'flores', 'camas', 'flores'],
+      cel: [[6, -1], [6, 0], [6, 1], [7, -1], [7, 0]] },
+    { k: 'Z6', n: 'Milpa: maíz, fríjol y ahuyama', c: '#fcd34d', d: 'El policultivo andino: el maíz da tutor al fríjol, el fríjol fija nitrógeno y la ahuyama cubre el suelo.', rec: ['milpa', 'milpa', 'flores', 'milpa'],
+      cel: [[-5, -24], [-5, -23], [-5, -22], [-4, -23], [-4, -22]] }
+  ];
+  const TIPO = { camas: 'Hortalizas en camas elevadas', arom: 'Aromáticas y medicinales', flores: 'Franja de flores para polinizadores', frutal: 'Fresa, uchuva y mora', arboles: 'Tomate de árbol y feijoa', milpa: 'Milpa: maíz y ahuyama', tomate: 'Invernadero de tomate', espiral: 'Espiral de aromáticas', aula: 'Aula al aire libre', doc: 'Módulo docente' };
+  const RECETA = { // cultivos de las 8 camas de cada tipo
+    camas: (r) => { const L = ['lechuga', 'morada', 'acelga', 'cilantro', 'repollo', 'cebolla'], a = L[Math.floor(r() * 6)], b = L[Math.floor(r() * 6)]; return Array.from({ length: 8 }, (_, k) => k < 4 ? a : b); },
+    arom: () => ['lavanda', 'aromatica', 'cilantro', 'aromatica', 'lavanda', 'aromatica', 'flores', 'aromatica'],
+    flores: () => Array(8).fill('flores'), frutal: () => ['fresa', 'fresa', 'fresa', 'uchuva', 'uchuva', 'mora', 'mora', 'fresa'],
+    milpa: () => ['maiz', 'maiz', 'ahuyama', 'maiz', 'maiz', 'ahuyama', 'maiz', 'maiz'], tomate: () => Array(8).fill('tomate')
+  };
+  const pasajeCerca = (c) => { let m = [1e9, null]; for (const P of PAS) for (let i = 1; i < P.length; i++) { const a = P[i - 1], b = P[i], dx = b[0] - a[0], dz = b[1] - a[1], L2 = dx * dx + dz * dz || 1, t = Math.max(0, Math.min(1, ((c[0] - a[0]) * dx + (c[1] - a[1]) * dz) / L2)), q = [a[0] + t * dx, a[1] + t * dz], d = Math.hypot(q[0] - c[0], q[1] - c[1]); if (d < m[0]) m = [d, q]; } return m; };
   const CEL = [];
   {
-    const ocupa = new Map(); for (const a of ARBW) { const k = Math.round(a[0] / 12) + '_' + Math.round(a[1] / 12); if (!ocupa.has(k)) ocupa.set(k, []); ocupa.get(k).push(a); }
-    const arbolCerca = (x, z) => { for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) for (const a of ocupa.get((Math.round(x / 12) + dx) + '_' + (Math.round(z / 12) + dz)) || []) if (Math.hypot(a[0] - x, a[1] - z) < 9 + a[2]) return true; return false; }; // la copa de ningún árbol toca el módulo de 15 × 15 m
     let sem = 7; const rnd = () => (sem = (sem * 16807) % 2147483647) / 2147483647;
-    for (let i = -40; i < 40; i++) for (let j = -40; j < 40; j++) {
-      const u = (i + 0.5) * 15, v = (j + 0.5) * 15, c = loc(C_CAMPO, u, v), doc = MODS.find(m => Math.abs(m.u - u) < 1 && Math.abs(m.v - v) < 1);
-      if (!doc) { if (!dentro(SITIO, c[0], c[1]) || distBorde(SITIO, c[0], c[1]) < 16) continue; // en todo el predio, donde haya claro
-        if (ED.some((e, k) => k !== 20 && k !== 27 && (dentro(e.W, c[0], c[1]) || distBorde(e.W, c[0], c[1]) < 18))) continue;
-        if (Math.hypot(c[0] - C_COMP[0], c[1] - C_COMP[1]) < 14 || arbolCerca(c[0], c[1])) continue;
-        if (PAS.some(P => distPolilinea(P, c[0], c[1]) < 9)) continue;
-        if (PUNTOS_FAUNA.some(([p, r]) => Math.hypot(p[0] - c[0], p[1] - c[1]) < r + 9)) continue; }
-      let cul, flor = false;
-      if (doc) cul = Array.from({ length: 8 }, (_, k) => doc.cul[k % doc.cul.length]);
-      else if (((i * 7 + j * 3) % 9 + 9) % 9 === 4) { cul = Array(8).fill('flores'); flor = true; } // franja polinizadora
-      else { const a = ROT[Math.floor(rnd() * ROT.length)], b = ROT[Math.floor(rnd() * ROT.length)]; cul = Array.from({ length: 8 }, (_, k) => (k < 4 ? a : b)); }
-      CEL.push({ c, u, v, i, j, cul, flor, inv: doc ? doc.inv : (!flor && ((j % 5 + 5) % 5 === 2)), doc: doc ? doc.k : null });
+    for (const Z of ZONAS) {
+      const cel = Z.cel.map(([i, j]) => { const u = (i + 0.5) * 15, v = (j + 0.5) * 15, c = loc(C_CAMPO, u, v); return { i, j, u, v, c, dp: pasajeCerca(c) }; }).sort((a, b) => a.dp[0] - b.dp[0]);
+      Z.aula = cel[0]; let n = 0;
+      for (const x of cel) {
+        const doc = MODS.find(m => Math.abs(m.u - x.u) < 1 && Math.abs(m.v - x.v) < 1);
+        const tipo = x === Z.aula ? 'aula' : doc ? 'doc' : Z.rec[n++ % Z.rec.length];
+        const cul = doc ? Array.from({ length: 8 }, (_, k) => doc.cul[k % doc.cul.length]) : RECETA[tipo] ? RECETA[tipo](rnd) : null;
+        CEL.push({ c: x.c, u: x.u, v: x.v, i: x.i, j: x.j, z: Z.k, tipo, cul, flor: tipo === 'flores' || tipo === 'espiral', inv: doc ? doc.inv : tipo === 'tomate', doc: doc ? doc.k : null });
+      }
+      let cx = 0, cz = 0; for (const x of cel) { cx += x.c[0]; cz += x.c[1]; } Z.c = [cx / cel.length, cz / cel.length]; Z.ha = cel.length * 225 / 1e4;
     }
   }
-  const HA = CEL.length * 225 / 10000, NFLOR = CEL.filter(c => c.flor).length;
+  const HA = CEL.length * 225 / 10000, NFLOR = CEL.filter(c => c.flor).length, CAMAS_CEL = CEL.filter(c => c.cul);
+  const C_DOC = loc(C_CAMPO, 45, 15); // centro de los módulos docentes
   PK.campo.a = HA.toFixed(1).replace('.', ',') + ' ha';
-  PK.campo.x = `${CEL.length} módulos de 15 × 15 m con 8 camas (${fmt(CEL.length * 8)} camas de 1,25 × 10 m): los 4 docentes A-D en el centro, ${NFLOR} franjas de flores nativas para polinizadores y el resto productivo, con lechuga verde y morada, acelga, cilantro, repollo, cebolla y fresa en rotación. Una franja de cada cinco va bajo invernadero.`;
+  PK.campo.x = `${ZONAS.length} huertas de enseñanza en los claros del bosque, paralelas a los edificios y cada una con su aula al aire libre junto al pasaje: ` + ZONAS.map(z => z.n.toLowerCase()).join(', ') + '.';
+  /* texturas: tierra con paja y el cultivo visto de lejos */
   const texCama = (k) => { const C = CULT[k], cv = document.createElement('canvas'); cv.width = 64; cv.height = 512; const g = cv.getContext('2d');
     g.fillStyle = '#4a3527'; g.fillRect(0, 0, 64, 512); for (let n = 0; n < 1400; n++) { g.fillStyle = `rgba(${30 + Math.random() * 40},${20 + Math.random() * 25},${12 + Math.random() * 15},.55)`; g.fillRect(Math.random() * 64, Math.random() * 512, 2, 2); }
     for (let n = 0; n < 260; n++) { g.strokeStyle = `rgba(${190 + Math.random() * 40},${160 + Math.random() * 30},90,.55)`; g.lineWidth = 1; const x = Math.random() * 64, y = Math.random() * 512, a = Math.random() * 3; g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a) * 6, y + Math.sin(a) * 6); g.stroke(); } // paja
     if (C) { const filas = C.fil, pas = Math.max(6, C.paso / 9.7 * 512); for (let f = 0; f < filas; f++) { const x = (f + 0.5) * 64 / filas; for (let y = pas / 2; y < 512; y += pas) { const r = Math.min(64 / filas, pas) * 0.48 * (0.8 + Math.random() * 0.35);
       if (C.pal) { g.fillStyle = '#3f7a35'; g.beginPath(); g.ellipse(x, y, r, r, 0, 0, 7); g.fill(); g.fillStyle = C.pal[Math.floor(Math.random() * C.pal.length)]; g.beginPath(); g.ellipse(x + (Math.random() - 0.5) * 3, y, r * 0.6, r * 0.6, 0, 0, 7); g.fill(); continue; }
-      g.fillStyle = Math.random() < 0.5 ? C.c : C.c2; g.beginPath(); g.ellipse(x + (Math.random() - 0.5) * 2, y, r, r, 0, 0, 7); g.fill(); g.fillStyle = 'rgba(255,255,255,.12)'; g.beginPath(); g.ellipse(x - r * 0.25, y - r * 0.25, r * 0.35, r * 0.35, 0, 0, 7); g.fill(); } } }
+      g.fillStyle = Math.random() < 0.5 ? C.c : C.c2; g.beginPath(); g.ellipse(x + (Math.random() - 0.5) * 2, y, r, r, 0, 0, 7); g.fill();
+      if (C.fr && Math.random() < 0.45) { g.fillStyle = C.fr; g.beginPath(); g.ellipse(x + (Math.random() - 0.5) * r, y + (Math.random() - 0.5) * r, r * 0.3, r * 0.3, 0, 0, 7); g.fill(); }
+      g.fillStyle = 'rgba(255,255,255,.12)'; g.beginPath(); g.ellipse(x - r * 0.25, y - r * 0.25, r * 0.35, r * 0.35, 0, 0, 7); g.fill(); } } }
     const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t; };
-  const hojas = (n, sx, sy, sz, inc, alto, centro0 = 0) => { const L = []; for (let k = 0; k < n; k++) { const h = new THREE.SphereGeometry(1, 5, 3); h.scale(sx, sy, sz); h.translate(0, 0, sz * 0.8); h.rotateX(-inc); h.rotateY(k / n * Math.PI * 2 + (k % 2) * 0.3); h.translate(0, alto, 0); L.push(h); }
-    if (centro0) { const c = new THREE.SphereGeometry(centro0, 6, 4); c.scale(1, 0.8, 1); c.translate(0, alto + centro0 * 0.5, 0); L.push(c); } return unir(L); };
   /* plantas con HOJAS de verdad: tarjetas con la forma de la hoja (textura en grises con nervadura; el color lo pone cada planta) */
   const texHoja = (tipo) => { const cv = document.createElement('canvas'); cv.width = cv.height = 256; const g = cv.getContext('2d'); g.clearRect(0, 0, 256, 256);
     const gr = (y0, y1) => { const q = g.createLinearGradient(0, y0, 0, y1); q.addColorStop(0, '#f2f2f2'); q.addColorStop(1, '#9a9a9a'); return q; };
@@ -185,6 +212,7 @@ export function crearDistritoBavaria({ T3, lw, D, ARB = [], SX = null }) {
       for (let k = 0; k < 7; k++) { const y = 220 - k * 26; g.beginPath(); g.moveTo(128, y); g.quadraticCurveTo(160, y - 18, 205, y - 34); g.moveTo(128, y); g.quadraticCurveTo(96, y - 18, 51, y - 34); g.stroke(); } }
     if (tipo === 'fina') { g.fillStyle = '#d8d8d8'; for (let k = 0; k < 9; k++) { const a = -1.2 + k * 0.3, x = 128 + Math.sin(a) * 70, y = 150 - Math.cos(a) * 80; g.beginPath(); g.ellipse(x, y, 26, 18, a, 0, 7); g.fill(); g.strokeStyle = '#bbb'; g.lineWidth = 3; g.beginPath(); g.moveTo(128, 250); g.lineTo(x, y); g.stroke(); } }
     if (tipo === 'tira') { g.fillStyle = gr(0, 256); for (const dx of [-30, 0, 30]) { g.beginPath(); g.moveTo(128 + dx - 9, 256); g.quadraticCurveTo(128 + dx, 120, 128 + dx * 1.6, 4); g.quadraticCurveTo(128 + dx + 4, 120, 128 + dx + 9, 256); g.fill(); } }
+    if (tipo === 'larga') { g.fillStyle = gr(0, 256); g.beginPath(); g.moveTo(118, 256); g.quadraticCurveTo(70, 120, 128, 2); g.quadraticCurveTo(186, 120, 138, 256); g.fill(); g.strokeStyle = 'rgba(255,255,255,.8)'; g.lineWidth = 4; g.beginPath(); g.moveTo(128, 256); g.lineTo(128, 10); g.stroke(); }
     if (tipo === 'trebol') { g.fillStyle = gr(30, 250); for (const a of [-0.9, 0, 0.9]) { g.save(); g.translate(128, 200); g.rotate(a); g.beginPath(); for (let i = 0; i <= 40; i++) { const t2 = i / 40 * Math.PI * 2, rr = 1 + 0.08 * Math.sin(t2 * 14); g.lineTo(Math.sin(t2) * 42 * rr, -95 - Math.cos(t2) * 58 * rr); } g.fill(); g.restore(); }
       g.fillStyle = '#5a5a5a'; for (const [x, y] of [[70, 230], [190, 226], [128, 244]]) { g.beginPath(); g.ellipse(x, y, 16, 20, 0, 0, 7); g.fill(); } }
     if (tipo === 'flor') { g.fillStyle = '#f0f0f0'; for (let k = 0; k < 18; k++) { const a = k / 18 * Math.PI * 2; g.beginPath(); g.ellipse(128 + Math.cos(a) * 62, 128 + Math.sin(a) * 62, 40, 16, a, 0, 7); g.fill(); } g.fillStyle = '#7a7a7a'; g.beginPath(); g.arc(128, 128, 38, 0, 7); g.fill(); }
@@ -192,32 +220,62 @@ export function crearDistritoBavaria({ T3, lw, D, ARB = [], SX = null }) {
   const unirUV = (gs) => { const P = [], N = [], U = []; for (const g0 of gs) { const g = g0.index ? g0.toNonIndexed() : g0; g.computeVertexNormals(); P.push(...g.attributes.position.array); N.push(...g.attributes.normal.array); if (g.attributes.uv) U.push(...g.attributes.uv.array); else for (let i = 0; i < g.attributes.position.count; i++) U.push(0.5, 0.5); }
     const G = new THREE.BufferGeometry(); G.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); G.setAttribute('normal', new THREE.Float32BufferAttribute(N, 3)); G.setAttribute('uv', new THREE.Float32BufferAttribute(U, 2)); return G; };
   // roseta: n hojas que salen del centro, inclinadas (inc: 0 = parada, PI/2 = acostada); l = largo, a = ancho
-  const roseta = (n, l, a, inc, alto = 0) => unirUV(Array.from({ length: n }, (_, i) => { const p = new THREE.PlaneGeometry(a, l); p.translate(0, l / 2, 0); p.rotateX(-(inc + (i % 2) * 0.18)); p.rotateY(i / n * Math.PI * 2 + (i % 3) * 0.4); p.translate(0, alto, 0); return p; }));
+  const roseta = (n, l, a, inc, alto = 0, giro = 0) => unirUV(Array.from({ length: n }, (_, i) => { const p = new THREE.PlaneGeometry(a, l); p.translate(0, l / 2, 0); p.rotateX(-(inc + (i % 2) * 0.18)); p.rotateY(i / n * Math.PI * 2 + (i % 3) * 0.4 + giro); p.translate(0, alto, 0); return p; }));
+  const tallo = (h, r = 0.008) => new THREE.CylinderGeometry(r * 0.7, r, h, 4).translate(0, h / 2, 0);
+  // fruta: piezas sueltas (su color va aparte, en su propia malla instanciada)
+  const fruto = (pts, f) => unirUV(pts.map(p => f().translate(p[0], p[1], p[2])));
+  const anillo = (n, r, y0, y1, s = 1) => Array.from({ length: n }, (_, i) => { const a = i * 2.39996 * s, rr = r * (0.55 + 0.45 * ((i * 0.618) % 1)); return [Math.cos(a) * rr, y0 + (y1 - y0) * ((i * 0.37) % 1), Math.sin(a) * rr]; });
+  const ahuyamaG = () => { const g = new THREE.SphereGeometry(1, 20, 12), p = g.attributes.position; for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i), z = p.getZ(i), k = 1 + 0.07 * Math.cos(Math.atan2(z, x) * 9); p.setXYZ(i, x * k * 0.24, y * 0.15, z * k * 0.24); } g.computeVertexNormals(); return g.translate(0, 0.13, 0); };
   const GEO = {
     lechuga: roseta(10, 0.17, 0.16, 1.0), morada: roseta(10, 0.16, 0.15, 0.95), repollo: unirUV([roseta(9, 0.2, 0.2, 1.15), new THREE.SphereGeometry(0.1, 10, 8).scale(1, 0.85, 1).translate(0, 0.09, 0)]),
-    acelga: roseta(7, 0.32, 0.14, 0.35), cilantro: roseta(8, 0.17, 0.13, 0.55), cebolla: roseta(5, 0.34, 0.06, 0.12), fresa: roseta(6, 0.15, 0.13, 0.85),
-    flores: unirUV([roseta(5, 0.18, 0.08, 0.7), new THREE.CylinderGeometry(0.006, 0.008, 0.42, 4).translate(0, 0.21, 0), new THREE.PlaneGeometry(0.11, 0.11).rotateX(-Math.PI / 2).translate(0, 0.43, 0)])
+    acelga: roseta(7, 0.32, 0.14, 0.35), cilantro: roseta(8, 0.17, 0.13, 0.55), cebolla: roseta(5, 0.34, 0.06, 0.12), fresa: roseta(7, 0.15, 0.13, 0.85),
+    flores: unirUV([roseta(5, 0.18, 0.08, 0.7), new THREE.CylinderGeometry(0.006, 0.008, 0.42, 4).translate(0, 0.21, 0), new THREE.PlaneGeometry(0.11, 0.11).rotateX(-Math.PI / 2).translate(0, 0.43, 0)]),
+    tomate: unirUV([tallo(1.55, 0.012), ...[0.15, 0.45, 0.75, 1.05, 1.3].map((h, i) => roseta(5, 0.24, 0.17, 1.15 - i * 0.08, h, i * 0.7))]),
+    uchuva: unirUV([tallo(0.9, 0.012), ...[0.2, 0.45, 0.7, 0.9].map((h, i) => roseta(6, 0.2, 0.16, 1.2, h, i * 0.5))]),
+    mora: unirUV([...[0, 1.2, 2.4, 3.6, 4.8].map(a => new THREE.TorusGeometry(0.55, 0.008, 3, 10, Math.PI * 0.8).rotateY(a).translate(0, 0.05, 0)), ...[0.35, 0.6, 0.85].map((h, i) => roseta(8, 0.13, 0.12, 1.35, h, i))]),
+    maiz: unirUV([tallo(2.1, 0.018), ...[0.3, 0.6, 0.9, 1.2, 1.5, 1.8].map((h, i) => roseta(2, 0.75, 0.09, 0.9, h, i * 1.1)), roseta(6, 0.25, 0.02, 0.35, 2.05)]),
+    ahuyama: unirUV([roseta(7, 0.42, 0.4, 1.3, 0.02), roseta(5, 0.3, 0.3, 1.05, 0.12, 0.6)]),
+    lavanda: unirUV([roseta(14, 0.22, 0.03, 0.45)]), aromatica: unirUV([roseta(9, 0.16, 0.12, 0.7), roseta(7, 0.12, 0.1, 0.5, 0.1, 0.4)])
   };
-  const HOJA = { lechuga: 'rizada', morada: 'rizada', repollo: 'lisa', acelga: 'lisa', cilantro: 'fina', cebolla: 'tira', fresa: 'trebol', flores: 'flor' };
-  const MATP = {}; for (const k in HOJA) MATP[k] = new THREE.MeshStandardMaterial({ color: '#ffffff', map: texHoja(HOJA[k]), alphaTest: 0.45, side: THREE.DoubleSide, roughness: 0.72 });
-  // bancales de tablas, tierra con surcos y paja, caminos de viruta
+  const HOJA = { lechuga: 'rizada', morada: 'rizada', repollo: 'lisa', acelga: 'lisa', cilantro: 'fina', cebolla: 'tira', fresa: 'trebol', flores: 'flor', tomate: 'fina', uchuva: 'lisa', mora: 'trebol', maiz: 'larga', ahuyama: 'lisa', lavanda: 'tira', aromatica: 'fina' };
+  const FRUTO = { // fruta real de cada planta, como malla aparte con su color
+    fresa: fruto(anillo(5, 0.16, 0.02, 0.06), () => new THREE.ConeGeometry(0.022, 0.04, 7).rotateX(Math.PI)),
+    tomate: fruto(anillo(9, 0.2, 0.35, 1.25), () => new THREE.SphereGeometry(0.038, 8, 6).scale(1, 0.88, 1)),
+    uchuva: fruto(anillo(10, 0.22, 0.25, 0.85), () => new THREE.SphereGeometry(0.02, 7, 5)),
+    mora: fruto(anillo(14, 0.4, 0.3, 0.8), () => new THREE.SphereGeometry(0.016, 6, 4).scale(1, 1.25, 1)),
+    maiz: fruto([[0.05, 1.0, 0], [-0.04, 1.25, 0.03]], () => new THREE.SphereGeometry(1, 8, 6).scale(0.035, 0.11, 0.035).rotateZ(0.35)),
+    ahuyama: fruto([[0.25, 0, 0.1]], ahuyamaG),
+    lavanda: fruto(anillo(9, 0.1, 0.25, 0.32), () => new THREE.CylinderGeometry(0.012, 0.006, 0.09, 5))
+  };
+  const TXH = {}; for (const k in HOJA) TXH[HOJA[k]] = TXH[HOJA[k]] || texHoja(HOJA[k]);
+  const MATP = {}; for (const k in HOJA) MATP[k] = new THREE.MeshStandardMaterial({ color: '#ffffff', map: TXH[HOJA[k]], alphaTest: 0.45, side: THREE.DoubleSide, roughness: 0.72 });
+  // bancales de tablas, tierra con surcos y paja, caminos de viruta y de grava
   const lienzoT = (w, h, f, rx = 1, ry = 1) => { const cv = document.createElement('canvas'); cv.width = w; cv.height = h; f(cv.getContext('2d'), w, h); const tx = new THREE.CanvasTexture(cv); tx.colorSpace = THREE.SRGBColorSpace; tx.wrapS = tx.wrapT = THREE.RepeatWrapping; tx.repeat.set(rx, ry); tx.anisotropy = 8; return tx; };
   const texTabla = lienzoT(128, 512, (g, w, h) => { g.fillStyle = '#7d5a3a'; g.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 64) { g.fillStyle = `rgb(${110 + Math.random() * 30},${78 + Math.random() * 20},${48 + Math.random() * 15})`; g.fillRect(0, y + 2, w, 60); g.fillStyle = 'rgba(40,25,12,.55)'; g.fillRect(0, y, w, 3); }
     for (let i = 0; i < 260; i++) { g.strokeStyle = `rgba(${60 + Math.random() * 30},${40 + Math.random() * 20},20,.35)`; g.lineWidth = 1; const y = Math.random() * h; g.beginPath(); g.moveTo(0, y); g.bezierCurveTo(40, y + 3, 90, y - 3, w, y + (Math.random() - 0.5) * 4); g.stroke(); } }, 1, 1);
-  const texViruta = lienzoT(256, 256, (g, w, h) => { g.fillStyle = '#8a6a48'; g.fillRect(0, 0, w, h); for (let i = 0; i < 3000; i++) { const v = Math.random(); g.fillStyle = v < 0.4 ? 'rgba(70,48,28,.65)' : v < 0.8 ? 'rgba(170,135,92,.6)' : 'rgba(205,180,140,.6)'; g.save(); g.translate(Math.random() * w, Math.random() * h); g.rotate(Math.random() * 3); g.fillRect(0, 0, 3 + Math.random() * 7, 1.2 + Math.random() * 1.8); g.restore(); } }, 5, 5);  {
-    const o = new THREE.Object3D(), N = CEL.length * 8, cuenta = {}; for (const c of CEL) for (const k of c.cul) cuenta[k] = (cuenta[k] || 0) + 1;
-    const piso = new THREE.InstancedMesh(new THREE.PlaneGeometry(15, 15).rotateX(-Math.PI / 2), mStd('#ffffff', { map: texViruta, roughness: 1 }), CEL.length);
+  const texViruta = lienzoT(256, 256, (g, w, h) => { g.fillStyle = '#8a6a48'; g.fillRect(0, 0, w, h); for (let i = 0; i < 3000; i++) { const v = Math.random(); g.fillStyle = v < 0.4 ? 'rgba(70,48,28,.65)' : v < 0.8 ? 'rgba(170,135,92,.6)' : 'rgba(205,180,140,.6)'; g.save(); g.translate(Math.random() * w, Math.random() * h); g.rotate(Math.random() * 3); g.fillRect(0, 0, 3 + Math.random() * 7, 1.2 + Math.random() * 1.8); g.restore(); } }, 5, 5);
+  const texGrava = lienzoT(256, 256, (g, w, h) => { g.fillStyle = '#9a9283'; g.fillRect(0, 0, w, h); for (let i = 0; i < 5000; i++) { const v = 115 + Math.random() * 80; g.fillStyle = `rgba(${v},${v - 6},${v - 16},.8)`; g.beginPath(); g.ellipse(Math.random() * w, Math.random() * h, 1 + Math.random() * 2.2, 1 + Math.random() * 1.6, Math.random() * 3, 0, 7); g.fill(); } }, 1, 1);
+  const o3 = new THREE.Object3D();
+  const instancias = (geo, mat, L, f, sombra = !MOV) => { const im = new THREE.InstancedMesh(geo, mat, Math.max(1, L.length)); im.count = L.length; L.forEach((x, k) => { f(x, o3); o3.updateMatrix(); im.setMatrixAt(k, o3.matrix); o3.scale.set(1, 1, 1); o3.rotation.set(0, 0, 0); }); im.castShadow = sombra; im.receiveShadow = true; grupo.add(im); return im; };
+  const enCel = (c, u, v, y, o, giro = 0) => { const q = loc(c.c, u, v); o.position.set(q[0], y, q[1]); o.rotation.set(0, -ANG + giro, 0); };
+  {
+    const o = new THREE.Object3D(), N = CAMAS_CEL.length * 8, cuenta = {}; for (const c of CAMAS_CEL) for (const k of c.cul) cuenta[k] = (cuenta[k] || 0) + 1;
+    // piso: viruta en las huertas, grava en las aulas
+    const vir = CEL.filter(c => c.tipo !== 'aula' && c.tipo !== 'espiral' && c.tipo !== 'arboles'), gra = CEL.filter(c => c.tipo === 'aula' || c.tipo === 'espiral');
+    instancias(new THREE.PlaneGeometry(14.2, 14.2).rotateX(-Math.PI / 2), mStd('#ffffff', { map: texViruta, roughness: 1 }), vir, (c, o) => enCel(c, 0, 0, 0.22, o), false);
+    const tg = texGrava.clone(); tg.repeat.set(4, 4); tg.needsUpdate = true;
+    instancias(new THREE.PlaneGeometry(14.2, 14.2).rotateX(-Math.PI / 2), mStd('#ffffff', { map: tg, roughness: 1 }), gra, (c, o) => enCel(c, 0, 0, 0.22, o), false);
     const cama = new THREE.InstancedMesh(new THREE.BoxGeometry(1.25, 0.4, 10), mStd('#ffffff', { map: texTabla, roughness: 0.9 }), N);
     const riego = new THREE.InstancedMesh(new THREE.BoxGeometry(0.035, 0.035, 10), mStd('#111827', { roughness: 0.6 }), N);
     const tops = {}, idx = {}; for (const k in cuenta) { tops[k] = new THREE.InstancedMesh(new THREE.PlaneGeometry(1.1, 9.7).rotateX(-Math.PI / 2), mStd('#ffffff', { map: texCama(k), roughness: 0.9 }), cuenta[k]); idx[k] = 0; }
     let n = 0;
-    CEL.forEach((c, ci) => {
-      o.position.set(c.c[0], 0.22, c.c[1]); o.rotation.set(0, -ANG, 0); o.updateMatrix(); piso.setMatrixAt(ci, o.matrix); c.camas = [];
-      for (let b = 0; b < 8; b++) { const q = loc(c.c, -5.6 + b * 1.6, 0); o.position.set(q[0], 0.45, q[1]); o.updateMatrix(); cama.setMatrixAt(n, o.matrix);
+    CAMAS_CEL.forEach((c) => { c.camas = [];
+      for (let b = 0; b < 8; b++) { const q = loc(c.c, -5.6 + b * 1.6, 0); o.position.set(q[0], 0.45, q[1]); o.rotation.set(0, -ANG, 0); o.updateMatrix(); cama.setMatrixAt(n, o.matrix);
         const k = c.cul[b]; o.position.y = 0.66; o.updateMatrix(); tops[k].setMatrixAt(idx[k]++, o.matrix);
         o.position.y = 0.7; o.updateMatrix(); riego.setMatrixAt(n, o.matrix); c.camas.push({ q, k }); n++; }
     });
-    piso.receiveShadow = cama.receiveShadow = true; cama.castShadow = !MOV; grupo.add(piso, cama, riego); Object.values(tops).forEach(t => { t.receiveShadow = true; grupo.add(t); });
+    cama.receiveShadow = true; cama.castShadow = !MOV; grupo.add(cama, riego); Object.values(tops).forEach(t => { t.receiveShadow = true; grupo.add(t); });
+    // invernaderos de túnel doble (tomate y módulos A-B)
     const INV = CEL.filter(c => c.inv);
     if (INV.length) {
       const piel = [], cost = [];
@@ -227,32 +285,83 @@ export function crearDistritoBavaria({ T3, lw, D, ARB = [], SX = null }) {
       for (const x of [-7.4, 0, 7.4]) for (let z = -7.4; z <= 7.45; z += 2.96) { const p = new THREE.BoxGeometry(0.1, 2.2, 0.1); p.translate(x, 1.1, z); cost.push(p); }
       const lados = []; for (const x of [-7.4, 7.4]) { const p = new THREE.PlaneGeometry(14.8, 2.2).rotateY(Math.PI / 2); p.translate(x, 1.1, 0); lados.push(p); } for (const z of [-7.4, 7.4]) { const p = new THREE.PlaneGeometry(14.8, 2.2); p.translate(0, 1.1, z); lados.push(p); }
       const gP = unir([...piel, ...lados]), gC = unir(cost);
-      const mP = new THREE.MeshStandardMaterial({ color: '#f1f7f4', roughness: 0.12, metalness: 0.05, transparent: true, opacity: 0.22, side: THREE.DoubleSide, depthWrite: false });
+      const mP = new THREE.MeshStandardMaterial({ color: '#f1f7f4', roughness: 0.12, metalness: 0.05, transparent: true, opacity: 0.2, side: THREE.DoubleSide, depthWrite: false });
       const iP = new THREE.InstancedMesh(gP, mP, INV.length), iC = new THREE.InstancedMesh(gC, mStd('#cbd2d6', { metalness: 0.6, roughness: 0.35 }), INV.length);
       INV.forEach((c, k) => { o.position.set(c.c[0], 0.22, c.c[1]); o.rotation.set(0, -ANG, 0); o.updateMatrix(); iP.setMatrixAt(k, o.matrix); iC.setMatrixAt(k, o.matrix); });
       iP.renderOrder = 7; iC.castShadow = !MOV; grupo.add(iC, iP);
+      // tutores y alambre del tomate
+      const tom = CEL.filter(c => c.tipo === 'tomate'), tut = [];
+      for (const c of tom) for (let b = 0; b < 8; b++) for (let s = -4.5; s <= 4.55; s += 1.5) tut.push([c, -5.6 + b * 1.6, s]);
+      instancias(new THREE.CylinderGeometry(0.015, 0.02, 1.8, 4).translate(0, 0.9, 0), mStd('#8a6a48'), tut, ([c, u, v], o) => enCel(c, u, v, 0.66, o), false);
+      instancias(new THREE.BoxGeometry(0.01, 0.01, 9.4), mStd('#9ca3af', { metalness: 0.6 }), tom.flatMap(c => Array.from({ length: 8 }, (_, b) => [c, -5.6 + b * 1.6])), ([c, u], o) => enCel(c, u, 0, 2.3, o), false);
     }
-    { const bordes = CEL.filter((c, k) => !c.doc && k % 23 === 5), cas = new THREE.InstancedMesh(new THREE.BoxGeometry(3, 2.6, 2.4).translate(0, 1.5, 0), mStd('#8d6e4f'), bordes.length), tan = new THREE.InstancedMesh(new THREE.CylinderGeometry(1, 1, 2.2, 16).translate(0, 1.3, 0), mStd('#1f2937', { roughness: 0.5 }), bordes.length);
+    // aula al aire libre: tablero didáctico con techito, bancas de tronco y mesa de trabajo
+    const AU = CEL.filter(c => c.tipo === 'aula'), banc = [], mad = mStd('#8a6a48', { map: texTabla, roughness: 0.9 });
+    for (const c of AU) for (let f = 0; f < 3; f++) for (let s = -1; s <= 1; s++) banc.push([c, -1 + f * 2.4, s * 3.6]);
+    instancias(new THREE.BoxGeometry(0.45, 0.45, 2.8).translate(0, 0.45, 0), mad, banc, ([c, u, v], o) => enCel(c, u, v, 0.22, o));
+    instancias(new THREE.BoxGeometry(0.12, 2.4, 0.12).translate(0, 1.2, 0), mStd('#5b4636'), AU.flatMap(c => [[c, -4.6, -1.5], [c, -4.6, 1.5]]), ([c, u, v], o) => enCel(c, u, v, 0.22, o));
+    instancias(new THREE.BoxGeometry(0.06, 1.2, 3.1).translate(0, 1.55, 0), mStd('#244236', { roughness: 0.6 }), AU, (c, o) => enCel(c, -4.55, 0, 0.22, o));
+    instancias(new THREE.BoxGeometry(0.9, 0.05, 3.6).translate(0, 2.5, 0), mStd('#56615a', { metalness: 0.3, roughness: 0.5 }), AU, (c, o) => enCel(c, -4.5, 0, 0.22, o));
+    instancias(new THREE.BoxGeometry(1.4, 0.08, 2.6).translate(0, 0.9, 0), mad, AU, (c, o) => enCel(c, 4.6, 0, 0.22, o));
+    // letrero didáctico en la esquina de cada módulo
+    const LET = CEL.filter(c => c.tipo !== 'aula');
+    instancias(new THREE.BoxGeometry(0.06, 1.0, 0.06).translate(0, 0.5, 0), mStd('#5b4636'), LET, (c, o) => enCel(c, -7.2, -7.2, 0.22, o), false);
+    instancias(new THREE.BoxGeometry(0.04, 0.42, 0.62).translate(0, 1.1, 0).rotateZ(-0.35), mStd('#e7e1d2', { roughness: 0.7 }), LET, (c, o) => enCel(c, -7.2, -7.2, 0.22, o), false);
+    // caminos de grava: del aula de cada huerta a su pasaje
+    for (const Z of ZONAS) { const a = Z.aula, d = a.dp; if (!d[1] || d[0] < 6) continue; const q0 = a.c, q1 = d[1], L = d[0] - 6, dx = (q1[0] - q0[0]) / d[0], dz = (q1[1] - q0[1]) / d[0];
+      const g = new THREE.PlaneGeometry(2.4, L).rotateX(-Math.PI / 2); const uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setY(i, uv.getY(i) * L / 2.4); g.attributes.uv.needsUpdate = true;
+      const m = new THREE.Mesh(g, mStd('#ffffff', { map: texGrava, roughness: 1 })); m.position.set(q0[0] + dx * (6 + L / 2), 0.24, q0[1] + dz * (6 + L / 2)); m.rotation.y = Math.atan2(dx, dz); m.receiveShadow = true; grupo.add(m); }
+    // árboles frutales: tomate de árbol (fruto rojo) y feijoa, 3 x 3 por celda con su plato de viruta
+    const ARBF = []; CEL.filter(c => c.tipo === 'arboles').forEach((c, ci) => { for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) ARBF.push([c, a * 4.6, b * 4.6, (a + b + ci) % 2 === 0 ? 'tomarbol' : 'feijoa', ((a * 3 + b * 7 + ci) % 5) * 0.1]); });
+    if (ARBF.length) {
+      const copa = []; let s2 = 3; const r2 = () => (s2 = (s2 * 16807) % 2147483647) / 2147483647;
+      for (let i = 0; i < 260; i++) { const th = r2() * 6.283, ph = Math.acos(2 * r2() - 1), rr = 0.55 + r2() * 0.5, p = new THREE.PlaneGeometry(0.27, 0.36); p.rotateX(-0.6 - r2()); p.rotateY(r2() * 6.28); p.translate(Math.sin(ph) * Math.cos(th) * rr * 1.1, 2.3 + Math.cos(ph) * rr * 0.75, Math.sin(ph) * Math.sin(th) * rr * 1.1); copa.push(p); }
+      const gCopa = unirUV(copa), gTronco = unir([new THREE.CylinderGeometry(0.05, 0.08, 1.9, 6).translate(0, 0.95, 0), ...[0, 2.1, 4.2].map(a => new THREE.CylinderGeometry(0.025, 0.04, 0.9, 5).translate(0, 0.45, 0).rotateZ(0.55).rotateY(a).translate(0, 1.6, 0))]);
+      const FR = anillo(16, 0.95, 1.65, 2.25).map(p => [p[0] * 1.05, p[1], p[2] * 1.05]);
+      const mH = MATP.uchuva.clone(); mH.color.set('#4e7a34');
+      instancias(gTronco, mStd('#6b5340', { roughness: 0.95 }), ARBF, ([c, u, v, , e], o) => { enCel(c, u, v, 0.22, o, e * 9); o.scale.setScalar(0.9 + e); });
+      instancias(gCopa, mH, ARBF, ([c, u, v, , e], o) => { enCel(c, u, v, 0.22, o, e * 9); o.scale.setScalar(0.9 + e); });
+      for (const [k, col, f] of [['tomarbol', '#d2452b', () => new THREE.SphereGeometry(1, 8, 6).scale(0.055, 0.085, 0.055)], ['feijoa', '#6f8f3a', () => new THREE.SphereGeometry(1, 8, 6).scale(0.05, 0.075, 0.05)]]) {
+        const L = ARBF.filter(a => a[3] === k); instancias(fruto(FR, f), mStd(col, { roughness: 0.45 }), L, ([c, u, v, , e], o) => { enCel(c, u, v, 0.22, o, e * 9); o.scale.setScalar(0.9 + e); }, false); }
+      instancias(new THREE.CircleGeometry(1.3, 20).rotateX(-Math.PI / 2), mStd('#ffffff', { map: texViruta, roughness: 1 }), ARBF, ([c, u, v], o) => enCel(c, u, v, 0.25, o), false);
+      instancias(new THREE.PlaneGeometry(14.2, 14.2).rotateX(-Math.PI / 2), mStd('#7f9a58', { roughness: 1 }), CEL.filter(c => c.tipo === 'arboles'), (c, o) => enCel(c, 0, 0, 0.22, o), false);
+    }
+    // espirales de aromáticas: muro de piedra que sube hacia el centro, tierra en cono y hierbas en la rampa
+    const ESP = CEL.filter(c => c.tipo === 'espiral');
+    if (ESP.length) {
+      const pie = [], hier = []; const TM = 2.6 * Math.PI * 2;
+      for (const c of ESP) for (let t = 0.6; t < TM; t += 0.07) { const r = 4.7 - (t / TM) * 4.0, h = 0.3 + (t / TM) * 1.1, u = Math.cos(t) * r, v = Math.sin(t) * r; for (let y = 0; y < h; y += 0.2) pie.push([c, u, v, y, t]);
+        if ((t * 10 | 0) % 3 === 0) { const ri = r - 0.55, k = ['aromatica', 'lavanda', 'aromatica', 'flores', 'cilantro'][(t * 7 | 0) % 5]; hier.push([c, Math.cos(t) * ri, Math.sin(t) * ri, h * 0.85, k, t]); } }
+      instancias(new THREE.DodecahedronGeometry(0.17, 0).scale(1.3, 0.75, 1), mStd('#a39a8c', { roughness: 0.95 }), pie, ([c, u, v, y, t], o) => { enCel(c, u, v, 0.32 + y, o, t * 3.1); });
+      instancias(new THREE.CylinderGeometry(0.5, 4.5, 1.15, 28).translate(0, 0.58, 0), mStd('#4a3527', { roughness: 1 }), ESP, (c, o) => enCel(c, 0, 0, 0.22, o), false);
+      for (const k of ['aromatica', 'lavanda', 'flores', 'cilantro']) { const L = hier.filter(h => h[4] === k), col = new THREE.Color(); if (!L.length) continue;
+        const im = instancias(GEO[k], MATP[k], L, ([c, u, v, y, , t], o) => { enCel(c, u, v, 0.3 + y, o, t * 5); o.scale.setScalar(1.3); }, false);
+        L.forEach(([, , , , , t], i) => im.setColorAt(i, col.set(CULT[k].pal ? CULT[k].pal[(t * 13 | 0) % CULT[k].pal.length] : CULT[k].c)));
+        if (FRUTO[k]) instancias(FRUTO[k], mStd(CULT[k].fr), L, ([c, u, v, y, , t], o) => { enCel(c, u, v, 0.3 + y, o, t * 5); o.scale.setScalar(1.3); }, false); }
+    }
+    { const bordes = CAMAS_CEL.filter((c, k) => !c.doc && k % 9 === 4), cas = new THREE.InstancedMesh(new THREE.BoxGeometry(3, 2.6, 2.4).translate(0, 1.5, 0), mStd('#8d6e4f'), Math.max(1, bordes.length)), tan = new THREE.InstancedMesh(new THREE.CylinderGeometry(1, 1, 2.2, 16).translate(0, 1.3, 0), mStd('#1f2937', { roughness: 0.5 }), Math.max(1, bordes.length));
+      cas.count = tan.count = bordes.length;
       bordes.forEach((c, k) => { const q = loc(c.c, 6.4, 6.2); o.position.set(q[0], 0.2, q[1]); o.rotation.set(0, -ANG, 0); o.updateMatrix(); cas.setMatrixAt(k, o.matrix); const r = loc(c.c, 3, 6.6); o.position.set(r[0], 0.2, r[1]); o.updateMatrix(); tan.setMatrixAt(k, o.matrix); });
       grupo.add(cas, tan); }
-    grupo.add(lineas(rect(C_CAMPO, 30, 30), 0.75, '#4ade80', 0.95));
+    grupo.add(lineas(rect(C_DOC, 30, 30), 0.75, '#4ade80', 0.95));
   }
   const PLANTAS = (() => {
-    const CAP = MOV ? 6000 : 22000, ims = {}, o = new THREE.Object3D(), cc = new THREE.Color();
-    for (const k in GEO) { ims[k] = new THREE.InstancedMesh(GEO[k], MATP[k] || new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.75 }), Math.round(CAP / 3)); ims[k].castShadow = false; ims[k].count = 0; ims[k].receiveShadow = true; ims[k].frustumCulled = false; grupo.add(ims[k]); }
+    const CAP = MOV ? 6000 : 22000, ims = {}, frs = {}, o = new THREE.Object3D(), cc = new THREE.Color();
+    for (const k in GEO) { const n = Math.round(CAP / (['maiz', 'tomate', 'ahuyama', 'uchuva', 'mora'].includes(k) ? 6 : 3)); ims[k] = new THREE.InstancedMesh(GEO[k], MATP[k] || new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.75 }), n); ims[k].castShadow = false; ims[k].count = 0; ims[k].receiveShadow = true; ims[k].frustumCulled = false; grupo.add(ims[k]);
+      if (FRUTO[k]) { frs[k] = new THREE.InstancedMesh(FRUTO[k], mStd(CULT[k].fr, { roughness: 0.4 }), n); frs[k].count = 0; frs[k].frustumCulled = false; grupo.add(frs[k]); } }
     let ux = 1e9, uz = 1e9;
     return function actualizar(forzar) {
-      const t = T3.orbit.target, cam = T3.camera.position; if (cam.y > 420) { for (const k in ims) ims[k].count = 0; ux = 1e9; return; }
+      const t = T3.orbit.target, cam = T3.camera.position; if (cam.y > 420) { for (const k in ims) ims[k].count = 0; for (const k in frs) frs[k].count = 0; ux = 1e9; return; }
       if (!forzar && Math.hypot(t.x - ux, t.z - uz) < 30) return; ux = t.x; uz = t.z;
-      const R = Math.min(170, 60 + cam.y * 0.6), cerca = CEL.filter(c => Math.hypot(c.c[0] - t.x, c.c[1] - t.z) < R).sort((a, b) => Math.hypot(a.c[0] - t.x, a.c[1] - t.z) - Math.hypot(b.c[0] - t.x, b.c[1] - t.z));
+      const R = Math.min(170, 60 + cam.y * 0.6), cerca = CAMAS_CEL.filter(c => Math.hypot(c.c[0] - t.x, c.c[1] - t.z) < R).sort((a, b) => Math.hypot(a.c[0] - t.x, a.c[1] - t.z) - Math.hypot(b.c[0] - t.x, b.c[1] - t.z));
       const n = {}; for (const k in ims) n[k] = 0;
-      for (const c of cerca) for (const cm of c.camas) { const C = CULT[cm.k], im = ims[cm.k]; if (!C || !im) continue;
-        const pas = C.paso * (MOV ? 1.6 : 1), fil = C.fil, cap = im.instanceMatrix.count;
+      for (const c of cerca) for (const cm of c.camas || []) { const C = CULT[cm.k], im = ims[cm.k]; if (!C || !im) continue;
+        const pas = C.paso * (MOV ? 1.6 : 1), fil = C.fil, cap = im.instanceMatrix.count, fr = frs[cm.k];
         for (let f = 0; f < fil; f++) { const du = (f + 0.5) / fil * 1.1 - 0.55; for (let s = -4.8; s < 4.85 && n[cm.k] < cap; s += pas) {
           const h = Math.sin((cm.q[0] + s) * 12.9898 + (cm.q[1] + f) * 78.233) * 43758.5453, r = h - Math.floor(h), q = loc(cm.q, du + (r - 0.5) * 0.04, s);
-          o.position.set(q[0], 0.86, q[1]); o.rotation.set(0, r * 6.28, 0); const e = 0.75 + r * 0.5; o.scale.set(e, e * (0.9 + r * 0.2), e); o.updateMatrix(); im.setMatrixAt(n[cm.k], o.matrix);
+          o.position.set(q[0], 0.86, q[1]); o.rotation.set(0, r * 6.28, 0); const e = 0.75 + r * 0.5; o.scale.set(e, e * (0.9 + r * 0.2), e); o.updateMatrix(); im.setMatrixAt(n[cm.k], o.matrix); if (fr) fr.setMatrixAt(n[cm.k], o.matrix);
           im.setColorAt(n[cm.k], cc.set(C.pal ? C.pal[Math.floor(r * 997) % C.pal.length] : (r < 0.5 ? C.c : C.c2)).multiplyScalar(0.85 + r * 0.3)); n[cm.k]++; } } }
-      for (const k in ims) { ims[k].count = n[k]; ims[k].instanceMatrix.needsUpdate = true; if (ims[k].instanceColor) ims[k].instanceColor.needsUpdate = true; }
+      for (const k in ims) { ims[k].count = n[k]; ims[k].instanceMatrix.needsUpdate = true; if (ims[k].instanceColor) ims[k].instanceColor.needsUpdate = true; if (frs[k]) { frs[k].count = n[k]; frs[k].instanceMatrix.needsUpdate = true; } }
     };
   })();
 
@@ -405,7 +514,7 @@ export function crearDistritoBavaria({ T3, lw, D, ARB = [], SX = null }) {
   const COSECHA = [
     { t: 'Sale el grupo del aula', x: 'Un grupo de 24 recibe el ensayo del día en el instituto y sale por la cara interior de la L.', k: 'inst', p: [[9185, 2990]] },
     { t: 'Pasa por el hub de biotecnología', x: 'Biotecnología vegetal prepara el registro del ensayo: camas de tratamiento y de control.', k: 'bio', p: [[9150, 3080], [9200, 3215], [9300, 3200]] },
-    { t: 'Cosecha en el invernadero A', x: 'Los abejorros nativos ya polinizaron; el grupo recoge lechugas, pesa una caja y registra el lote.', k: 'campo', p: [[9370, 3180], [9440, 3140], [9478, 3085]] },
+    { t: 'Cosecha en el invernadero A', x: 'Los abejorros nativos ya polinizaron; el grupo recoge lechugas, pesa una caja y registra el lote.', k: 'campo', p: [[9370, 3180], [9440, 3140], [9505, 3042]] },
     { t: 'Poscosecha: sensor en el empaque', x: 'Se selecciona, se empaca y se prueba el indicador de humedad del centro de nanotecnología.', k: 'pos', p: [[9470, 3000], [9420, 2930]] },
     { t: 'Mercado: ¿se entiende la etiqueta?', x: 'Ciencias cognitivas observa si el comerciante entiende la información y qué decide con la caja.', k: 'mer', p: [[9360, 2930], [9300, 2938]] },
     { t: 'Lo que sobra, a compostaje', x: 'Las hojas descartadas van al compostaje; las lombrices las vuelven abono para las camas.', k: 'comp', p: [[9380, 2965], [9445, 3060], [9500, 3120], [9527, 3133]] },
@@ -540,8 +649,9 @@ body.bd-on #dock,body.bd-on #hid-red{display:none!important}
     fauna: () => `<div class="ind" style="margin-top:0">Cada módulo atrae fauna que <b style="color:#fff">trabaja para las huertas</b> (poliniza, controla plagas y roedores, hace suelo) y cada interacción se <b style="color:#fff">mide con tecnología</b> del distrito: es material de clase para los colegios y dato para los laboratorios.</div>` +
       INTER.map((I, i) => fila('F' + (i + 1), I.c, I.n, I.sp, `<b style="font-weight:500;color:#cfd5d9">${I.mod}.</b> ${I.serv}`, '', `data-f="${I.k}"`, I.tec)).join('') +
       `<p class="nota">La mirla (Turdus fuscater) se come la fruta y las semillas: por eso la fresa y los semilleros van bajo malla o invernadero. El bosque no se interviene.</p>`,
-    huerta: () => `<div class="ind" style="margin-top:0"><b style="color:#fff">${HA.toFixed(1).replace('.', ',')} ha de huerta</b> en todo el claro al oriente de la nave grande: ${CEL.length} módulos de 15 × 15 m con 8 camas cada uno (${fmt(CEL.length * 8)} camas). ${NFLOR} franjas de flores nativas para los polinizadores; una franja de cada cinco bajo invernadero multitúnel. Respetan el bosque, los pasajes y los módulos de fauna.</div>` +
-      `<div class="sub">Módulos docentes (centro)</div>` + MODS.map(m => fila(m.k, m.inv ? '#86efac' : '#4ade80', m.n, m.inv ? 'invernadero' : 'exterior', m.q, '', `data-mod="${m.k}"`)).join('') +
+    huerta: () => `<div class="ind" style="margin-top:0"><b style="color:#fff">${ZONAS.length} huertas de enseñanza · ${HA.toFixed(1).replace('.', ',')} ha</b> en los claros entre los parches de bosque: no se tala ningún árbol. Van paralelas a los edificios, lejos de ellos, y cada una se recorre desde su pasaje: un camino de grava lleva a su aula al aire libre (tablero y bancas) y de ahí a los módulos de 15 × 15 m, cada uno con su letrero.</div>` +
+      `<div class="sub">Huertas de enseñanza</div>` + ZONAS.map((z, i) => fila('H' + (i + 1), z.c, z.n, z.ha.toFixed(2).replace('.', ',') + ' ha', z.d, '', `data-zona="${z.k}"`)).join('') +
+      `<div class="sub">Módulos docentes (huerta de hortalizas)</div>` + MODS.map(m => fila(m.k, m.inv ? '#86efac' : '#4ade80', m.n, m.inv ? 'invernadero' : 'exterior', m.q, '', `data-mod="${m.k}"`)).join('') +
       `<div class="ind">Los 300 m² de lechuga docente podrían entregar <b style="color:#fff">unas 90–200 unidades de 250 g por semana</b> (siembra escalonada y 15 % de merma supuesta). La cifra se comprueba pesando cosechas.</div>`,
     ciclo: () => PROG.filter(p => ['comp', 'sol'].includes(p.k)).map(p => fila(p.k === 'sol' ? '☀' : '♻', p.c, p.n, p.a, p.d, p.x, `data-k="${p.k}"`)).join('') +
       `<div class="sub">Compostaje paso a paso</div>` + ['Separación: en cultivo, poscosecha y mercado se recogen aparte los restos vegetales aptos.', 'Pesaje: se registran los kilos de cada actividad.', 'Proceso: mezcla con material seco; temperatura, humedad y manejo por lote.', 'Maduración y destino: primero jardinería demostrativa; en camas alimentarias solo con controles de calidad.', 'Ajuste: cuatro semanas pesando entradas para saber si alcanzan las tres composteras.']
@@ -559,11 +669,11 @@ body.bd-on #dock,body.bd-on #hid-red{display:none!important}
   let sxObj = 1, focoFauna = null;
   const pintar = () => { cuerpo.innerHTML = TABS[tab](); pan.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.t === tab))); cuerpo.scrollTop = 0; verGrupoEtq(); };
   pan.querySelector('.tabs').onclick = (e) => { const b = e.target.closest('[data-t]'); if (!b) return; tab = b.dataset.t; pintar(); focoFauna = null; resaltar(null);
-    if (tab === 'sx') volar(...vistaSx()); else if (tab === 'fauna') volarA(C_CAMPO, 260); else if (tab === 'huerta') volarA(C_CAMPO, 90); else if (tab === 'ciclo') enfocar('comp', true); else general(); };
+    if (tab === 'sx') volar(...vistaSx()); else if (tab === 'fauna') volarA(C_CAMPO, 260); else if (tab === 'huerta') volarA(C_DOC, 260); else if (tab === 'ciclo') enfocar('comp', true); else general(); };
   const clicFila = (e) => { const sw = e.target.closest('[data-sx]'); if (sw) { sxObj = +sw.dataset.sx; cuerpo.querySelectorAll('[data-sx]').forEach(b => b.setAttribute('aria-pressed', String(b === sw))); return; }
     const it = e.target.closest('.it'); if (!it) return; cuerpo.querySelectorAll('.it.act').forEach(x => x !== it && x.classList.remove('act')); it.classList.toggle('act');
     if (it.dataset.k) enfocar(it.dataset.k, true); else if (it.dataset.f) enfocarFauna(it.dataset.f, true); else if (it.dataset.ret) { const r = RET.find(q => q.k === it.dataset.ret); volarA(r.c, 90); }
-    else if (it.dataset.mod) { const m = MODS.find(q => q.k === it.dataset.mod); volarA(loc(C_CAMPO, m.u, m.v), 60); } else if (it.dataset.acc) volarA(ACC.find(a => a.k === it.dataset.acc).p, 160); };
+    else if (it.dataset.mod) { const m = MODS.find(q => q.k === it.dataset.mod); volarA(loc(C_CAMPO, m.u, m.v), 60); } else if (it.dataset.zona) { const z = ZONAS.find(q => q.k === it.dataset.zona); volarA(z.c, 120); } else if (it.dataset.acc) volarA(ACC.find(a => a.k === it.dataset.acc).p, 160); };
   cuerpo.addEventListener('click', clicFila); cuerpo.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); clicFila(e); } });
   pan.querySelector('.cerrar').onclick = (e) => { e.stopPropagation(); window.dispatchEvent(new CustomEvent('bav-cerrar')); };
   pan.querySelector('header').addEventListener('click', () => { if (innerWidth < 760) pan.classList.toggle('min'); });
