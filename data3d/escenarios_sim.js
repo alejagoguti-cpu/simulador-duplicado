@@ -75,7 +75,12 @@ export async function iniciarEscenariosSim({ T3, cj }) {
 #esim label input[type=range]{grid-column:1/-1;width:100%;accent-color:#e2a55b}#esim .chk label{display:flex;gap:6px;align-items:center;margin:5px 0}#esim .chk input{accent-color:#e2a55b}
 #esim .nota{color:#8d969b;font-size:10.5px;margin:6px 0 0}#esim .ir{all:unset;cursor:pointer;display:block;text-align:center;margin-top:10px;padding:8px;border-radius:9px;background:rgba(255,255,255,.07);font-weight:500}
 #esim .ir:hover{background:rgba(255,255,255,.12)}
-#esim.min .cuerpo{display:none}#esim.min{min-height:0}
+#esim.min .cuerpo,#esim.min .exp{display:none}#esim.min{min-height:0}
+#esim .exp{margin:0 14px 8px;font-size:11px;line-height:1.45;color:#c3cace}
+#esim li button{all:unset;cursor:pointer;grid-column:1/-1;justify-self:start;margin-top:4px;font-size:10.5px;font-weight:600;color:#f2c995}#esim li button:hover{text-decoration:underline}#esim li button:focus-visible{outline:2px solid #fff;outline-offset:2px}
+#esim .aviso{margin:6px 12px 0;padding:8px 10px;border-radius:10px;background:rgba(226,165,91,.14);border:1px solid rgba(226,165,91,.35);font-size:11px;line-height:1.4;color:#f3e3cc;display:flex;gap:8px;align-items:center}
+#esim .aviso[hidden]{display:none}#esim .aviso span{flex:1}#esim .aviso button{all:unset;cursor:pointer;font-weight:600;color:#fff;padding:4px 8px;border-radius:7px;background:rgba(255,255,255,.12);white-space:nowrap}
+#esim .tl .yr{font-size:10px;color:#949da3;display:block;text-align:right}
 body.tb-abierto #esim{display:none}
 @media (max-width:760px){#esim{left:8px;right:8px;width:auto;top:146px;bottom:auto;max-height:40vh}#esim .cab{padding:8px 10px 6px 12px}}`;
   document.head.appendChild(css);
@@ -88,10 +93,11 @@ body.tb-abierto #esim{display:none}
   const pct = (v) => fmt(v * 100) + ' %';
   const FMT = { alcance: pct, auto: pct, frac: pct, sust: pct, precio: (v) => '$' + fmt(v), zona: fmtK, reac: (v) => fmt(v, 2), arboles: (v) => fmt(v, 2), luz: (v) => fmt(v, 2), rec: (v) => fmt(v, 3), dist: (v) => fmt(v, 1) };
   const el = document.createElement('section'); el.id = 'esim'; el.setAttribute('aria-label', 'Escenarios de la simulación');
-  el.innerHTML = `<div class="cab"><b>Escenarios · qué pasa en 10 años</b><button type="button" data-min aria-label="Plegar" title="Plegar">–</button></div>
+  el.innerHTML = `<div class="cab"><b>Escenarios · 10 años de la propuesta</b><button type="button" data-guia aria-label="Cómo se usa" title="Cómo se usa">?</button><button type="button" data-min aria-label="Plegar" title="Plegar">–</button></div>
+<p class="exp">Escoge un escenario y dale ▶: corren 10 años y el mapa cambia. Mueve las variables de abajo y mira qué pasa en el territorio.</p>
 <div class="seg" role="group" aria-label="Escenario"><button type="button" data-e="A"><b>A</b>Kennedy hoy</button><button type="button" data-e="B"><b>B</b>Nodo central</button><button type="button" data-e="C"><b>C</b>Clúster rotativo</button></div>
 <div class="tl"><button type="button" data-play aria-label="Correr 10 años">▶</button><input type="range" min="0" max="${SEM - 1}" value="${SIMST.t}" data-t aria-label="Semana de la simulación"><output data-año></output></div>
-<div class="cuerpo"><ul data-kpi></ul>
+<div class="aviso" data-aviso hidden></div><div class="cuerpo"><ul data-kpi></ul>
 <details><summary>Comida · huertas y Corabastos (SIM-01)</summary>
 ${slider(P1, 'rend', 'Rendimiento (kg/m²·año)', 1, 12, 1)}${slider(P1, 'alcance', 'Alcance sobre lotes y techos', 0.1, 1, 0.05, pct)}${slider(P1, 'auto', 'Autoconsumo', 0.1, 0.7, 0.05, pct)}
 ${slider(P1, 'precio', 'Precio de excedentes ($/kg)', 1500, 4500, 100, FMT.precio)}${slider(P1, 'acopio', 'Capacidad de acopio (kg/semana)', 2000, 40000, 1000)}${slider(P1, 'reac', 'Reacción de precio de la central', 0, 1, 0.05, FMT.reac)}
@@ -113,6 +119,20 @@ ${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, FMT.luz)}${slider(
   document.body.appendChild(el);
   const $ = (s) => el.querySelector(s);
   if (MOV) { el.classList.add('min'); $('[data-min]').textContent = '+'; } // en el celular empieza plegado (solo escenario y tiempo)
+
+  /* ---------------- «ver en el mapa»: vuela al lugar donde cambia y prende la capa que lo muestra ---------------- */
+  const volar = (c, alto, atras = 0.55) => { if (!T3.orbit) return; const o = T3.orbit, p0 = T3.camera.position.clone(), t0 = o.target.clone(), p1 = new THREE.Vector3(c[0] + alto * 0.2, alto, c[1] + alto * atras), t1 = new THREE.Vector3(c[0], 0, c[1]), ini = performance.now();
+    const f = () => { const k = Math.min(1, (performance.now() - ini) / 1500), e2 = k * k * (3 - 2 * k); T3.camera.position.lerpVectors(p0, p1, e2); o.target.lerpVectors(t0, t1, e2); o.update(); if (k < 1) requestAnimationFrame(f); }; f(); };
+  const capaFlujo = (on) => { const b = document.querySelector(`#gs-fc button[data-v="${on ? '1' : ''}"]`); if (b && !b.classList.contains('on')) b.click(); };
+  const LUGAR = {
+    huertas: { n: 'las huertas que se abren desde Bavaria', ir: () => { capaFlujo(false); volar([3500, 300], 1500, 0.7); } },
+    trafico: { n: 'el tráfico de la Av. Ciudad de Cali y Corabastos (capa de flujo de carros)', ir: () => { capaFlujo(true); const m = T3.alivio && T3.alivio.mid; volar(m || CORA, 900, 0.6); } },
+    compost: { n: 'el camino de los residuos orgánicos', ir: () => { capaFlujo(false); const e = esc(); volar(e === 'C' ? BAVC() : (EST[0] || BAV), e === 'C' ? 500 : 700, 0.6); } },
+    humedal: { n: 'las aves y el estado del Humedal El Burro', ir: () => { capaFlujo(false); volar(BURRO, 750, 0.6); } }
+  };
+  const GRUPO = { 1: ['huertas', 'trafico'], 2: ['compost'], 3: ['humedal'] };
+  let tAviso = 0;
+  const avisar2 = (txt, lugar) => { const d = $('[data-aviso]'); d.hidden = false; d.innerHTML = `<span>${txt}: mira ${LUGAR[lugar].n}.</span><button type="button" data-ir="${lugar}">Ver en el mapa</button>`; clearTimeout(tAviso); tAviso = setTimeout(() => { d.hidden = true; }, 9000); };
 
   /* ---------------- aplicar al territorio ---------------- */
   let ultHB = -1;
@@ -142,7 +162,7 @@ ${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, FMT.luz)}${slider(
     ET.comp.innerHTML = e === 'B' ? `<b><i style="background:#c8a26a"></i>Estaciones de compost (${EST.length})</b>Ocupación ${fmt(s2.ocup[t] * 100)} %` : e === 'C' ? `<b><i style="background:#e2a55b"></i>Planta de compost · Bavaria</b>${fmt(s2.desv[t] / 1000, 1)} t/semana · ${fmt(s2.hongos[t])} kg de hongos` : '';
     ET.dj.innerHTML = `<b><i style="background:#9aa1a6"></i>Al relleno Doña Juana</b>${fmt(s2.relleno[t] / 1000, 1)} t/semana · ${fmtK(s2.km[t])} km de camión`;
     // panel
-    $('[data-t]').value = t; $('[data-año]').textContent = `año ${año}`;
+    $('[data-t]').value = t; $('[data-año]').innerHTML = `${2026 + año}<span class="yr">año ${año} de 10</span>`;
     const d = (v, a, menos, f2) => { if (e === 'A' || !isFinite(a) || Math.abs(v - a) < 1e-9) return ''; const mej = menos ? v < a : v > a; return ` · <em style="color:${mej ? '#8fd18a' : '#ff8a80'}">${v >= a ? '+' : '−'}${f2(Math.abs(v - a))} frente a hoy</em>`; };
     const sA2 = R.S2.A;
     $('[data-kpi]').innerHTML = [
@@ -151,7 +171,7 @@ ${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, FMT.luz)}${slider(
       ['Dependencia de Corabastos', fmt(dep * 100) + ' %', `menos tráfico en la Av. Ciudad de Cali${d(dep * 100, A.dep[t] * 100, true, (v) => fmt(v) + ' pts')}`],
       ['Orgánicos que vuelven a la tierra', fmt(s2.pct[t], 1) + ' %', `${fmt(s2.relleno[t] / 1000, 1)} t/semana siguen al relleno${d(s2.pct[t], sA2.pct[t], false, (v) => fmt(v, 1) + ' pts')}`],
       ['Aves en el borde del humedal', fmt(s3.aves[t]), `integridad del humedal ${fmt(hum * 100)} %${d(s3.aves[t], s3A.aves[t], false, fmt)}`]
-    ].map(([n, v, s]) => `<li><span>${n}</span><strong>${v}</strong><small>${s}</small></li>`).join('');
+    ].map(([n, v, s2], i) => `<li><span>${n}</span><strong>${v}</strong><small>${s2}</small><button type="button" data-ir="${['huertas', 'huertas', 'trafico', 'compost', 'humedal'][i]}">Ver en el mapa →</button></li>`).join('');
     el.querySelectorAll('.seg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.e === e)));
   }
 
@@ -162,6 +182,8 @@ ${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, FMT.luz)}${slider(
   const arrancar = () => { if (RMQ) { SIMST.t = SEM - 1; aplicar(); return; } if (SIMST.t >= SEM - 1) SIMST.t = 0; prev = performance.now(); $('[data-play]').textContent = '❚❚'; play = requestAnimationFrame(paso); };
   el.addEventListener('click', (ev) => {
     const b = ev.target.closest('button'); if (!b) return;
+    if (b.dataset.ir) { LUGAR[b.dataset.ir].ir(); return; }
+    if (b.dataset.guia !== undefined) { import('./guia.js?v=1').then(m => m.abrirGuia(true)); return; }
     if (b.dataset.min !== undefined) { el.classList.toggle('min'); b.textContent = el.classList.contains('min') ? '+' : '–'; return; }
     if (b.dataset.play !== undefined) { play ? parar() : arrancar(); return; }
     if (b.dataset.tab !== undefined) { const t = document.getElementById('b-tablero'); if (t) t.click(); return; }
@@ -171,11 +193,12 @@ ${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, FMT.luz)}${slider(
   });
   el.addEventListener('input', (ev) => { const i = ev.target;
     if (i.dataset.t !== undefined) { parar(); SIMST.t = +i.value; aplicar(); return; }
-    if (i.dataset.k) { const P = i.dataset.g === '1' ? P1 : i.dataset.g === '2' ? P2 : P3; P[i.dataset.k] = +i.value; const o = el.querySelector(`output[data-o="${i.dataset.k}"]`); if (o) o.textContent = (FMT[i.dataset.k] || fmt)(+i.value); R = correrTodo(); aplicar(); avisar('mapa'); }
+    if (i.dataset.k) { const P = i.dataset.g === '1' ? P1 : i.dataset.g === '2' ? P2 : P3; P[i.dataset.k] = +i.value; const o = el.querySelector(`output[data-o="${i.dataset.k}"]`); if (o) o.textContent = (FMT[i.dataset.k] || fmt)(+i.value); R = correrTodo(); aplicar(); avisar('mapa');
+      const lab = i.closest('label').firstChild.textContent.trim(); GRUPO[i.dataset.g].forEach((l, j) => { if (!j) avisar2(`Cambiaste «${lab}»`, i.dataset.g === '1' && /zona|regional|reac|precio/.test(i.dataset.k) ? 'trafico' : l); }); }
   });
   el.addEventListener('change', (ev) => { const i = ev.target;
-    if (i.dataset.b) { P1[i.dataset.b] = i.checked; R = correrTodo(); aplicar(); avisar('mapa'); }
-    if (i.dataset.anti !== undefined) { P3.anti = i.checked; R = correrTodo(); aplicar(); avisar('mapa'); } });
+    if (i.dataset.b) { P1[i.dataset.b] = i.checked; R = correrTodo(); aplicar(); avisar('mapa'); avisar2(i.checked ? 'Activaste un estrés' : 'Quitaste un estrés', 'huertas'); }
+    if (i.dataset.anti !== undefined) { P3.anti = i.checked; R = correrTodo(); aplicar(); avisar('mapa'); avisar2(i.checked ? 'Con medida antitrampa' : 'Sin medida antitrampa', 'humedal'); } });
   addEventListener('sim-cambio', (ev) => { if (ev.detail && ev.detail.origen === 'mapa') return; R = correrTodo(); el.querySelectorAll('input[data-k]').forEach(i => { const P = i.dataset.g === '1' ? P1 : i.dataset.g === '2' ? P2 : P3; i.value = P[i.dataset.k]; }); aplicar(); });
   addEventListener('escenario', () => setTimeout(() => { SIMST.t = 0; ultHB = -1; aplicar(); arrancar(); }, 60));
   // la huerta de barrio carga después: se aplica cuando aparece
@@ -190,11 +213,12 @@ ${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, FMT.luz)}${slider(
       const rutas = RUTAS[p.r], cv = rutas[p.k % rutas.length]; const v = p.r === 'rell' ? 0.05 : 0.11; cv.getPoint((p.f + tt * v) % 1, V); PP[i * 3] = V.x; PP[i * 3 + 1] = V.y; PP[i * 3 + 2] = V.z; }
     gp.attributes.position.needsUpdate = true;
     const cam = T3.camera, W = innerWidth, H = innerHeight;
-    for (const k in ET) { const d = ET[k]; if (!d.innerHTML || (k === 'comp' && e === 'A') || document.body.classList.contains('tb-abierto')) { d.style.display = 'none'; continue; }
+    for (const k in ET) { const d = ET[k]; if (!d.innerHTML || (k === 'comp' && e === 'A') || document.body.classList.contains('tb-abierto') || (T3.escSolo && T3.escSolo()) || cam.position.y < 140) { d.style.display = 'none'; continue; }
       const p = POS[k](); V.set(p[0], p[1], p[2]).project(cam); const ok = V.z < 1 && Math.abs(V.x) < 0.92 && Math.abs(V.y) < 0.9; d.style.display = ok ? 'block' : 'none';
       if (ok) d.style.transform = `translate(${((V.x + 1) / 2 * W).toFixed(1)}px,${((1 - V.y) / 2 * H).toFixed(1)}px) translate(-50%,-110%)`; }
   }
   requestAnimationFrame(cuadro);
   aplicar();
+  setTimeout(() => import('./guia.js?v=1').then(m => m.abrirGuia(false)).catch(() => {}), 2500); // la primera vez: cómo se usa
   return { aplicar, arrancar, get R() { return R; } };
 }

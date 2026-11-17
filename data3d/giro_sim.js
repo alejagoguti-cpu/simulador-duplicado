@@ -203,7 +203,7 @@ export async function iniciarSimulacion(cfg = {}) {
   /* ---------- interfaz ---------- */
   const st0 = { t: H(6, 30), dia: 1, vel: 60, play: true, capa: '', agentes: true, conv: !SINP }; // con estrategias, arrancan apagadas
   const izq = document.createElement('div'); izq.className = 'gs-pan gs-act'; izq.id = 'gs-izq';
-  izq.innerHTML = `<h3>SIMULACIÓN <em id="gs-dia">DÍA 1</em></h3>
+  izq.innerHTML = `<h3>HORA DEL DÍA <em id="gs-dia">DÍA 1</em></h3><p style="margin:-2px 0 8px;font-size:11px;line-height:1.4;color:var(--ui-tx2,#c3cace)">Un día cualquiera en Kennedy: mueve los carros y las personas. Los <b>años</b> de la propuesta se corren en <b>Escenarios</b>.</p>
     <div class="gs-reloj"><svg id="gs-dial" viewBox="0 0 120 120" role="slider" tabindex="0" aria-label="Hora del día (24 horas): arrastra alrededor" aria-valuemin="0" aria-valuemax="1439"></svg><div><b id="gs-hora">06:30</b><small id="gs-jor">Antes de la jornada</small><em>Arrastra la bola alrededor: después de las 23:59 sigue la 00:00</em></div></div>
     <div class="gs-fila"><button id="gs-play">❚❚</button><button data-v="20">x20</button><button data-v="60" class="on">x60</button><button data-v="240">x240</button></div>
     <div class="gs-sub">SINTAXIS ESPACIAL <span>DepthmapX</span></div>
