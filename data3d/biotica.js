@@ -630,10 +630,27 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
     <div class="bt-cuerpo">
       <div class="bt-sub">TIPOS DE RELACIÓN <span>conexiones ahora</span></div>
       ${TIPOS.map(t => `<button class="bt-tipo" data-t="${t.id}"><i style="background:${t.c}"></i>${icono(t.id, t.c)}<span>${t.n}</span><b id="bt-c-${t.id}">0</b></button>`).join('')}
-      <div class="bt-sub">AGENTES NO HUMANOS <span>${AG.length} individuos · ${HUM.length} humedales y ${PAR.length} zonas verdes</span></div>
-      ${cats.map(c => `<div class="bt-cat" style="color:${CAT[c].c}">${CAT[c].n.toUpperCase()}</div><div class="bt-esp">${Object.keys(MAL).filter(k => ESP[k].cat === c).map(k => `<button class="bt-e" data-k="${k}" title="${ESP[k].sci}"><img src="${IMG[k]}" alt="">${ESP[k].n}<small>${POR[k].length}</small></button>`).join('')}</div>`).join('')}
+      <div class="bt-sub">AGENTES NO HUMANOS <span id="bt-tot">${AG.length} individuos · ${HUM.length} humedales y ${PAR.length} zonas verdes</span></div><div class="bt-pro" id="bt-pro"></div>
+      ${cats.map(c => `<div class="bt-cat" style="color:${CAT[c].c}">${CAT[c].n.toUpperCase()}</div><div class="bt-esp">${Object.keys(MAL).filter(k => ESP[k].cat === c).map(k => `<button class="bt-e" data-k="${k}" title="${ESP[k].sci}"><img src="${IMG[k]}" alt="">${ESP[k].n}<small data-n="${k}">${POR[k].length}</small></button>`).join('')}</div>`).join('')}
       <div class="bt-nota">Red: Red de Interacciones Bióticas de Kennedy (${B.enlaces.length} relaciones entre estas ${Object.keys(MAL).length} especies y ${Object.keys(B.flora).length} especies de árboles del censo SIGAU). Cada animal se conecta con el individuo más cercano de cada especie con la que tiene relación en la red (hasta 220 m) y con los árboles relacionados (hasta 90 m); las líneas se mueven con ellos. Línea fuerte con pulso: encuentro (la interacción está ocurriendo); tenue: conexión a distancia. Movimiento: bandadas y zonas de Couzin, forrajeo floral de lugar central, balsas de aves acuáticas, caminata correlacionada con ámbito hogareño, persecución y huida.</div>
     </div>`;
+  /* la red biótica cambia con el escenario: con la propuesta llegan la fauna de las huertas (techos, lotes, parques-huerta y Bavaria) */
+  { const st = document.createElement('style'); st.textContent = `#bt-pan .bt-pro{display:none;margin:2px 0 8px;padding:9px 10px;border-radius:10px;background:rgba(226,165,91,.1);border:1px solid rgba(226,165,91,.3);font:400 11px/1.45 var(--ui-sans,Inter,sans-serif);color:#e9ebec}
+#bt-pan .bt-pro.on{display:block}#bt-pan .bt-pro b{color:#f2c995;font-weight:600}#bt-pan .bt-e small em{font-style:normal;color:#f2c995;margin-left:3px}#bt-pan .bt-e.nuevo{border-color:rgba(226,165,91,.45)}`; document.head.appendChild(st); }
+  const deHuerta = (a) => a.h && a.h.tipo === 'huerta';
+  const NHUE = HAB.filter(h => h.tipo === 'huerta').length;
+  let ultEsc = null;
+  function pintarEscenario() {
+    const pro = ESTADO.escenario === 'proyecto'; if (pro === ultEsc) return; ultEsc = pro;
+    let tot = 0, extra = 0; const suma = {};
+    for (const k of Object.keys(MAL)) { const L = POR[k] || [], n = L.filter(a => pro || !deHuerta(a)).length, x = L.filter(deHuerta).length; tot += n; if (pro && x) { extra += x; suma[k] = x; }
+      const s = pan.querySelector(`small[data-n="${k}"]`); if (s) s.innerHTML = pro && x ? `${n}<em>+${x}</em>` : String(n); const b = s && s.closest('.bt-e'); if (b) b.classList.toggle('nuevo', pro && x > 0); }
+    const tt = pan.querySelector('#bt-tot'); if (tt) tt.textContent = `${tot.toLocaleString('es-CO')} individuos · ${HUM.length} humedales, ${PAR.length} zonas verdes${pro ? ` y ${NHUE} huertas` : ''}`;
+    const bp = pan.querySelector('#bt-pro'); if (bp) { bp.classList.toggle('on', pro);
+      const top = Object.entries(suma).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([k, x]) => `${ESP[k].n.toLowerCase()} +${x}`).join(', ');
+      bp.innerHTML = pro ? `<b>Con la propuesta llegan +${extra.toLocaleString('es-CO')} animales</b> a ${NHUE} huertas (lotes, techos y el distrito Bavaria Común): ${top}. Son polinizadores, aves que comen plagas y lombrices del suelo; las relaciones nuevas se ven arriba en «conexiones ahora».` : ''; }
+  }
+  addEventListener('escenario', () => setTimeout(pintarEscenario, 50)); setInterval(pintarEscenario, 1500);
   const ficha = document.createElement('div'); ficha.id = 'bt-ficha';
   const tog = document.createElement('button'); tog.id = 'bt-tog'; tog.textContent = 'RED BIÓTICA';
   document.body.append(pan, ficha, tog);
