@@ -332,7 +332,7 @@ export function crearDistritoBavaria({ T3, lw, D, ARB = [], SX = null }) {
         const cur = new THREE.QuadraticBezierCurve3(A, C, B), pts = cur.getPoints(18); for (let s = 1; s < pts.length; s++) L.push(pts[s - 1].x, pts[s - 1].y, pts[s - 1].z, pts[s].x, pts[s].y, pts[s].z);
         for (let r = 0; r < POR; r++, k++) { A.toArray(a0, k * 3); C.toArray(a1, k * 3); B.toArray(a2, k * 3); cc.toArray(cl, k * 3); of[k] = (r / POR + pi * 0.13) % 1; ve[k] = I.v / Math.max(30, d) * (0.8 + ((k * 0.61) % 0.4)) * (r % 2 ? 1 : -1); fi[k] = ii; } });
       const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(L, 3));
-      const ln = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: I.c, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false })); ln.renderOrder = 11; grupo.add(ln); I.ln = ln; });
+      const ln = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: I.c, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false })); ln.renderOrder = 11; ln.visible = false; grupo.add(ln); I.ln = ln; }); // sin líneas entre edificios: solo se mueve la fauna
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(a0, 3)); geo.setAttribute('a1', new THREE.BufferAttribute(a1, 3)); geo.setAttribute('a2', new THREE.BufferAttribute(a2, 3));
     geo.setAttribute('aOf', new THREE.BufferAttribute(of, 1)); geo.setAttribute('aVe', new THREE.BufferAttribute(ve, 1)); geo.setAttribute('aC', new THREE.BufferAttribute(cl, 3)); geo.setAttribute('aF', new THREE.BufferAttribute(fi, 1));
@@ -341,7 +341,7 @@ export function crearDistritoBavaria({ T3, lw, D, ARB = [], SX = null }) {
       vertexShader: 'attribute vec3 a1,a2,aC; attribute float aOf,aVe,aF; uniform float uT,uPx; uniform float uFoc[16]; varying vec3 vC; varying float vA;\nvoid main(){ float t=fract(aOf+uT*abs(aVe)); if(aVe<0.) t=1.-t; float u=1.-t; vec3 p=u*u*position+2.*u*t*a1+t*t*a2; p.y+=sin(uT*9.+aOf*40.)*.25; vec4 mv=modelViewMatrix*vec4(p,1.);\n vC=aC; vA=uFoc[int(aF)]; gl_PointSize=clamp(1500.*uPx/-mv.z,2.*uPx,11.*uPx); gl_Position=projectionMatrix*mv; }',
       fragmentShader: 'uniform float uVis; varying vec3 vC; varying float vA;\nvoid main(){ float r=length(gl_PointCoord-.5); if(r>.5) discard; float a=smoothstep(.5,0.,r); a=a*a+smoothstep(.15,0.,r); gl_FragColor=vec4(mix(vC,vec3(1.),smoothstep(.15,0.,r)*.6)*a*vA*uVis,1.);' + COLSP + '}',
       transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false });
-    const pts = new THREE.Points(geo, pm); pts.frustumCulled = false; pts.renderOrder = 12; grupo.add(pts);
+    const pts = new THREE.Points(geo, pm); pts.frustumCulled = false; pts.renderOrder = 12; pts.visible = false; grupo.add(pts); // sin arcos de partículas entre edificios
   }
 
   /* ---------- 7. sintaxis espacial: la red alrededor del predio, de hoy a «con el distrito» (integración angular 800 m) ---------- */
@@ -382,7 +382,7 @@ export function crearDistritoBavaria({ T3, lw, D, ARB = [], SX = null }) {
       fragmentShader: 'uniform float uT,uDraw,uVis; varying float vU;\nvoid main(){ if(vU>uDraw) discard; float p=pow(fract(vU*5.-uT*.8),10.); vec3 c=vec3(.22,.74,.97); gl_FragColor=vec4(c*(.35+p*2.),(.25+p)*uVis);' + COLSP + '}',
       transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false });
     for (const d of dest) { const A = new THREE.Vector3(o[0], o[1] + 2, o[2]), B = new THREE.Vector3(d[0], d[1], d[2]), C = A.clone().lerp(B, 0.5); C.y = Math.max(A.y, B.y) + 18 + A.distanceTo(B) * 0.12;
-      const t = new THREE.Mesh(new THREE.TubeGeometry(new THREE.QuadraticBezierCurve3(A, C, B), 40, 0.35, 5), mat); t.renderOrder = 10; grupo.add(t); }
+      const t = new THREE.Mesh(new THREE.TubeGeometry(new THREE.QuadraticBezierCurve3(A, C, B), 40, 0.35, 5), mat); t.renderOrder = 10; t.visible = false; grupo.add(t); } // la red de datos no se dibuja (eran conexiones entre edificios)
   }
 
   /* ---------- 9. carga y accesos ---------- */
@@ -391,7 +391,7 @@ export function crearDistritoBavaria({ T3, lw, D, ARB = [], SX = null }) {
     fragmentShader: 'uniform vec3 uC; uniform float uT,uRep; varying float vU;\nvoid main(){ float d=fract(vU*uRep-uT*.6); float a=.35+pow(d,5.)*1.4; gl_FragColor=vec4(uC*a,min(1.,a));' + COLSP + '}', transparent: true, depthWrite: false, toneMapped: false });
   const CARGA = (() => { const p = [[8974, 3008], [9040, 3050], [9150, 3110], [9200, 3214], [9300, 3186], [9368, 3214], [9420, 3238], [9490, 3200], [9488, 3170], [9520, 3140]];
     const curva = new THREE.CatmullRomCurve3(p.map(q => { const w = M(q[0], q[1]); return new THREE.Vector3(w[0], 1.1, w[1]); }), false, 'centripetal'), L = curva.getLength();
-    const m = new THREE.Mesh(new THREE.TubeGeometry(curva, Math.round(L / 3), 0.85, 6), matRuta('#ef4444', L / 9)); m.renderOrder = 10; grupo.add(m);
+    const m = new THREE.Mesh(new THREE.TubeGeometry(curva, Math.round(L / 3), 0.85, 6), matRuta('#ef4444', L / 9)); m.renderOrder = 10; m.visible = false; grupo.add(m); // sin la línea roja de la carga
     const im = new THREE.InstancedMesh(new THREE.BoxGeometry(2, 2.1, 4.6).translate(0, 1.05, 0), mStd('#f8fafc', { roughness: 0.6 }), 3); grupo.add(im); const t = [0, 0.33, 0.66], o = new THREE.Object3D();
     return (dt, mov) => { for (let i = 0; i < 3; i++) { if (mov) t[i] = (t[i] + dt * 4.5 / L) % 1; const q = curva.getPointAt(t[i]), g = curva.getTangentAt(t[i]); o.position.set(q.x, 0.3, q.z); o.rotation.set(0, Math.atan2(g.x, g.z), 0); o.updateMatrix(); im.setMatrixAt(i, o.matrix); } im.instanceMatrix.needsUpdate = true; }; })();
   ACC.forEach(a => { const g = new THREE.Group(); g.position.set(a.p[0], 0, a.p[1]);
