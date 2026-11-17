@@ -1,0 +1,199 @@
+/* ============ ESCENARIOS EN EL TERRITORIO (SIM-01, SIM-02 y SIM-03 con sliders, sobre el mapa) ============
+   A = «Kennedy hoy» (sin intervención). B = nodo único con decisión central. C = clúster con decisión rotativa.
+   El modelo (data3d/sim_modelos.js, el mismo del tablero) corre 10 años semana a semana y CADA resultado se ve en el 3D:
+   · SIM-01  hogares con huerta  -> huertas de barrio que se abren desde Bavaria hacia afuera (y se cierran si hay abandono)
+             dependencia de Corabastos -> menos carros y camiones en la Av. Ciudad de Cali (T3.alivio.KEEP) y el anillo de Corabastos
+             promotores formados -> etiqueta en Bavaria Común
+   · SIM-02  orgánicos: camiones al relleno Doña Juana (A) / estaciones barriales de compostaje (B) / planta de Bavaria (C),
+             con partículas proporcionales a los kilos y la ocupación de cada estación
+   · SIM-03  aves -> fracción de aves visibles en la red biótica (T3.bio.ESTADO.fauna); integridad del humedal -> anillo de El Burro;
+             trampas ecológicas (luz y vidrio) -> huertas del borde en rojo si no hay medida antitrampa */
+import { SEM, AÑO, PAR, SIMST, avisar, correrTodo } from './sim_modelos.js?v=1';
+export async function iniciarEscenariosSim({ T3, cj }) {
+  const THREE = T3.THREE, MOV = innerWidth < 760, RMQ = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const HB = await cj('data3d/huertas_barrio.json?v=3').catch(() => ({ huertas: [] }));
+  const { P1, P2, P3 } = PAR;
+  let R = correrTodo();
+  const fmt = (v, d = 0) => (v == null || !isFinite(v)) ? '–' : v.toLocaleString('es-CO', { maximumFractionDigits: d, minimumFractionDigits: d });
+  const fmtK = (v) => v >= 1e6 ? fmt(v / 1e6, 1) + ' M' : v >= 1e4 ? fmt(v / 1e3, 0) + ' mil' : fmt(v);
+  const Y = T3.sueloY != null ? T3.sueloY : 0.35;
+  const esc = () => (T3.escenario === 'proyecto' ? SIMST.esc : 'A');
+
+  /* ---------------- lugares ---------------- */
+  const BURRO = [2095.67, -109.06], CORA = [1132.1, 948.6], BAV = [4136, 96], DJ = [5200, 2900]; // Doña Juana queda al sureste, fuera del mapa
+  const BAVC = () => (window.KEN_BAV && window.KEN_BAV.compost) || [4185.7, 28.9];
+  // estaciones barriales de compostaje (B): 8 huertas de parque bien repartidas (punto más lejano)
+  const PQ = HB.huertas.filter(h => h.tipo === 'parque').map(h => h.c);
+  const EST = []; if (PQ.length) { EST.push(PQ[0]); while (EST.length < Math.min(8, PQ.length)) { let m = null, md = -1; for (const p of PQ) { const d = Math.min(...EST.map(e => Math.hypot(e[0] - p[0], e[1] - p[1]))); if (d > md) { md = d; m = p; } } EST.push(m); } }
+  const BORDE = PQ.filter(p => Math.hypot(p[0] - BURRO[0], p[1] - BURRO[1]) < 1100); // huertas del borde del humedal (trampas)
+
+  /* ---------------- 3D ---------------- */
+  const grupo = new THREE.Group(); grupo.name = 'escenarios_sim'; T3.scene.add(grupo);
+  const anillo = (r0, r1, c) => { const m = new THREE.Mesh(new THREE.RingGeometry(r0, r1, 96).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: 0.55, depthWrite: false, toneMapped: false, side: THREE.DoubleSide })); m.renderOrder = 7; grupo.add(m); return m; };
+  const aHum = anillo(300, 312, '#59a14f'); aHum.position.set(BURRO[0], Y + 1.2, BURRO[1]);
+  const aCor = anillo(330, 342, '#e15759'); aCor.position.set(CORA[0], Y + 1.2, CORA[1]);
+  // estaciones barriales: caseta + tres pilas de compost cuya altura sigue la ocupación (G12)
+  const mMad = new THREE.MeshStandardMaterial({ color: '#7b5a3c', roughness: 0.9 }), mPila = new THREE.MeshStandardMaterial({ color: '#3b2b1f', roughness: 1 }), mTecho = new THREE.MeshStandardMaterial({ color: '#59615c', roughness: 0.6, metalness: 0.3 });
+  const ESTM = EST.map(p => { const g = new THREE.Group(); g.position.set(p[0] + 14, Y, p[1] + 10);
+    const caseta = new THREE.Mesh(new THREE.BoxGeometry(6, 2.6, 4).translate(0, 1.3, 0), mMad), techo = new THREE.Mesh(new THREE.BoxGeometry(7, 0.12, 5).translate(0, 2.8, 0), mTecho);
+    const pilas = [-3, 0, 3].map(x => { const m = new THREE.Mesh(new THREE.SphereGeometry(1.4, 14, 8, 0, 6.29, 0, 1.4).scale(1.4, 1, 1), mPila); m.position.set(x, 0, 4.2); g.add(m); return m; });
+    caseta.castShadow = techo.castShadow = true; g.add(caseta, techo); g.visible = false; grupo.add(g); return { g, pilas }; });
+  // rutas de orgánicos (partículas): relleno, estación, Bavaria
+  const curva = (a, b, h) => { const L = Math.hypot(b[0] - a[0], b[1] - a[1]); return new THREE.QuadraticBezierCurve3(new THREE.Vector3(a[0], Y + 4, a[1]), new THREE.Vector3((a[0] + b[0]) / 2, Y + 4 + L * h, (a[1] + b[1]) / 2), new THREE.Vector3(b[0], Y + 4, b[1])); };
+  const FUENTE = EST.map(p => [p[0] + 160, p[1] - 120]); // barrios que separan sus orgánicos (al lado de cada estación)
+  const RUTAS = { rell: EST.map((p, i) => curva(FUENTE[i], DJ, 0.05)), est: EST.map((p, i) => curva(FUENTE[i], p, 0.25)), bav: EST.map((p, i) => curva(FUENTE[i], BAVC(), 0.08)) };
+  const NP = MOV ? 260 : 520, PP = new Float32Array(NP * 3), PC = new Float32Array(NP * 3), gp = new THREE.BufferGeometry();
+  gp.setAttribute('position', new THREE.BufferAttribute(PP, 3)); gp.setAttribute('color', new THREE.BufferAttribute(PC, 3));
+  const puntos = new THREE.Points(gp, new THREE.PointsMaterial({ size: MOV ? 5 : 6, sizeAttenuation: false, vertexColors: true, transparent: true, depthWrite: false, toneMapped: false })); puntos.renderOrder = 11; grupo.add(puntos);
+  const PART = Array.from({ length: NP }, (_, i) => ({ r: 'rell', k: i % Math.max(1, EST.length), f: Math.random(), on: false }));
+  const COLR = { rell: new THREE.Color('#9aa1a6'), est: new THREE.Color('#c8a26a'), bav: new THREE.Color('#e2a55b') };
+  // trampas ecológicas: huertas del borde del humedal en rojo (luz y vidrio sin medida antitrampa)
+  const TR = BORDE.map(p => { const m = anillo(16, 22, '#ff5a4f'); m.position.set(p[0], Y + 1.5, p[1]); m.visible = false; return m; });
+
+  /* ---------------- etiquetas sobre el territorio ---------------- */
+  const css = document.createElement('style'); css.textContent = `
+.es-et{position:fixed;left:0;top:0;z-index:5;pointer-events:none;display:none;padding:6px 10px;border-radius:10px;font:400 11px/1.3 var(--ui-sans,Inter,system-ui,sans-serif);color:#eef1f2;white-space:nowrap;
+  background:var(--ui-glass,rgba(14,16,20,.6));border:1px solid var(--ui-glass-bd,rgba(255,255,255,.16));backdrop-filter:blur(14px) saturate(1.6);-webkit-backdrop-filter:blur(14px) saturate(1.6);font-variant-numeric:tabular-nums}
+.es-et b{display:block;font-weight:600;font-size:11.5px}.es-et i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}.es-et em{font-style:normal;color:#f2c995}
+#esim{position:fixed;right:16px;bottom:86px;z-index:8;width:330px;max-height:calc(100vh - 470px);min-height:150px;display:flex;flex-direction:column;border-radius:18px;overflow:hidden;color:#e9ecee;
+  font:400 12px/1.4 var(--ui-sans,Inter,system-ui,sans-serif);background:var(--ui-glass,rgba(14,16,20,.62));border:1px solid var(--ui-glass-bd,rgba(255,255,255,.16));box-shadow:var(--ui-glass-sh,0 20px 40px rgba(0,0,0,.3));
+  backdrop-filter:var(--ui-glass-fx,blur(24px) saturate(1.8));-webkit-backdrop-filter:var(--ui-glass-fx,blur(24px) saturate(1.8))}
+#esim .cab{display:flex;align-items:center;gap:8px;padding:11px 12px 8px 14px}#esim .cab b{flex:1;font-weight:600;font-size:13px}
+#esim .cab button{all:unset;cursor:pointer;width:26px;height:26px;display:grid;place-items:center;border-radius:8px;color:#b3bbc0}#esim .cab button:hover{background:rgba(255,255,255,.08);color:#fff}
+#esim .cab button:focus-visible,#esim .seg button:focus-visible,#esim .tl button:focus-visible{outline:2px solid #fff;outline-offset:1px}
+#esim .seg{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;margin:0 12px;padding:3px;border-radius:11px;background:rgba(0,0,0,.22)}
+#esim .seg button{all:unset;cursor:pointer;text-align:center;padding:6px 4px;border-radius:8px;color:#b3bbc0;font-size:11px;line-height:1.2}#esim .seg button b{display:block;font-size:12px;color:#e9ecee;font-weight:600}
+#esim .seg button[aria-pressed=true]{background:rgba(255,255,255,.14);color:#fff}
+#esim .tl{display:flex;align-items:center;gap:8px;padding:10px 12px 6px}#esim .tl button{all:unset;cursor:pointer;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#e2a55b;color:#1a1208;font-size:12px;flex:none}
+#esim .tl input{flex:1;accent-color:#e2a55b;min-width:0}#esim .tl output{width:58px;text-align:right;font-variant-numeric:tabular-nums;color:#d5dadd;font-size:11px}
+#esim .cuerpo{overflow:auto;padding:2px 12px 12px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.15) transparent}
+#esim ul{list-style:none;margin:4px 0 8px;padding:0;display:grid;gap:4px}#esim li{display:grid;grid-template-columns:1fr auto;gap:0 8px;padding:7px 9px;border-radius:10px;background:rgba(255,255,255,.04)}
+#esim li span{color:#c3cace;font-size:11px}#esim li strong{font-weight:600;font-size:12.5px;text-align:right;font-variant-numeric:tabular-nums}#esim li small{grid-column:1/-1;color:#949da3;font-size:10.5px}
+#esim li small em{font-style:normal;color:#f2c995}
+#esim details{margin-top:6px;border-top:1px solid rgba(255,255,255,.08);padding-top:6px}#esim summary{cursor:pointer;font-weight:600;font-size:11.5px;padding:4px 0;color:#dfe4e6}
+#esim label{display:grid;grid-template-columns:1fr auto;gap:2px 8px;margin:7px 0;font-size:11px;color:#c3cace}#esim label output{color:#fff;font-variant-numeric:tabular-nums}
+#esim label input[type=range]{grid-column:1/-1;width:100%;accent-color:#e2a55b}#esim .chk label{display:flex;gap:6px;align-items:center;margin:5px 0}#esim .chk input{accent-color:#e2a55b}
+#esim .nota{color:#8d969b;font-size:10.5px;margin:6px 0 0}#esim .ir{all:unset;cursor:pointer;display:block;text-align:center;margin-top:10px;padding:8px;border-radius:9px;background:rgba(255,255,255,.07);font-weight:500}
+#esim .ir:hover{background:rgba(255,255,255,.12)}
+#esim.min .cuerpo{display:none}#esim.min{min-height:0}
+body.tb-abierto #esim{display:none}
+@media (max-width:760px){#esim{left:8px;right:8px;width:auto;top:146px;bottom:auto;max-height:40vh}#esim .cab{padding:8px 10px 6px 12px}}`;
+  document.head.appendChild(css);
+  const chip = (html) => { const d = document.createElement('div'); d.className = 'es-et'; d.innerHTML = html; document.body.appendChild(d); return d; };
+  const ET = { cora: chip(''), hum: chip(''), bav: chip(''), comp: chip(''), dj: chip('') };
+  const POS = { cora: () => [CORA[0], 40, CORA[1]], hum: () => [BURRO[0], 30, BURRO[1]], bav: () => [BAV[0], 70, BAV[1]], comp: () => { const e = esc(); return e === 'C' ? [BAVC()[0], 30, BAVC()[1]] : EST[0] ? [EST[0][0], 20, EST[0][1]] : [0, 0, 0]; }, dj: () => { const f = FUENTE[0] || [0, 0]; return [(f[0] * 2 + DJ[0]) / 3, 50, (f[1] * 2 + DJ[1]) / 3]; } };
+
+  /* ---------------- panel ---------------- */
+  const slider = (P, k, n, min, max, paso, f = (v) => fmt(v)) => `<label>${n}<output data-o="${k}">${f(P[k])}</output><input type="range" data-g="${P === P1 ? 1 : P === P2 ? 2 : 3}" data-k="${k}" min="${min}" max="${max}" step="${paso}" value="${P[k]}"></label>`;
+  const pct = (v) => fmt(v * 100) + ' %';
+  const FMT = { alcance: pct, auto: pct, frac: pct, sust: pct, precio: (v) => '$' + fmt(v), zona: fmtK, reac: (v) => fmt(v, 2), arboles: (v) => fmt(v, 2), luz: (v) => fmt(v, 2), rec: (v) => fmt(v, 3), dist: (v) => fmt(v, 1) };
+  const el = document.createElement('section'); el.id = 'esim'; el.setAttribute('aria-label', 'Escenarios de la simulación');
+  el.innerHTML = `<div class="cab"><b>Escenarios · qué pasa en 10 años</b><button type="button" data-min aria-label="Plegar" title="Plegar">–</button></div>
+<div class="seg" role="group" aria-label="Escenario"><button type="button" data-e="A"><b>A</b>Kennedy hoy</button><button type="button" data-e="B"><b>B</b>Nodo central</button><button type="button" data-e="C"><b>C</b>Clúster rotativo</button></div>
+<div class="tl"><button type="button" data-play aria-label="Correr 10 años">▶</button><input type="range" min="0" max="${SEM - 1}" value="${SIMST.t}" data-t aria-label="Semana de la simulación"><output data-año></output></div>
+<div class="cuerpo"><ul data-kpi></ul>
+<details><summary>Comida · huertas y Corabastos (SIM-01)</summary>
+${slider(P1, 'rend', 'Rendimiento (kg/m²·año)', 1, 12, 1)}${slider(P1, 'alcance', 'Alcance sobre lotes y techos', 0.1, 1, 0.05, pct)}${slider(P1, 'auto', 'Autoconsumo', 0.1, 0.7, 0.05, pct)}
+${slider(P1, 'precio', 'Precio de excedentes ($/kg)', 1500, 4500, 100, FMT.precio)}${slider(P1, 'acopio', 'Capacidad de acopio (kg/semana)', 2000, 40000, 1000)}${slider(P1, 'reac', 'Reacción de precio de la central', 0, 1, 0.05, FMT.reac)}
+${slider(P1, 'cupos', 'Cupos de formación en Bavaria (por trimestre)', 0, 40, 1)}${slider(P1, 'retardo', 'Retardo de aprendizaje (semanas)', 2, 40, 1)}${slider(P1, 'c', 'm² por promotor', 400, 3000, 100)}
+${slider(P1, 'rotacion', 'Periodo de rotación (semanas)', 4, 52, 1)}${slider(P1, 'mu', 'Capacidad de decisión central (solicitudes/semana)', 1, 20, 1)}${slider(P1, 'zona', 'Población de la zona de servicio', 10000, 300000, 5000, fmtK)}
+<div class="chk">${[['sequia', 'Sequía (años 3-4)'], ['bloqueo', 'Bloqueo del mayorista (año 6)'], ['crece', 'Crecimiento poblacional'], ['baldios', 'Revocación de baldíos (año 6)']].map(([k, n]) => `<label><input type="checkbox" data-b="${k}" ${P1[k] ? 'checked' : ''}>${n}</label>`).join('')}</div>
+<p class="nota">Los estreses solo afectan B y C.</p></details>
+<details><summary>Residuos orgánicos y compost (SIM-02)</summary>
+${slider(P2, 'frac', 'Fracción desviada', 0.05, 0.9, 0.05, pct)}${slider(P2, 'cap', 'Capacidad de la estación (kg/semana)', 1000, 30000, 500)}${slider(P2, 'mad', 'Semanas de maduración', 4, 24, 1)}
+${slider(P2, 'sust', 'Fracción de sustrato al distrito (hongos)', 0, 0.6, 0.05, pct)}${slider(P2, 'dist', 'Distancia estación – huertas (km)', 0.2, 6, 0.1, FMT.dist)}
+<p class="nota">B: estaciones de compostaje en los barrios. C: todo va a la planta de Bavaria Común.</p></details>
+<details><summary>Aves y humedal (SIM-03)</summary>
+${slider(P3, 'disp', 'Alcance de dispersión de las aves (m)', 100, 1500, 50)}${slider(P3, 'borde', 'Huertas en el borde del humedal', 0, 60, 1)}${slider(P3, 'arboles', 'Densidad de árboles', 0, 1, 0.05, FMT.arboles)}
+${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, FMT.luz)}${slider(P3, 'rec', 'Tasa de recuperación del humedal', 0, 0.1, 0.005, FMT.rec)}
+<div class="chk"><label><input type="checkbox" data-anti ${P3.anti ? 'checked' : ''}>Medida antitrampa</label></div>
+<p class="nota">B: huertas sin criterio de ubicación. C: huertas con corredores entre parches.</p></details>
+<button type="button" class="ir" data-tab>Ver todas las gráficas en el tablero</button></div>`;
+  document.body.appendChild(el);
+  const $ = (s) => el.querySelector(s);
+  if (MOV) { el.classList.add('min'); $('[data-min]').textContent = '+'; } // en el celular empieza plegado (solo escenario y tiempo)
+
+  /* ---------------- aplicar al territorio ---------------- */
+  let ultHB = -1;
+  function aplicar() {
+    const e = esc(), t = Math.max(0, Math.min(SEM - 1, Math.floor(SIMST.t))), A = R.S1.A, s1 = R.S1[e], s2 = R.S2[e], s3 = R.S3[e], s3A = R.S3.A;
+    // SIM-01 · huertas abiertas y Corabastos
+    const f = e === 'A' ? 0 : s1.act[t] / R.S1.C.N; let ab = null;
+    const HBAR = window.KEN_HBAR; if (HBAR && HBAR.fraccion && Math.abs(f - ultHB) > 0.004) { ab = HBAR.fraccion(f); ultHB = f; }
+    const dep = s1.dep[t], al = T3.alivio; if (al) { al.KEEP = e === 'A' ? 1 : 0.3 + 0.7 * dep; al.KEEP_CAM = e === 'A' ? 1 : 0.1 + 0.9 * dep; }
+    aCor.material.color.set(dep > 0.66 ? '#e15759' : dep > 0.33 ? '#f28e2b' : '#59a14f'); aCor.material.opacity = 0.35 + 0.4 * dep;
+    // SIM-02 · orgánicos
+    const gen = s2.gen, rel = s2.relleno[t] / gen, des = s2.desv[t] / gen;
+    ESTM.forEach(s => { s.g.visible = e === 'B'; const o = s2.ocup[t]; s.pilas.forEach((p, i) => { p.scale.set(1.4, Math.max(0.05, Math.min(1.6, o * 1.4 - i * 0.25)), 1); p.material.color.set(o > 1 ? '#5a2a1f' : '#3b2b1f'); }); });
+    const nRel = Math.round(NP * Math.min(1, rel) * 0.6), nDes = Math.round(NP * Math.min(1, des) * 1.6);
+    PART.forEach((p, i) => { if (i < nRel) { p.r = 'rell'; p.on = true; } else if (i < nRel + nDes && e !== 'A') { p.r = e === 'B' ? 'est' : 'bav'; p.on = true; } else p.on = false;
+      const c = COLR[p.r]; PC.set([c.r, c.g, c.b], i * 3); });
+    gp.attributes.color.needsUpdate = true;
+    // SIM-03 · aves, humedal y trampas
+    const BI = T3.bio && T3.bio.ESTADO; if (BI) BI.fauna = Math.max(0.12, Math.min(1, s3.aves[t] / 1400));
+    const hum = s3.hum[t] / 100; aHum.material.color.setRGB(0.88 - 0.55 * hum, 0.35 + 0.45 * hum, 0.3); aHum.material.opacity = 0.4 + 0.3 * hum;
+    const nTr = e === 'A' || P3.anti ? 0 : Math.round(TR.length * Math.min(1, P3.borde / 40) * P3.luz * 1.6); TR.forEach((m, i) => { m.visible = i < nTr; });
+    // etiquetas
+    const año = Math.floor(t / AÑO) + 1;
+    ET.cora.innerHTML = `<b><i style="background:${aCor.material.color.getStyle()}"></i>Corabastos</b>Dependencia ${fmt(dep * 100)} %${e === 'A' ? '' : ` · <em>vías ${al && al.hoy > 0.5 ? '−' + fmt((1 - al.pro / al.hoy) * 100) + ' % carros' : 'con menos carros'}</em>`}`;
+    ET.hum.innerHTML = `<b><i style="background:${aHum.material.color.getStyle()}"></i>Humedal El Burro</b>Integridad ${fmt(hum * 100)} % · ${fmt(s3.aves[t])} aves${nTr ? ` · <em style="color:#ff8a80">${nTr} huertas-trampa</em>` : ''}`;
+    ET.bav.innerHTML = e === 'A' ? `<b><i style="background:#9aa1a6"></i>Bavaria</b>Sin intervención` : `<b><i style="background:#e2a55b"></i>Bavaria Común</b>${fmt(s1.prom[t])} promotores formados · ${fmt(s1.act[t])} hogares con huerta`;
+    ET.comp.innerHTML = e === 'B' ? `<b><i style="background:#c8a26a"></i>Estaciones de compost (${EST.length})</b>Ocupación ${fmt(s2.ocup[t] * 100)} %` : e === 'C' ? `<b><i style="background:#e2a55b"></i>Planta de compost · Bavaria</b>${fmt(s2.desv[t] / 1000, 1)} t/semana · ${fmt(s2.hongos[t])} kg de hongos` : '';
+    ET.dj.innerHTML = `<b><i style="background:#9aa1a6"></i>Al relleno Doña Juana</b>${fmt(s2.relleno[t] / 1000, 1)} t/semana · ${fmtK(s2.km[t])} km de camión`;
+    // panel
+    $('[data-t]').value = t; $('[data-año]').textContent = `año ${año}`;
+    const d = (v, a, menos, f2) => { if (e === 'A' || !isFinite(a) || Math.abs(v - a) < 1e-9) return ''; const mej = menos ? v < a : v > a; return ` · <em style="color:${mej ? '#8fd18a' : '#ff8a80'}">${v >= a ? '+' : '−'}${f2(Math.abs(v - a))} frente a hoy</em>`; };
+    const sA2 = R.S2.A;
+    $('[data-kpi]').innerHTML = [
+      ['Hogares con huerta', fmt(s1.act[t]), `huertas abiertas en el mapa${ab ? `: ${ab.abiertas} de ${ab.total}` : ''}${d(s1.act[t], A.act[t], false, fmt)}`],
+      ['Personas que comen de las huertas', fmtK(s1.pers[t]), `${fmt(s1.pct[t], 1)} % de Kennedy${d(s1.pers[t], A.pers[t], false, fmtK)}`],
+      ['Dependencia de Corabastos', fmt(dep * 100) + ' %', `menos tráfico en la Av. Ciudad de Cali${d(dep * 100, A.dep[t] * 100, true, (v) => fmt(v) + ' pts')}`],
+      ['Orgánicos que vuelven a la tierra', fmt(s2.pct[t], 1) + ' %', `${fmt(s2.relleno[t] / 1000, 1)} t/semana siguen al relleno${d(s2.pct[t], sA2.pct[t], false, (v) => fmt(v, 1) + ' pts')}`],
+      ['Aves en el borde del humedal', fmt(s3.aves[t]), `integridad del humedal ${fmt(hum * 100)} %${d(s3.aves[t], s3A.aves[t], false, fmt)}`]
+    ].map(([n, v, s]) => `<li><span>${n}</span><strong>${v}</strong><small>${s}</small></li>`).join('');
+    el.querySelectorAll('.seg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.e === e)));
+  }
+
+  /* ---------------- eventos ---------------- */
+  let play = 0, prev = 0;
+  const parar = () => { if (play) cancelAnimationFrame(play); play = 0; $('[data-play]').textContent = '▶'; };
+  const paso = (now) => { const dt = Math.min(0.1, (now - prev) / 1000); prev = now; SIMST.t = Math.min(SEM - 1, SIMST.t + dt * 22); aplicar(); if (SIMST.t >= SEM - 1) { parar(); return; } play = requestAnimationFrame(paso); };
+  const arrancar = () => { if (RMQ) { SIMST.t = SEM - 1; aplicar(); return; } if (SIMST.t >= SEM - 1) SIMST.t = 0; prev = performance.now(); $('[data-play]').textContent = '❚❚'; play = requestAnimationFrame(paso); };
+  el.addEventListener('click', (ev) => {
+    const b = ev.target.closest('button'); if (!b) return;
+    if (b.dataset.min !== undefined) { el.classList.toggle('min'); b.textContent = el.classList.contains('min') ? '+' : '–'; return; }
+    if (b.dataset.play !== undefined) { play ? parar() : arrancar(); return; }
+    if (b.dataset.tab !== undefined) { const t = document.getElementById('b-tablero'); if (t) t.click(); return; }
+    if (b.dataset.e) { const e = b.dataset.e; if (e === 'A') { if (T3.escenario === 'proyecto') document.querySelector('.sw button[data-e="hoy"]')?.click(); }
+      else { SIMST.esc = e; avisar('mapa'); if (T3.escenario !== 'proyecto') document.querySelector('.sw button[data-e="proyecto"]')?.click(); }
+      SIMST.t = 0; aplicar(); arrancar(); }
+  });
+  el.addEventListener('input', (ev) => { const i = ev.target;
+    if (i.dataset.t !== undefined) { parar(); SIMST.t = +i.value; aplicar(); return; }
+    if (i.dataset.k) { const P = i.dataset.g === '1' ? P1 : i.dataset.g === '2' ? P2 : P3; P[i.dataset.k] = +i.value; const o = el.querySelector(`output[data-o="${i.dataset.k}"]`); if (o) o.textContent = (FMT[i.dataset.k] || fmt)(+i.value); R = correrTodo(); aplicar(); avisar('mapa'); }
+  });
+  el.addEventListener('change', (ev) => { const i = ev.target;
+    if (i.dataset.b) { P1[i.dataset.b] = i.checked; R = correrTodo(); aplicar(); avisar('mapa'); }
+    if (i.dataset.anti !== undefined) { P3.anti = i.checked; R = correrTodo(); aplicar(); avisar('mapa'); } });
+  addEventListener('sim-cambio', (ev) => { if (ev.detail && ev.detail.origen === 'mapa') return; R = correrTodo(); el.querySelectorAll('input[data-k]').forEach(i => { const P = i.dataset.g === '1' ? P1 : i.dataset.g === '2' ? P2 : P3; i.value = P[i.dataset.k]; }); aplicar(); });
+  addEventListener('escenario', () => setTimeout(() => { SIMST.t = 0; ultHB = -1; aplicar(); arrancar(); }, 60));
+  // la huerta de barrio carga después: se aplica cuando aparece
+  const espera = setInterval(() => { if (window.KEN_HBAR && window.KEN_HBAR.fraccion) { clearInterval(espera); ultHB = -1; aplicar(); } }, 800);
+
+  /* ---------------- cuadro: partículas y etiquetas ---------------- */
+  const V = new THREE.Vector3();
+  function cuadro(now) {
+    requestAnimationFrame(cuadro);
+    const tt = RMQ ? 0 : now / 1000, e = esc();
+    for (let i = 0; i < NP; i++) { const p = PART[i]; if (!p.on || !EST.length) { PP[i * 3 + 1] = -999; continue; }
+      const rutas = RUTAS[p.r], cv = rutas[p.k % rutas.length]; const v = p.r === 'rell' ? 0.05 : 0.11; cv.getPoint((p.f + tt * v) % 1, V); PP[i * 3] = V.x; PP[i * 3 + 1] = V.y; PP[i * 3 + 2] = V.z; }
+    gp.attributes.position.needsUpdate = true;
+    const cam = T3.camera, W = innerWidth, H = innerHeight;
+    for (const k in ET) { const d = ET[k]; if (!d.innerHTML || (k === 'comp' && e === 'A') || document.body.classList.contains('tb-abierto')) { d.style.display = 'none'; continue; }
+      const p = POS[k](); V.set(p[0], p[1], p[2]).project(cam); const ok = V.z < 1 && Math.abs(V.x) < 0.92 && Math.abs(V.y) < 0.9; d.style.display = ok ? 'block' : 'none';
+      if (ok) d.style.transform = `translate(${((V.x + 1) / 2 * W).toFixed(1)}px,${((1 - V.y) / 2 * H).toFixed(1)}px) translate(-50%,-110%)`; }
+  }
+  requestAnimationFrame(cuadro);
+  aplicar();
+  return { aplicar, arrancar, get R() { return R; } };
+}

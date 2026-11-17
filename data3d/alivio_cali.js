@@ -26,7 +26,7 @@ export function crearAlivioCali({ T3, D }) {
     if (!enVia(x, z)) return 0;
     const cam = ((id * 2654435761) >>> 0) / 4294967296 >= 0.92; // mismo sorteo de camiones que index.html
     cH++; if (cam) kH++;
-    const queda = (Math.imul(id ^ 0x27d4eb2d, 0x165667b1) >>> 0) / 4294967296 < (cam ? KEEP_CAM : KEEP);
+    const queda = (Math.imul(id ^ 0x27d4eb2d, 0x165667b1) >>> 0) / 4294967296 < (cam ? alivio.KEEP_CAM : alivio.KEEP); // los escenarios (data3d/escenarios_sim.js) cambian KEEP según la dependencia de Corabastos
     if (queda) { cP++; if (cam) kP++; }
     return T3.escenario === 'proyecto' && !queda ? 2 : 1;
   };
@@ -80,7 +80,7 @@ export function crearAlivioCali({ T3, D }) {
     const vis = V.z < 1 && Math.abs(V.x) < 1 && Math.abs(V.y) < 1; et.style.display = vis ? 'flex' : 'none';
     if (vis) et.style.transform = `translate(${((V.x + 1) / 2 * innerWidth + 10).toFixed(1)}px,${((1 - V.y) / 2 * innerHeight - 18).toFixed(1)}px)`;
     if (t > tTxt) { tTxt = t + 700; const s = document.getElementById('alivio-v');
-      if (s) s.innerHTML = alivio.hoy > 0.5 ? `<em>−${Math.round((1 - alivio.pro / alivio.hoy) * 100)} % vehículos</em> · camiones −${Math.round((1 - KEEP_CAM) * 100)} %` : `menos viajes a Corabastos`; }
+      if (s) s.innerHTML = alivio.hoy > 0.5 ? `<em>−${Math.round((1 - alivio.pro / alivio.hoy) * 100)} % vehículos</em> · camiones −${Math.round((1 - alivio.KEEP_CAM) * 100)} %` : `menos viajes a Corabastos`; }
   }
   requestAnimationFrame(cuadro);
   return { ver(v) { on = !!v; }, get on() { return on; }, cinta, alivio };

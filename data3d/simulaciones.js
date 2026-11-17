@@ -13,85 +13,14 @@
    SIM-02 Orgánicos y compostaje: A ruta actual · B estación de compostaje barrial · C compostaje en Bavaria Común
    SIM-03 Hábitat y fauna: A sin huertas · B huertas sin criterio de ubicación · C huertas con corredores; con y sin medida antitrampa
    Los valores de partida que no da el documento están marcados [SUP] (supuestos para discutir con el grupo). */
+import { SEM, AÑO, POB_K, PAR, SIMST, avisar, sim03, correrTodo } from './sim_modelos.js?v=1';
 export function iniciarSimulaciones({ T3, tb, verPestana }) {
-  const SEM = 520, AÑO = 52, POB_K = 1034000; // población de Kennedy (proyección DANE 2024, aprox.)
+  const { P1, P2, P3 } = PAR; // los mismos parámetros que el panel de escenarios del mapa (data3d/sim_modelos.js)
   const COL = { A: '#8fb0c9', B: '#7f8a93', C: '#e2a55b' } /* los mismos del simulador: hoy azul grisáceo, propuesta ámbar */, NOMBRE = { A: 'A · sin intervención', B: 'B · nodo central', C: 'C · clúster rotativo' };
   const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const fmt = (v, d = 0) => (v == null || !isFinite(v)) ? '–' : v.toLocaleString('es-CO', { maximumFractionDigits: d, minimumFractionDigits: d });
   const fmtK = (v) => v >= 1e6 ? fmt(v / 1e6, 1) + ' M' : v >= 1e4 ? fmt(v / 1e3, 0) + ' mil' : fmt(v);
 
-  /* ---------------- parámetros (sliders) ---------------- */
-  const P1 = { rend: 6, alcance: 0.5, auto: 0.35, merma: 0.1, precio: 2600, acopio: 15000, reac: 0.5, cupos: 12, retardo: 12, c: 1000, rotacion: 12, mu: 6, zona: 50000,
-    sequia: false, bloqueo: false, crece: false, baldios: false };
-  const P2 = { frac: 0.4, cap: 6000, mad: 10, sust: 0.2, dist: 1.5 };
-  const P3 = { disp: 400, borde: 20, arboles: 0.4, luz: 0.5, anti: true, rec: 0.02 };
-
-  /* ---------------- SIM-01 ---------------- */
-  function sim01(e, P) {
-    const N = e === 'A' ? 300 : e === 'B' ? 2506 : 5400; // A: huerteros que ya existen sin apoyo [SUP]
-    const q = e === 'A' ? 0.0025 : 0.0073, area0 = 50; // m² por huerta (documento)
-    const out = { prod: [], auto: [], merma: [], exc: [], pers: [], pct: [], dep: [], act: [], m2p: [], cal: [], prom: [], espera: [], pc: [] };
-    let A_ = e === 'A' ? 120 : 60, prom = e === 'A' ? 0 : 6, cola = 0, pob = POB_K, Nef = N; const pipeline = [];
-    for (let t = 0; t < SEM; t++) {
-      if (P.crece && e !== 'A') pob *= Math.pow(1.015, 1 / AÑO);
-      if (P.baldios && e !== 'A' && t === 300) { Nef = N * 0.65; A_ *= 0.7; } // revocación de baldíos
-      const clima = P.sequia && t >= 150 && t < 200 ? 0.55 : 1, bloqueo = P.bloqueo && t >= 260 && t < 290;
-      // promotores formados por Bavaria (llegan con el retardo de aprendizaje)
-      if (e !== 'A') { if (t % 13 === 0) pipeline.push(t + P.retardo); while (pipeline.length && pipeline[0] <= t) { pipeline.shift(); prom += P.cupos; } }
-      const area = A_ * area0, m2p = prom ? area / prom : Infinity, cal = e === 'A' ? 0.55 : Math.min(1, P.c / m2p);
-      // difusión (Bass)
-      const p = e === 'A' ? 0.0002 : Math.max(0.00058, (P.cupos / 13) * P.alcance / Nef);
-      const adop = Math.max(0, (p + q * A_ / Nef) * (Nef - A_));
-      const carga = e === 'A' ? 1.2 : Math.max(0, m2p / P.c), alivio = e === 'C' ? Math.max(0.35, 1 - 6 / P.rotacion * 0.6) : 1;
-      const retiro = A_ * 0.0018 * (1 + 3 * Math.max(0, carga - 1)) * alivio;
-      A_ = Math.max(0, Math.min(Nef, A_ + adop - retiro));
-      // producción y destino
-      const prod = area * P.rend / AÑO * clima * cal;
-      const auto = prod * P.auto; let merma = prod * P.merma; let exc = prod - auto - merma;
-      if (e !== 'A' && exc > P.acopio) { merma += exc - P.acopio; exc = P.acopio; } // acopio lleno: sube la merma
-      if (e === 'A') { merma += exc * 0.5; exc *= 0.5; } // sin acopio la mitad del excedente se pierde [SUP]
-      // personas alimentadas (frutas y verduras recomendadas: 400 g/día, OMS)
-      const pers = prod * AÑO * (1 - 0.1) / (0.4 * 365);
-      // decisión: λ solicitudes por semana; μ central o rotativo
-      const lam = adop * 0.3 + A_ * 0.002 + (bloqueo ? 3 : 0);
-      const perdida = Math.min(0.5, 0.15 * 12 / P.rotacion), mu = e === 'A' ? 0 : e === 'B' ? P.mu : 4 * (P.mu * 0.6) * (1 - perdida);
-      let espera = null; if (e !== 'A') { cola = Math.max(0, cola + lam - mu); espera = lam < mu && cola < 1 ? 1 / (mu - lam) : (cola + lam) / Math.max(0.1, mu); }
-      const pc = 3000 * (bloqueo ? 1.6 : 1) * (1 - P.reac * Math.min(1, pers / P.zona) * 0.25); // precio de Corabastos [SUP]
-      out.prod.push(prod); out.auto.push(auto); out.merma.push(merma); out.exc.push(exc); out.pers.push(pers); out.pct.push(pers / pob * 100);
-      out.dep.push(Math.max(0, 1 - pers / P.zona) * (bloqueo ? 1 : 1)); out.act.push(A_); out.m2p.push(isFinite(m2p) ? m2p : null); out.cal.push(cal); out.prom.push(prom); out.espera.push(espera); out.pc.push(pc);
-    }
-    return out;
-  }
-  /* ---------------- SIM-02 ---------------- */
-  function sim02(e, P, pobZona) {
-    const gen = pobZona * 0.45 * 7, out = { relleno: [], compost: [], hongos: [], vuelve: [], pct: [], km: [], pila: [] }; // 0,45 kg/día de orgánicos por persona [SUP]
-    const cap = e === 'A' ? 0 : e === 'B' ? P.cap : P.cap * 3.5, frac = e === 'A' ? 0.02 : P.frac, dist = e === 'A' ? 28 : e === 'B' ? P.dist : 4.5; // Doña Juana a ~28 km; Bavaria a ~4,5 km [SUP]
-    const entra = []; let pila = 0;
-    for (let t = 0; t < SEM; t++) {
-      const adopc = Math.min(1, 0.15 + t / 156); // la separación en la fuente se aprende en ~3 años [SUP]
-      const desv = Math.min(gen * frac * adopc, cap || gen * frac * adopc * (e === 'A' ? 1 : 0)), rell = gen - desv;
-      entra.push(desv); pila += desv; const madura = t >= P.mad ? entra[t - P.mad] : 0; pila -= madura;
-      const sust = e === 'C' ? madura * P.sust : e === 'B' ? madura * P.sust * 0.3 : 0, comp = madura * 0.5 - sust * 0.5, hongos = sust * 0.15;
-      out.relleno.push(rell); out.compost.push(Math.max(0, comp)); out.hongos.push(hongos); out.vuelve.push(Math.max(0, comp)); out.pct.push(Math.max(0, comp) / gen * 100 * 2); out.pila.push(pila);
-      out.km.push(rell / 8000 * 28 * 2 + desv / 1500 * dist * 2); // camión de 8 t a relleno; triciclo/furgón de 1,5 t a la estación
-    }
-    return out;
-  }
-  /* ---------------- SIM-03 ---------------- */
-  function sim03(e, P, anti) {
-    const out = { aves: [], riq: [], hum: [], trampa: [] };
-    let B = 900, W = 0.55, muertes = 0;
-    const huertas = e === 'A' ? 0 : P.borde, conect = e === 'A' ? 0.2 : e === 'B' ? 1 - Math.exp(-P.disp / 600) : 1 - Math.exp(-P.disp / 250);
-    for (let t = 0; t < SEM; t++) {
-      const presion = 0.004 + (e === 'A' ? 0 : huertas * 0.00012 * (e === 'B' ? 1.6 : 0.7));
-      W = Math.max(0.05, Math.min(1, W + P.rec * (1 - W) * 0.2 - presion * W));
-      const K = 900 * (0.6 + 0.6 * W + 0.5 * P.arboles + (e === 'A' ? 0 : 0.4 * conect + huertas * 0.006));
-      const m = (e === 'A' ? 0.0004 : huertas / 40 * 0.004 * P.luz * (e === 'B' ? 1 : 0.6)) * (anti ? 0.3 : 1); // trampa ecológica: luz y vidrio
-      const r = 0.012; const crece = r * B * (1 - B / K), muere = B * m; muertes += muere; B = Math.max(20, B + crece - muere + conect * 1.5);
-      out.aves.push(B); out.riq.push(Math.round(42 * (0.45 + 0.35 * conect + 0.3 * W))); out.hum.push(W * 100); out.trampa.push(muertes);
-    }
-    return out;
-  }
 
   /* ---------------- estilos ---------------- */
   const css = document.createElement('style'); css.textContent = `
@@ -155,7 +84,7 @@ export function iniciarSimulaciones({ T3, tb, verPestana }) {
   const cont = document.createElement('div'); cont.className = 'gr sim'; cont.dataset.tab = 'sim';
   const ancla = tb.querySelector('.cuerpo .gr'); ancla.parentNode.insertBefore(cont, ancla);
   const tip = document.createElement('div'); tip.className = 'sim-tip'; tb.appendChild(tip);
-  let sim = 'S1', escP = 'C', t = SEM - 1, play = null;
+  let sim = 'S1', escP = SIMST.esc, t = SEM - 1, play = null;
   const escAct = () => (T3.escenario === 'proyecto' ? escP : 'A');
 
   /* ---------------- gráfica de líneas o áreas apiladas (un solo eje) ---------------- */
@@ -194,11 +123,7 @@ export function iniciarSimulaciones({ T3, tb, verPestana }) {
 `;
   }
   const S = { S1: null, S2: null, S3: null };
-  function correr() {
-    S.S1 = { A: sim01('A', P1), B: sim01('B', P1), C: sim01('C', P1) };
-    const z = P1.zona; S.S2 = { A: sim02('A', P2, z), B: sim02('B', P2, z), C: sim02('C', P2, z) };
-    S.S3 = { A: sim03('A', P3, P3.anti), B: sim03('B', P3, P3.anti), C: sim03('C', P3, P3.anti), Bsin: sim03('B', P3, false), Csin: sim03('C', P3, false) };
-  }
+  function correr() { Object.assign(S, correrTodo()); }
   function pintar() {
     if (!S.S1) correr(); const e = escAct();
     const sub = `<div class="sim-sub" role="tablist">${[['S1', 'Comida'], ['S2', 'Residuos'], ['S3', 'Aves y humedal']].map(([k, n]) => `<button data-s="${k}" class="${k === sim ? 'on' : ''}">${n}</button>`).join('')}</div>`;
@@ -323,13 +248,13 @@ export function iniciarSimulaciones({ T3, tb, verPestana }) {
   }
   function conectar() {
     cont.querySelectorAll('.sim-sub button').forEach(b => b.onclick = () => { sim = b.dataset.s; pintar(); animar(); });
-    cont.querySelectorAll('.sim-esc button').forEach(b => b.onclick = () => { escP = b.dataset.e; pintar(); animar(); });
+    cont.querySelectorAll('.sim-esc button').forEach(b => b.onclick = () => { escP = SIMST.esc = b.dataset.e; avisar('tablero'); pintar(); animar(); });
     const det = cont.querySelector('.sim-var'); if (det) { det.open = !!abiertoVar; det.ontoggle = () => { abiertoVar = det.open; }; }
     const tec = cont.querySelector('.sim-tec'); if (tec) tec.ontoggle = () => { abiertoTec = tec.open; if (tec.open) dibujar(); };
     cont.querySelectorAll('input[data-k]').forEach(inp => { const P = sim === 'S1' ? P1 : sim === 'S2' ? P2 : P3, o = cont.querySelector(`output[data-o="${inp.dataset.k}"]`);
-      inp.oninput = () => { P[inp.dataset.k] = +inp.value; if (o) o.textContent = inp.value; correr(); dibujar(); }; inp.onchange = () => pintar(); });
-    cont.querySelectorAll('input[data-b]').forEach(inp => inp.onchange = () => { P1[inp.dataset.b] = inp.checked; correr(); pintar(); });
-    cont.querySelectorAll('input[data-b3]').forEach(inp => inp.onchange = () => { P3.anti = inp.checked; correr(); pintar(); });
+      inp.oninput = () => { P[inp.dataset.k] = +inp.value; if (o) o.textContent = inp.value; correr(); dibujar(); avisar('tablero'); }; inp.onchange = () => pintar(); });
+    cont.querySelectorAll('input[data-b]').forEach(inp => inp.onchange = () => { P1[inp.dataset.b] = inp.checked; correr(); pintar(); avisar('tablero'); });
+    cont.querySelectorAll('input[data-b3]').forEach(inp => inp.onchange = () => { P3.anti = inp.checked; correr(); pintar(); avisar('tablero'); });
   }
   let abiertoVar = false, abiertoTec = false;
   function refrescar() { const r = cont.querySelector('.sim-res'); if (r) r.outerHTML = resumen(); dibujar(); }
@@ -341,6 +266,8 @@ export function iniciarSimulaciones({ T3, tb, verPestana }) {
   cont.addEventListener('click', (e) => { if (e.target.closest('[data-play]')) { if (play) { parar(); refrescar(); } else arrancar(t >= SEM - 1); } });
   cont.addEventListener('input', (e) => { const ts = e.target.closest('[data-t]'); if (!ts) return; parar(); t = +ts.value; const o = ts.nextElementSibling; if (o) o.textContent = 'año ' + año10(); dibujar(); });
   cont.addEventListener('change', (e) => { if (e.target.closest('[data-t]')) refrescar(); });
+  // el panel de escenarios del mapa cambió algo: mismo escenario y mismos parámetros aquí
+  addEventListener('sim-cambio', (ev) => { if (ev.detail && ev.detail.origen === 'tablero') return; escP = SIMST.esc; correr(); if (cont.classList.contains('vis')) pintar(); });
   const RMQ = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const visible = () => cont.classList.contains('vis') && document.body.classList.contains('tb-abierto');
   const animar = () => { if (RMQ) { t = SEM - 1; refrescar(); return; } if (visible()) arrancar(true); };

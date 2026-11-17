@@ -70,6 +70,7 @@ export async function crearHuertasBarrio({ THREE, T3, D, movil = false }) {
   const CAMAS = []; // {m, u, v, len, k}
   MODS.forEach((m, mi) => { const len = m.l - 6.5, u0 = -2.25; let j = 0;
     for (let v = -m.w / 2 + 1.7; v <= m.w / 2 - 1.6; v += 1.95) CAMAS.push({ m, u: u0, v, len, k: ORDEN[(mi * 3 + j++) % ORDEN.length] }); });
+  const iniMod = grupo.children.length; let lotesOn = true; // mallas de los módulos de lotes baldíos (se apagan juntas)
   // piso de viruta: una sola malla con UV en metros
   { const P = [], U = [], I = []; for (const m of MODS) { const b = P.length / 3; for (const [u, v] of [[-m.l / 2, -m.w / 2], [m.l / 2, -m.w / 2], [m.l / 2, m.w / 2], [-m.l / 2, m.w / 2]]) { const q = loc(m, u, v); P.push(q[0], YG, q[1]); U.push(q[0] / 3, q[1] / 3); } I.push(b, b + 2, b + 1, b, b + 3, b + 2); }
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(U, 2)); g.setIndex(I); g.computeVertexNormals();
@@ -121,6 +122,7 @@ export async function crearHuertasBarrio({ THREE, T3, D, movil = false }) {
     cs.forEach((p, i) => { pon(ica, i, p[0], p[1], p[2], YG); pon(ite, i, p[0], p[1], p[2], YG); }); ica.castShadow = ite.castShadow = !movil; grupo.add(ica, ite);
   }
 
+  const MODMESH = grupo.children.slice(iniMod);
   /* ---------- parques: huertas EFÍMERAS (como la de la Biblioteca El Tintal, pero con la forma del parque) ----------
      vainas orgánicas a lado y lado de los senderos, con borde claro, tierra viva y cubiertas de lóbulos con membrana
      traslúcida sobre columnas-árbol; hoteles de insectos y perchas para que lleguen polinizadores y aves */
@@ -189,17 +191,17 @@ export async function crearHuertasBarrio({ THREE, T3, D, movil = false }) {
     if (!forzar && Math.hypot(t.x - ux, t.z - uz) < 25 && Math.abs(cam.y - uy) < 40) return; ux = t.x; uz = t.z; uy = cam.y;
     const R = Math.min(200, 70 + cam.y * 0.7), n = {}; for (const k in ims) n[k] = 0;
     const cerca = (m) => Math.hypot(m.c[0] - t.x, m.c[1] - t.z) < R + m.l / 2;
-    for (const c of CAMAS) { if (!cerca(c.m)) continue; const C = CULT[c.k], im = ims[c.k], cap = im.instanceMatrix.count, pas = C.paso * (movil ? 1.6 : 1);
+    for (const c of CAMAS) { if (!lotesOn || !cerca(c.m)) continue; const C = CULT[c.k], im = ims[c.k], cap = im.instanceMatrix.count, pas = C.paso * (movil ? 1.6 : 1);
       for (let f = 0; f < C.fil; f++) { const dv = (f + 0.5) / C.fil * 1.0 - 0.5;
         for (let s = -c.len / 2 + 0.2; s < c.len / 2 - 0.15 && n[c.k] < cap; s += pas) {
           const h = Math.sin((c.m.c[0] + s) * 12.9898 + (c.m.c[1] + c.v + f) * 78.233) * 43758.5453, r = h - Math.floor(h);
           const q = loc(c.m, c.u + s, c.v + dv + (r - 0.5) * 0.05); o.position.set(q[0], YG + 0.42, q[1]); o.rotation.set(0, r * 6.28, 0); const e = 0.78 + r * 0.5; o.scale.set(e, e * (0.9 + r * 0.2), e); o.updateMatrix(); im.setMatrixAt(n[c.k], o.matrix);
           im.setColorAt(n[c.k], cc.set(C.pal ? C.pal[Math.floor(r * 997) % C.pal.length] : (r < 0.5 ? C.c : C.c2)).multiplyScalar(0.85 + r * 0.3)); n[c.k]++; } } }
-    for (const q of PUNTOS_POD) { if (Math.abs(q[0] - t.x) > R || Math.abs(q[1] - t.z) > R) continue; const C = CULT[q[2]], im = ims[q[2]]; if (!C || !im || n[q[2]] >= im.instanceMatrix.count) continue; const r = q[3];
+    for (const q of PUNTOS_POD) { if (Math.abs(q[0] - t.x) > R || Math.abs(q[1] - t.z) > R || !HPAR[q[4]].g.visible) continue; const C = CULT[q[2]], im = ims[q[2]]; if (!C || !im || n[q[2]] >= im.instanceMatrix.count) continue; const r = q[3];
       o.position.set(q[0], YG + 0.42 + HPAR[q[4]].g.position.y, q[1]); o.rotation.set(0, r * 6.28, 0); const e = 0.8 + r * 0.55; o.scale.set(e, e * (0.9 + r * 0.2), e); o.updateMatrix(); im.setMatrixAt(n[q[2]], o.matrix);
       im.setColorAt(n[q[2]], cc.set(C.pal ? C.pal[Math.floor(r * 997) % C.pal.length] : (r < 0.5 ? C.c : C.c2)).multiplyScalar(0.85 + r * 0.3)); n[q[2]]++; }
     { const im = ims.girasol, cap = im.instanceMatrix.count;
-      for (const g of GIR) { if (!cerca(g.m)) continue; for (let s = -g.len / 2 - 2; s < g.len / 2 - 2 && n.girasol < cap; s += movil ? 1.3 : 0.75) {
+      for (const g of GIR) { if (!lotesOn || !cerca(g.m)) continue; for (let s = -g.len / 2 - 2; s < g.len / 2 - 2 && n.girasol < cap; s += movil ? 1.3 : 0.75) {
         const h = Math.sin((g.m.c[0] + s) * 3.7 + g.m.c[1] * 1.3) * 43758.5453, r = h - Math.floor(h), q = loc(g.m, s, g.v + (r - 0.5) * 0.2);
         o.position.set(q[0], YG, q[1]); o.rotation.set(0, -g.m.a + Math.PI + (r - 0.5) * 0.8, 0); const e = 0.85 + r * 0.35; o.scale.set(e, e, e); o.updateMatrix(); im.setMatrixAt(n.girasol, o.matrix); im.setColorAt(n.girasol, cc.set(r < 0.5 ? '#3f7a2c' : '#4a8a32')); n.girasol++; } } }
     for (const k in ims) { ims[k].count = n[k]; ims[k].instanceMatrix.needsUpdate = true; if (ims[k].instanceColor) ims[k].instanceColor.needsUpdate = true; }
@@ -211,6 +213,7 @@ export async function crearHuertasBarrio({ THREE, T3, D, movil = false }) {
     const base = actualizar; const sinc = () => { const g = ims.girasol; disco.count = centro.count = g.count; for (let i = 0; i < g.count; i++) { g.getMatrixAt(i, o.matrix); disco.setMatrixAt(i, o.matrix); centro.setMatrixAt(i, o.matrix); } disco.instanceMatrix.needsUpdate = centro.instanceMatrix.needsUpdate = true; };
     var actualizarTodo = (f) => { const c0 = ims.girasol.count, u0 = ux; base(f); if (ims.girasol.count !== c0 || ux !== u0) sinc(); }; }
   const timer = setInterval(() => actualizarTodo(false), 400);
+  const BAVC = [4136, 96], HORD = HPAR.slice().sort((a, b) => Math.hypot(a.h.c[0] - BAVC[0], a.h.c[1] - BAVC[1]) - Math.hypot(b.h.c[0] - BAVC[0], b.h.c[1] - BAVC[1]));
   /* apoyar cada huerta de parque en el suelo REAL de la foto aérea: rayos hacia abajo sobre la malla de Google en sus vainas
      (percentil bajo, sin copas: las vainas no tocan árboles); se vuelve a medir cuando la malla se recalibra (T3.tilesDy) */
   const rc = new THREE.Raycaster(), ab = new THREE.Vector3(0, -1, 0), P0 = new THREE.Vector3(); rc.firstHitOnly = true; let ultDy = null;
@@ -229,6 +232,12 @@ export async function crearHuertasBarrio({ THREE, T3, D, movil = false }) {
   return {
     grupo, n: D.huertas.length, area,
     ver(on) { grupo.visible = !!on; if (on) actualizarTodo(true); },
+    // escenarios (data3d/escenarios_sim.js): f = hogares con huerta ÷ techo del escenario C. Las huertas se abren desde Bavaria hacia afuera
+    // (difusión de lo que se aprende allá) y se cierran en el orden contrario si hay abandono por carga
+    fraccion(f) { f = Math.max(0, Math.min(1, f)); const n = Math.round(f * HORD.length); let cambio = false;
+      HORD.forEach((h, i) => { const v = i < n; if (h.g.visible !== v) { h.g.visible = v; cambio = true; } });
+      const lo = f > 0.06; if (lo !== lotesOn) { lotesOn = lo; MODMESH.forEach(m => { m.visible = lo; }); cambio = true; }
+      if (cambio) { ux = 1e9; actualizarTodo(true); } return { abiertas: n + (lotesOn ? D.huertas.filter(h => h.m).length : 0), total: HORD.length + D.huertas.filter(h => h.m).length }; },
     // polígonos de cada huerta (módulo principal) para la red biótica
     sitios: () => sitiosHuertasBarrio(D),
     quitar() { clearInterval(timer); clearInterval(timer2); T3.scene.remove(grupo); }
