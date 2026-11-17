@@ -124,13 +124,13 @@ export async function crearHuertasBarrio({ THREE, T3, D, movil = false }) {
   /* ---------- parques: huertas EFÍMERAS (como la de la Biblioteca El Tintal, pero con la forma del parque) ----------
      vainas orgánicas a lado y lado de los senderos, con borde claro, tierra viva y cubiertas de lóbulos con membrana
      traslúcida sobre columnas-árbol; hoteles de insectos y perchas para que lleguen polinizadores y aves */
-  const PODS = []; D.huertas.forEach(h => (h.pods || []).forEach(p => PODS.push(p)));
-  const CUBS = []; D.huertas.forEach(h => (h.cub || []).forEach(c => CUBS.push(c)));
-  const FAUS = []; D.huertas.forEach(h => (h.fau || []).forEach(f => FAUS.push(f)));
   const PUNTOS_POD = []; // plantas dentro de cada vaina (se dibujan de cerca)
   const dentroP = (W, x, z) => { let c = false; for (let i = 0, j = W.length - 1; i < W.length; j = i++) { const a = W[i], b = W[j]; if ((a[1] > z) !== (b[1] > z) && x < (b[0] - a[0]) * (z - a[1]) / (b[1] - a[1]) + a[0]) c = !c; } return c; };
-  if (PODS.length) {
-    const { mergeGeometries } = await import('three/addons/utils/BufferGeometryUtils.js'); const NI = (g) => g.index ? g.toNonIndexed() : g;
+  const HPAR = []; // una huerta por grupo: cada una se apoya en el suelo real de la foto (se mide con rayos)
+  const { mergeGeometries } = await import('three/addons/utils/BufferGeometryUtils.js');
+  for (const H of D.huertas.filter(h => h.pods && h.pods.length)) {
+    const gH = new THREE.Group(), hi = HPAR.length; gH.name = 'huerta-efimera'; grupo.add(gH); HPAR.push({ g: gH, h: H, dy: null });
+    const PODS = H.pods, CUBS = H.cub || [], FAUS = H.fau || [];
     const sh = (W) => new THREE.Shape(W.map(p => new THREE.Vector2(p[0], -p[1])));
     const bordes = [], tierras = [];
     for (const p of PODS) {
@@ -139,14 +139,14 @@ export async function crearHuertasBarrio({ THREE, T3, D, movil = false }) {
       try { const t = new THREE.ShapeGeometry(sh(p.pi)).rotateX(-Math.PI / 2).translate(0, YG + 0.4, 0); const P = t.attributes.position, U = t.attributes.uv; for (let i = 0; i < P.count; i++) U.setXY(i, P.getX(i) / 2.5, P.getZ(i) / 2.5); tierras.push(t); } catch (e) {}
       let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const q of p.pi) { x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); z0 = Math.min(z0, q[1]); z1 = Math.max(z1, q[1]); }
       const C = CULT[p.cul] || CULT.lechuga, paso = Math.max(0.3, C.paso * 1.15);
-      for (let x = x0 + 0.2; x < x1; x += paso) for (let z = z0 + 0.2; z < z1; z += paso) { const px = x + (rnd() - 0.5) * paso * 0.5, pz = z + (rnd() - 0.5) * paso * 0.5; if (dentroP(p.pi, px, pz)) PUNTOS_POD.push([px, pz, p.cul, rnd()]); }
+      for (let x = x0 + 0.2; x < x1; x += paso) for (let z = z0 + 0.2; z < z1; z += paso) { const px = x + (rnd() - 0.5) * paso * 0.5, pz = z + (rnd() - 0.5) * paso * 0.5; if (dentroP(p.pi, px, pz)) PUNTOS_POD.push([px, pz, p.cul, rnd(), hi]); }
     }
     const mBorde = mStd('#cfcac0', { roughness: 0.8 });
-    if (bordes.length) { const m = new THREE.Mesh(mergeGeometries(bordes), mBorde); m.castShadow = m.receiveShadow = !movil; grupo.add(m); }
+    if (bordes.length) { const m = new THREE.Mesh(mergeGeometries(bordes), mBorde); m.castShadow = m.receiveShadow = !movil; gH.add(m); }
     if (tierras.length) { const texT = lienzo(256, 256, (g, w, h) => { g.fillStyle = '#4a3527'; g.fillRect(0, 0, w, h); for (let n = 0; n < 2600; n++) { g.fillStyle = `rgba(${30 + rnd() * 40},${20 + rnd() * 25},${12 + rnd() * 15},.6)`; g.fillRect(rnd() * w, rnd() * h, 2, 2); }
         for (let n = 0; n < 500; n++) { g.strokeStyle = `rgba(${190 + rnd() * 40},${160 + rnd() * 30},90,.5)`; g.lineWidth = 1; const x = rnd() * w, y = rnd() * h, a = rnd() * 3; g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a) * 7, y + Math.sin(a) * 7); g.stroke(); }
         for (let n = 0; n < 160; n++) { g.fillStyle = rnd() < 0.5 ? 'rgba(80,130,50,.75)' : 'rgba(110,160,70,.7)'; g.beginPath(); g.ellipse(rnd() * w, rnd() * h, 3 + rnd() * 5, 3 + rnd() * 5, 0, 0, 7); g.fill(); } });
-      const m = new THREE.Mesh(mergeGeometries(tierras), mStd('#ffffff', { map: texT, roughness: 1 })); m.receiveShadow = !movil; grupo.add(m); }
+      const m = new THREE.Mesh(mergeGeometries(tierras), mStd('#ffffff', { map: texT, roughness: 1 })); m.receiveShadow = !movil; gH.add(m); }
     // cubiertas de lóbulos: membrana traslúcida + costillas blancas + borde tubular + columnas que se abren en ramas
     const texCost = lienzo(64, 256, (g, w, h) => { g.clearRect(0, 0, w, h); g.fillStyle = '#fff'; for (let y = 0; y < h; y += 22) g.fillRect(0, y, w, 2); g.fillRect(0, 0, 2, h); });
     const memb = [], tubos = [], cols = [];
@@ -165,16 +165,16 @@ export async function crearHuertasBarrio({ THREE, T3, D, movil = false }) {
     }
     if (memb.length) { const gm = mergeGeometries(memb);
       const m1 = new THREE.Mesh(gm, new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.14, side: THREE.DoubleSide, roughness: 0.3, depthWrite: false }));
-      const m2 = new THREE.Mesh(gm, new THREE.MeshStandardMaterial({ color: 0xf6f6f2, map: texCost, alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.4 })); m2.castShadow = !movil; m1.renderOrder = 6; grupo.add(m1, m2);
+      const m2 = new THREE.Mesh(gm, new THREE.MeshStandardMaterial({ color: 0xf6f6f2, map: texCost, alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.4 })); m2.castShadow = !movil; m1.renderOrder = 6; gH.add(m1, m2);
       const mCol = mStd('#f1f1ee', { roughness: 0.35, metalness: 0.2 });
-      const t = new THREE.Mesh(mergeGeometries(tubos), mCol), c = new THREE.Mesh(mergeGeometries(cols), mCol); t.castShadow = c.castShadow = !movil; grupo.add(t, c); }
+      const t = new THREE.Mesh(mergeGeometries(tubos), mCol), c = new THREE.Mesh(mergeGeometries(cols), mCol); t.castShadow = c.castShadow = !movil; gH.add(t, c); }
     // hoteles de insectos (caja de madera con tubos sobre un poste) y perchas para aves
     const hot = FAUS.filter(f => f[2] === 'hotel'), per = FAUS.filter(f => f[2] === 'percha');
     if (hot.length) { const caja = new THREE.InstancedMesh(new THREE.BoxGeometry(0.7, 0.9, 0.35).translate(0, 1.75, 0), mStd('#ffffff', { map: lienzo(64, 64, (g) => { g.fillStyle = '#8a6a48'; g.fillRect(0, 0, 64, 64); for (let i = 0; i < 70; i++) { g.fillStyle = 'rgba(40,25,12,.85)'; g.beginPath(); g.arc(rnd() * 64, rnd() * 64, 1.5 + rnd() * 2.5, 0, 7); g.fill(); } }, false) }), hot.length);
       const poste = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.05, 0.06, 1.4, 6).translate(0, 0.7, 0), mStd('#6b4f36'), hot.length);
-      hot.forEach((f, i) => { o.position.set(f[0], YG, f[1]); o.rotation.set(0, rnd() * 6.28, 0); o.scale.set(1, 1, 1); o.updateMatrix(); caja.setMatrixAt(i, o.matrix); poste.setMatrixAt(i, o.matrix); }); caja.castShadow = !movil; grupo.add(caja, poste); }
+      hot.forEach((f, i) => { o.position.set(f[0], YG, f[1]); o.rotation.set(0, rnd() * 6.28, 0); o.scale.set(1, 1, 1); o.updateMatrix(); caja.setMatrixAt(i, o.matrix); poste.setMatrixAt(i, o.matrix); }); caja.castShadow = !movil; gH.add(caja, poste); }
     if (per.length) { const g = unirUV([new THREE.CylinderGeometry(0.04, 0.05, 3.2, 6).translate(0, 1.6, 0), new THREE.CylinderGeometry(0.025, 0.025, 1.1, 5).rotateZ(Math.PI / 2).translate(0, 3.0, 0), new THREE.CylinderGeometry(0.02, 0.02, 0.7, 5).rotateX(Math.PI / 2).translate(0, 2.5, 0)]);
-      const im = new THREE.InstancedMesh(g, mStd('#5b4632'), per.length); per.forEach((f, i) => { o.position.set(f[0] + 0.5, YG, f[1] + 0.5); o.rotation.set(0, rnd() * 6.28, 0); o.scale.set(1, 1, 1); o.updateMatrix(); im.setMatrixAt(i, o.matrix); }); grupo.add(im); }
+      const im = new THREE.InstancedMesh(g, mStd('#5b4632'), per.length); per.forEach((f, i) => { o.position.set(f[0] + 0.5, YG, f[1] + 0.5); o.rotation.set(0, rnd() * 6.28, 0); o.scale.set(1, 1, 1); o.updateMatrix(); im.setMatrixAt(i, o.matrix); }); gH.add(im); }
   }
 
   /* ---------- plantas: solo cerca de la cámara ---------- */
@@ -196,7 +196,7 @@ export async function crearHuertasBarrio({ THREE, T3, D, movil = false }) {
           const q = loc(c.m, c.u + s, c.v + dv + (r - 0.5) * 0.05); o.position.set(q[0], YG + 0.42, q[1]); o.rotation.set(0, r * 6.28, 0); const e = 0.78 + r * 0.5; o.scale.set(e, e * (0.9 + r * 0.2), e); o.updateMatrix(); im.setMatrixAt(n[c.k], o.matrix);
           im.setColorAt(n[c.k], cc.set(C.pal ? C.pal[Math.floor(r * 997) % C.pal.length] : (r < 0.5 ? C.c : C.c2)).multiplyScalar(0.85 + r * 0.3)); n[c.k]++; } } }
     for (const q of PUNTOS_POD) { if (Math.abs(q[0] - t.x) > R || Math.abs(q[1] - t.z) > R) continue; const C = CULT[q[2]], im = ims[q[2]]; if (!C || !im || n[q[2]] >= im.instanceMatrix.count) continue; const r = q[3];
-      o.position.set(q[0], YG + 0.42, q[1]); o.rotation.set(0, r * 6.28, 0); const e = 0.8 + r * 0.55; o.scale.set(e, e * (0.9 + r * 0.2), e); o.updateMatrix(); im.setMatrixAt(n[q[2]], o.matrix);
+      o.position.set(q[0], YG + 0.42 + HPAR[q[4]].g.position.y, q[1]); o.rotation.set(0, r * 6.28, 0); const e = 0.8 + r * 0.55; o.scale.set(e, e * (0.9 + r * 0.2), e); o.updateMatrix(); im.setMatrixAt(n[q[2]], o.matrix);
       im.setColorAt(n[q[2]], cc.set(C.pal ? C.pal[Math.floor(r * 997) % C.pal.length] : (r < 0.5 ? C.c : C.c2)).multiplyScalar(0.85 + r * 0.3)); n[q[2]]++; }
     { const im = ims.girasol, cap = im.instanceMatrix.count;
       for (const g of GIR) { if (!cerca(g.m)) continue; for (let s = -g.len / 2 - 2; s < g.len / 2 - 2 && n.girasol < cap; s += movil ? 1.3 : 0.75) {
@@ -211,6 +211,19 @@ export async function crearHuertasBarrio({ THREE, T3, D, movil = false }) {
     const base = actualizar; const sinc = () => { const g = ims.girasol; disco.count = centro.count = g.count; for (let i = 0; i < g.count; i++) { g.getMatrixAt(i, o.matrix); disco.setMatrixAt(i, o.matrix); centro.setMatrixAt(i, o.matrix); } disco.instanceMatrix.needsUpdate = centro.instanceMatrix.needsUpdate = true; };
     var actualizarTodo = (f) => { const c0 = ims.girasol.count, u0 = ux; base(f); if (ims.girasol.count !== c0 || ux !== u0) sinc(); }; }
   const timer = setInterval(() => actualizarTodo(false), 400);
+  /* apoyar cada huerta de parque en el suelo REAL de la foto aérea: rayos hacia abajo sobre la malla de Google en sus vainas
+     (percentil bajo, sin copas: las vainas no tocan árboles); se vuelve a medir cuando la malla se recalibra (T3.tilesDy) */
+  const rc = new THREE.Raycaster(), ab = new THREE.Vector3(0, -1, 0), P0 = new THREE.Vector3(); rc.firstHitOnly = true; let ultDy = null;
+  const apoyar = () => {
+    const tl = T3.tiles; if (!tl || !tl.group || !grupo.visible) return; const st = tl.stats; if (st && st.downloading + st.parsing > 6) return;
+    if (T3.tilesDy !== ultDy) { for (const h of HPAR) h.dy = null; ultDy = T3.tilesDy; }
+    const t = T3.orbit ? T3.orbit.target : T3.camera.position; let cambio = false;
+    for (const h of HPAR) { if (h.dy !== null) continue; const c = h.h.c; if (Math.hypot(c[0] - t.x, c[1] - t.z) > 650) continue;
+      const ys = []; for (const p of h.h.pods) { const k = Math.max(1, Math.floor(p.pi.length / 6)); for (let i = 0; i < p.pi.length; i += k) { const q = p.pi[i]; rc.set(P0.set(q[0], YG + 150, q[1]), ab); const hit = rc.intersectObject(tl.group, true)[0]; if (hit && Math.abs(hit.point.y - YG) < 30) ys.push(hit.point.y); } }
+      if (ys.length < 4) continue; ys.sort((a, b) => a - b); h.dy = ys[Math.floor(ys.length * 0.3)] - YG + 0.03; h.g.position.y = h.dy; cambio = true; }
+    if (cambio) ux = 1e9; // las plantas se vuelven a poner a la nueva altura
+  };
+  const timer2 = setInterval(apoyar, 1500);
 
   const area = D.area || MODS.reduce((s, m) => s + m.l * m.w, 0);
   return {
@@ -218,7 +231,7 @@ export async function crearHuertasBarrio({ THREE, T3, D, movil = false }) {
     ver(on) { grupo.visible = !!on; if (on) actualizarTodo(true); },
     // polígonos de cada huerta (módulo principal) para la red biótica
     sitios: () => sitiosHuertasBarrio(D),
-    quitar() { clearInterval(timer); T3.scene.remove(grupo); }
+    quitar() { clearInterval(timer); clearInterval(timer2); T3.scene.remove(grupo); }
   };
 }
 // hábitats «huerta» para la red biótica (solo los parques: los lotes baldíos ya entran por las estrategias)

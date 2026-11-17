@@ -160,13 +160,13 @@ def huerta_parque(p, k0):
     if sum(l.length for l in L) < 25: L = [x for x in espina(pg.buffer(-2)) if x.length >= 12]; fuente = 'espina'
     if not L: return None
     pista = unary_union([l.buffer(1.4) for l in L])
-    tope = int(min(16, max(4, pg.area / 1100))); pods = []
+    tope = int(min(22, max(3, pg.area / 900))); pods = []
     for li, line in enumerate(sorted(L, key=lambda l: -l.length)):
         for lado in (1, -1):
             s = 2.5 + (3.5 if lado < 0 else 0)
             while s < line.length - 4 and len(pods) < tope:
                 ph = s * 0.19 + li * 1.7 + lado
-                Lp = 8 + 8 * (0.5 + 0.5 * math.sin(ph)); D = 3 + 3 * (0.5 + 0.5 * math.sin(ph * 0.7 + 2))
+                Lp = 11 + 10 * (0.5 + 0.5 * math.sin(ph)); D = 4 + 4 * (0.5 + 0.5 * math.sin(ph * 0.7 + 2))
                 if s + Lp > line.length - 2: break
                 v = vaina(line, s, s + Lp, lado, 2.1, D)
                 ok = v.geom_type == 'Polygon' and v.is_valid and not v.is_empty and pin.contains(v) and not v.intersects(pista) and not any(v.intersects(q['g'].buffer(1.6)) for q in pods)
@@ -177,8 +177,9 @@ def huerta_parque(p, k0):
                 else: s += 2.0
         if len(pods) >= tope: break
     if len(pods) < 2: return None
+    if p['pg'].distance(BURRO) < 800 or len(pods) >= 6: pass
     nom = ('Huerta efímera del parque ' + p['n'].replace('PARQUE ', '').title()) if p['n'] else 'Huerta efímera de parque'
-    cub = [{'c': [R(q['c'][0]), R(q['c'][1])], 'rot': round(q['ang'], 3), 'A': R(q['L'] * 0.62), 'B': R(q['D'] * 0.75 + 1.2), 'H': R(3.8 + (i % 3) * 0.6)} for i, q in enumerate(pods) if i % 3 == 0 and q['L'] >= 8]
+    cub = [{'c': [R(q['c'][0]), R(q['c'][1])], 'rot': round(q['ang'], 3), 'A': R(q['L'] * 0.78), 'B': R(q['D'] * 0.85 + 2.6), 'H': R(5.2 + (i % 3) * 0.9)} for i, q in enumerate(pods) if q['L'] >= 10 and i % 2 == 0]
     fau = []
     for i, q in enumerate(pods):
         if i % 4 == 1: fau.append([R(q['c'][0]), R(q['c'][1]), 'hotel'])

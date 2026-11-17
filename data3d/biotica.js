@@ -91,7 +91,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
   const [BV, BA, CO] = await Promise.all(['data3d/bavaria.json?v=2', 'data3d/bavaria_arboles.json?v=2', 'data3d/corabastos.json?v=3'].map(u => (window.cargarJSON || ((u) => fetch(u).then(r => r.json())))(u).catch(() => null))); // Bavaria y Corabastos: también son hábitat
   const rnd = Math.random, gauss = () => { let u = 0, v = 0; while (!u) u = rnd(); while (!v) v = rnd(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(6.283 * v); };
   const TIPOS = B.tipos, COLT = TIPOS.map(t => new THREE.Color(t.c));
-  const GY = Y0; // suelo y lámina de agua en el marco de la maqueta (el mismo de las personas de la simulación)
+  const GY = (T3.sueloY != null && T3.sueloY > 0) ? T3.sueloY + 0.02 : Y0; // con la foto real (sueloY 0,3) los animales pisan la foto, no flotan 1,7 m // suelo y lámina de agua en el marco de la maqueta (el mismo de las personas de la simulación)
   // actividad de cada especie a la hora del reloj de la simulación (T3.reloj): al terminar cada pausa, el animal sigue en reposo con probabilidad 1 - actividad
   const AC = {}, horaSim = () => { const r = T3.reloj; return r && r.t >= 0 ? (r.t / 60) % 24 : 9; };
   const actualizarAC = () => { const h = horaSim(); for (const k of Object.keys(ESP)) AC[k] = actividad(k, h); }; actualizarAC();

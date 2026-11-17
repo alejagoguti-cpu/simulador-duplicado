@@ -123,10 +123,10 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
   let DIST = null, pDist = null;
   addEventListener('bav-cerrar', () => { const sp = $ley().querySelector('[data-s="bav"]'); if (solo === 'bav' && sp) sp.click(); }); // la × del panel vuelve a todas las estrategias
   function distritoBavaria() {
-    const on = T3.escenario === 'proyecto' && solo === 'bav';
-    if (on && !DIST && !pDist) pDist = Promise.all([import('./bavaria_distrito.js?v=17'), cj('data3d/bavaria.json?v=3'), cj('data3d/bavaria_arboles.json?v=3').then(j => j.arboles).catch(() => []) /* todos los árboles (bosque y sueltos): las huertas no van debajo de ninguno */, cj('data3d/bavaria_distrito_sx.json?v=2').catch(() => null)])
+    const pro = T3.escenario === 'proyecto', on = pro && solo === 'bav';
+    if (pro && !DIST && !pDist) pDist = Promise.all([import('./bavaria_distrito.js?v=17'), cj('data3d/bavaria.json?v=3'), cj('data3d/bavaria_arboles.json?v=3').then(j => j.arboles).catch(() => []) /* todos los árboles (bosque y sueltos): las huertas no van debajo de ninguno */, cj('data3d/bavaria_distrito_sx.json?v=2').catch(() => null)])
       .then(([m, D, ARB, SX]) => { DIST = m.crearDistritoBavaria({ T3, lw, D, ARB, SX }); /* ARB: bosque denso (las huertas no lo tocan) */ window.KEN_BAV = DIST; distritoBavaria(); }).catch(e => console.warn('distrito Bavaria:', e));
-    if (DIST) DIST.ver(on);
+    if (DIST) { DIST.ver(on); if (DIST.verHuertas) DIST.verHuertas(pro && solo !== 'col'); } // las huertas de enseñanza de Bavaria se ven SIEMPRE con la propuesta, aunque se mire otra estrategia
   }
   /* ---------- red de colegios: enlaces entre colegios, parques-huerta de dos pisos y visitas a Bavaria Común (data3d/colegios_red.js) ---------- */
   let RED = null, pRed = null, redOn = false;
@@ -148,13 +148,13 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
   let CALI = null, HBAR = null, pHBar = null;
   /* huertas de barrio (lotes baldíos y parques vecinales): bancales reales, solo con la propuesta (data3d/huertas_barrio.js) */
   const huertasBarrio = (on) => { if (HBAR) { HBAR.ver(on); return; } if (!on || pHBar) return;
-    pHBar = Promise.all([import('./huertas_barrio.js?v=3'), cj('data3d/huertas_barrio.json?v=2')]).then(([m, D]) => m.crearHuertasBarrio({ THREE: T3.THREE, T3, D, movil: matchMedia('(pointer:coarse)').matches }))
+    pHBar = Promise.all([import('./huertas_barrio.js?v=4'), cj('data3d/huertas_barrio.json?v=3')]).then(([m, D]) => m.crearHuertasBarrio({ THREE: T3.THREE, T3, D, movil: matchMedia('(pointer:coarse)').matches }))
       .then(h => { HBAR = h; window.KEN_HBAR = h; HBAR.ver(T3.escenario === 'proyecto' && solo !== 'col'); }).catch(e => console.warn('huertas de barrio:', e)); };
   Promise.all([import('./alivio_cali.js?v=1'), cj('data3d/alivio_cali.json?v=1')]).then(([m, D]) => { CALI = m.crearAlivioCali({ T3, D }); window.KEN_CALI = CALI; CALI.ver(T3.escenario === 'proyecto' && !solo); }).catch(e => console.warn('Av. Ciudad de Cali:', e));
   /* red de producción alimentaria: huertas de parques, lotes y techos en clústeres de barrio, conectadas a Bavaria (data3d/red_produccion.js) */
   let RPROD = null, pRProd = null;
   const redProduccion = (on) => { if (RPROD) { RPROD.ver(on); return; } if (!on || pRProd) return;
-    pRProd = import('./red_produccion.js?v=1').then(m => m.crearRedProduccion({ T3, lw, cj })).then(r => { RPROD = r; window.KEN_RPROD = r; RPROD.ver(T3.escenario === 'proyecto' && solo === 'red'); }).catch(e => console.warn('red de producción:', e)); };
+    pRProd = import('./red_produccion.js?v=2').then(m => m.crearRedProduccion({ T3, lw, cj })).then(r => { RPROD = r; window.KEN_RPROD = r; RPROD.ver(T3.escenario === 'proyecto' && solo === 'red'); }).catch(e => console.warn('red de producción:', e)); };
   const centro = (P) => [P.reduce((a, p) => a + p[0], 0) / P.length, P.reduce((a, p) => a + p[1], 0) / P.length];
   const poner = (sid, x, z, n) => { const s = EST5.find(q => q.id === sid), d = document.createElement('div'); d.className = 'esc-pt';
     d.style.setProperty('--c', s.c); d.innerHTML = `<b class="pin">${svg(s.id, 15)}</b><span>${n === undefined ? s.n : n}</span>`; if (sid === 'col') d.classList.add('col'); document.body.appendChild(d); PUNTOS.push({ s, x, z, d, vis: solo ? sid === solo : sid !== 'col' }); };
@@ -212,12 +212,12 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
     const EST = T3.EST; if (EST && EST.hidroponia) EST.hidroponia(hu); T3.conHidro = hu && !!EST; // huertas hidropónicas en techos y balcones con sus polinizadores
     if (T3.huertas && T3.huertas.grupo) T3.huertas.grupo.visible = hu && !EST; // camas de tierra en terrazas solo si no hay hidroponía
     if (T3.torres && T3.torres.huertas) T3.torres.huertas(hu);
-    const bv = T3.bavaria; if (bv && bv.userData && bv.userData.mallasHuerta) bv.userData.mallasHuerta.forEach(m => { m.visible = hu && solo !== 'bav'; }); // con el distrito, su campo experimental reemplaza las parcelas
+    const bv = T3.bavaria; if (bv && bv.userData && bv.userData.mallasHuerta) bv.userData.mallasHuerta.forEach(m => { m.visible = false; }); // las parcelas viejas (en diagonal) ya no: las reemplazan las huertas de enseñanza del distrito
     const co = T3.scene && T3.scene.getObjectByName('corabastos'); if (co && co.userData.quitadas) co.userData.quitadas.visible = true;
     if (T3.bio && T3.bio.ESTADO) T3.bio.ESTADO.escenario = pro && T3.PROP.fauna ? 'proyecto' : 'hoy'; // fauna e interacciones de las huertas
     if (T3.sintaxisEscenario) T3.sintaxisEscenario();
     if (CALI) CALI.ver(pro && !solo);
-    huertasBarrio(hu); redProduccion(pro && solo === 'red'); // Av. Ciudad de Cali con menos tráfico (se oculta al mirar una sola estrategia)
+    huertasBarrio(hu); redProduccion(pro && solo === 'red'); distritoBavaria(); // Av. Ciudad de Cali con menos tráfico (se oculta al mirar una sola estrategia)
   }
   function aplicar(e) {
     T3.escenario = e; el.dataset.e = e; { const nm = el.querySelector('#esc-nom'); if (nm && e !== 'proyecto') nm.classList.remove('on'); } const st = el.querySelector('#esc-st'); if (st) st.textContent = e === 'proyecto' ? 'Con la propuesta' : 'Kennedy hoy';
