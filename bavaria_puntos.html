@@ -42,6 +42,10 @@ section.hero{align-items:center}
 .tx .baja{display:inline-flex;gap:10px;align-items:center;margin-top:24px;padding:12px 18px;border:1px solid rgba(255,255,255,.3);font:500 11px var(--mono);letter-spacing:.18em;color:var(--tx);text-decoration:none;text-transform:uppercase}
 .tx .baja:hover{background:rgba(255,255,255,.06)}
 .tx .fin{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+.tx .fin .rec{all:unset;cursor:pointer;padding:11px 16px;background:var(--acc);color:#04201a;font:600 11px var(--mono);letter-spacing:.14em;text-transform:uppercase}
+#guiaRec{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:12;display:none;gap:10px;align-items:center;padding:10px 14px;border:1px solid rgba(255,255,255,.18);background:rgba(4,7,10,.72);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);font:500 11px var(--mono);letter-spacing:.08em;color:var(--tx2)}
+#guiaRec button{all:unset;cursor:pointer;color:var(--tx);padding:6px 10px;border:1px solid rgba(255,255,255,.25)}
+body.libre main,body.libre .prog,body.libre #inset,body.libre #enc,body.libre #hilo{display:none!important}body.libre{overflow:hidden}body.libre #guiaRec{display:flex}body.libre canvas#c{cursor:grab}
 .tx .fin a{padding:11px 16px;border:1px solid rgba(255,255,255,.28);font:500 11px var(--mono);letter-spacing:.14em;color:var(--tx);text-decoration:none;text-transform:uppercase}.tx .fin a:hover{background:rgba(255,255,255,.07)}
 .pie{position:fixed;right:28px;bottom:24px;z-index:6;display:flex;gap:18px;align-items:center;font-size:10.5px;color:var(--tx3)}
 .pie button{all:unset;cursor:pointer;color:var(--tx2);font-size:11.5px}.pie button:hover{color:var(--tx)}.pie span{max-width:520px;text-align:right}
@@ -72,8 +76,9 @@ a:focus-visible,button:focus-visible{outline:1px solid var(--acc);outline-offset
 <main id="secs"></main>
 <div class="prog" id="prog" aria-hidden="true"></div>
 <div class="pie"><button id="pausa" type="button">Pausar movimiento</button><span id="nota"></span></div>
+<div id="guiaRec"><span>Arrastra para mirar · W A S D o flechas para caminar · rueda para avanzar</span><button type="button" id="b-salir">Salir</button></div>
 <div class="carga" id="carga"><span>CARGANDO PUNTOS</span><i><b id="cb"></b></i></div>
-<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}</script>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <script type="module">
 import * as THREE from 'three';
 const $ = (id) => document.getElementById(id);
@@ -81,37 +86,40 @@ const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;
 let RMQ = matchMedia('(prefers-reduced-motion: reduce)').matches; const MOV = innerWidth <= 760;
 const M = await fetch('data3d/puntos/bavaria_campo.json?v=8').then(r => r.json());
 const ESP = M.especies, porK = Object.fromEntries(ESP.map(e => [e.k, e]));
+{ const NOM = { cilantro: 'Lavanda', lechuga: 'Lechuga', tomate: 'Alcachofa', acelga: 'Kale', zanahoria: 'Acelga roja', eucalipto: 'Árboles existentes' }; for (const k in NOM) if (porK[k]) porK[k].n = NOM[k]; }
 
 /* ---------- las interacciones que se encuadran con el scroll ---------- */
 const SEC = [
-  ['colibri', 'cilantro', 'Polinización', 'Colibrí', 'Flota frente a las flores rojas del fríjol trepador y toma su néctar; el polen se le pega al pico y lo lleva a la siguiente flor.'],
-  ['abeja', 'cilantro', 'Polinización', 'Abeja de miel', 'Viene del apiario del distrito y visita las flores del fríjol y del calabacín: sin ella hay menos fruto.'],
-  ['mariposa', 'lechuga', 'Polinización', 'Mariposa', 'Toma néctar de las flores de la arveja. Que llegue es señal de una huerta sin venenos.'],
-  ['mariquita', 'lechuga', 'Control de plagas', 'Mariquita', 'Camina por las hojas de la arveja comiéndose los pulgones: la huerta no necesita plaguicidas.'],
-  ['abejorro', 'tomate', 'Polinización', 'Abejorro', 'El abejorro nativo entra a las flores amarillas del calabacín y las poliniza.'],
-  ['copeton', 'acelga', 'Control de plagas', 'Copetón', 'Salta por el camino entre los bancales comiendo semillas de maleza y orugas; anida en los árboles que se conservan.'],
-  ['mirla', 'lombriz', 'Depredación', 'Mirla patiamarilla', 'Busca en el pasto húmedo entre los bancales y saca lombrices e insectos.'],
+  ['colibri', 'cilantro', 'Polinización', 'Colibrí', 'Flota frente a las flores de lavanda y toma su néctar; el polen se le pega al pico y lo lleva a la siguiente flor.'],
+  ['abeja', 'cilantro', 'Polinización', 'Abeja de miel', 'Viene del apiario del distrito y recorre las hileras de lavanda: poliniza la huerta y produce miel para el mercado.'],
+  ['mariposa', 'cilantro', 'Polinización', 'Mariposa', 'Toma néctar de la lavanda. Que llegue es señal de una huerta sin venenos.'],
+  ['mariquita', 'lechuga', 'Control de plagas', 'Mariquita', 'Camina por las hojas de la lechuga comiéndose los pulgones: la huerta no necesita plaguicidas.'],
+  ['abejorro', 'tomate', 'Polinización', 'Abejorro', 'El abejorro nativo visita las flores moradas de la alcachofa y las poliniza.'],
+  ['copeton', 'acelga', 'Control de plagas', 'Copetón', 'Salta por el sendero de madera entre las hileras, comiendo semillas de maleza y orugas; anida en los árboles que se conservan.'],
+  ['mirla', 'lombriz', 'Depredación', 'Mirla patiamarilla', 'Busca en la tierra húmeda junto a las hileras y saca lombrices e insectos.'],
   ['lombriz', 'zanahoria', 'Suelo vivo', 'Lombriz roja', 'Convierte el compost del distrito en tierra fértil para todos los bancales.'],
   ['murcielago', 'eucalipto', 'Refugio', 'Murciélago', 'Al anochecer sale de los refugios de los árboles y caza las polillas de la huerta.']
 ].filter(s => porK[s[0]]);
 $('secs').innerHTML = `<section class="hero" id="s0"><div class="tx"><div class="ey">Bavaria Común · huertas de enseñanza</div><h1>Tramas de vida en la huerta</h1>
-<p>Una huerta de enseñanza reconstruida en puntos desde una fotografía. Baja con el scroll: cada parada encuadra una especie que llega a la huerta y lo que hace en ella.</p>
+<p>Las huertas de enseñanza de Bavaria Común en puntos: hileras de cultivos, el sendero de madera, el pabellón de la escuela y los árboles que se conservan. Baja con el scroll: cada parada encuadra una especie y lo que hace; al final puedes recorrerla.</p>
 <a class="baja" href="#s1">Desliza ↓</a></div></section>` +
   SEC.map(([k, b, t, n, d], i) => `<section id="s${i + 1}"><div class="tx"><div class="ey">${String(i + 1).padStart(2, '0')} · ${esc(t)}</div><h2>${esc(n)}</h2><p>${esc(d)}</p>
   <span class="rel"><i style="background:${M.tipos[t] || '#fff'}"></i>${esc(n)} → ${esc((porK[b] || {}).n || '')}</span></div></section>`).join('') +
   `<section id="s${SEC.length + 1}"><div class="tx"><div class="ey">La trama completa</div><h2>${M.rel.length} relaciones entre ${ESP.length} especies</h2>
   <p>Polinizadores, aves que comen plagas y el suelo vivo trabajan para la huerta; los árboles existentes les dan refugio. Así se enseña a cultivar en Bavaria Común.</p>
-  <div class="fin"><a href="index.html">Volver al simulador</a><a href="bavaria_interior.html?e=bio">Entrar a los edificios</a></div></div></section>`;
+  <div class="fin"><button type="button" id="b-rec" class="rec">Recorrer la huerta</button><a href="index.html">Volver al simulador</a><a href="bavaria_interior.html?e=bio">Entrar a los edificios</a></div></div></section>`;
 $('prog').innerHTML = Array.from({ length: SEC.length + 2 }, (_, i) => `<a href="#s${i}" aria-label="Sección ${i}"></a>`).join('');
 $('nav').innerHTML = [['s0', 'Inicio'], ['s1', 'Polinización'], [`s${SEC.findIndex(s => s[2] === 'Control de plagas') + 1}`, 'Plagas'], [`s${SEC.findIndex(s => s[2] === 'Depredación') + 1}`, 'Suelo y aves'], [`s${SEC.length + 1}`, 'La trama']].map(([h, n]) => `<a href="#${h}">${n}</a>`).join('');
 
-/* ---------- nube de puntos de la huerta ---------- */
-const resp = await fetch('data3d/puntos/bavaria_campo.bin?v=5'), tot = +resp.headers.get('content-length') || M.n * 9, rd = resp.body.getReader(), partes = []; let lle = 0;
-for (;;) { const { done, value } = await rd.read(); if (done) break; partes.push(value); lle += value.length; $('cb').style.width = Math.min(100, lle / tot * 100) + '%'; }
-const raw = new Uint8Array(lle); { let o = 0; for (const p of partes) { raw.set(p, o); o += p.length; } }
-const N = M.n, I16 = new Int16Array(raw.buffer, 0, N * 3), COL = raw.subarray(N * 6, N * 9);
-const paso = MOV ? 2 : 1, n = Math.floor(N / paso), pos = new Float32Array(n * 3), col = new Float32Array(n * 3), rnd = new Float32Array(n);
-for (let i = 0, j = 0; j < n; i += paso, j++) { for (let a = 0; a < 3; a++) { pos[j * 3 + a] = I16[i * 3 + a] * M.esc; col[j * 3 + a] = Math.pow(COL[i * 3 + a] / 255, 2.2); } /* la foto viene en sRGB */ rnd[j] = Math.random(); }
+/* ---------- escena de huertas en puntos: se arma en el navegador (data3d/puntos/escena_huerta.js) ---------- */
+const { crearEscenaHuerta } = await import('./data3d/puntos/escena_huerta.js?v=6');
+const ESC = await crearEscenaHuerta({ THREE, MOV, progreso: (f) => { $('cb').style.width = Math.round(f * 100) + '%'; } });
+const OJO = 1.6, n = ESC.n, pos = ESC.pos, col = ESC.col, rnd = new Float32Array(n).map(() => Math.random());
+for (let j = 1; j < pos.length; j += 3) pos[j] -= OJO; // el ojo queda en el origen
+M.eye = [0, 0, 0]; M.look = [0, -0.1, 1]; M.fov = 56; M.W = 16; M.H = 9;
+// las especies, sobre sus plantas de esta escena
+const RENOMBRA = { cilantro: ['Lavanda', 'Lavandula angustifolia', 'flor'], lechuga: ['Lechuga', 'Lactuca sativa', 'cultivo'], tomate: ['Alcachofa', 'Cynara scolymus', 'cultivo'], acelga: ['Kale', 'Brassica oleracea var. sabellica', 'cultivo'], zanahoria: ['Acelga roja', 'Beta vulgaris var. cicla', 'cultivo'], eucalipto: ['Árboles existentes', 'bosque de Bavaria', 'arbol'] };
+for (const e of ESP) { const a = ESC.anc[e.k]; if (a) e.p = [a[0], a[1] - OJO, a[2]]; const r = RENOMBRA[e.k]; if (r) { e.n = r[0]; e.sci = r[1]; e.g = r[2]; } }
 const cv = $('c'), R = new THREE.WebGLRenderer({ canvas: cv, antialias: true, powerPreference: 'high-performance' });
 R.setPixelRatio(Math.min(2, devicePixelRatio || 1)); R.setClearColor(0x04070a, 1);
 const S = new THREE.Scene(), cam = new THREE.PerspectiveCamera(M.fov, innerWidth / innerHeight, 0.05, 3000);
@@ -121,14 +129,14 @@ const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Buffe
 const mat = new THREE.ShaderMaterial({ uniforms: U, vertexColors: true, transparent: true, depthWrite: false,
   vertexShader: `attribute float r; varying vec3 vC; varying float vA; uniform float uT, uPx, uIn, uZ;
     void main(){ vec3 p = position; float h = fract(r * 91.7);
-      p += (vec3(fract(r*13.1), fract(r*7.3), fract(r*3.7)) - 0.5) * 0.0045 * length(position); // rompe la rejilla de los píxeles
-      if (p.y > -0.9) p.x += sin(uT * 1.3 + p.y * 2.0 + r * 6.0) * 0.006 * (p.y + 0.9);
+      p += (vec3(fract(r*13.1), fract(r*7.3), fract(r*3.7)) - 0.5) * 0.002 * length(position);
+      if (p.y > 2.0) p.x += sin(uT * 1.1 + p.y * 0.5 + r * 6.0) * 0.012 * (p.y - 2.0); // copas que se mecen
       float rise = smoothstep(r * 0.6, r * 0.6 + 0.4, uIn); p.y -= (1.0 - rise) * (2.0 + r * 6.0);
       vec4 mv = modelViewMatrix * vec4(p, 1.0); gl_Position = projectionMatrix * mv; float d = -mv.z;
-      gl_PointSize = clamp(uPx * 0.0026 * uZ * (0.8 + h * 0.5) / max(d, 0.1) * 6.0, 1.4, 7.0 * uZ);
-      float lejos = smoothstep(7.0, 16.0, d); vec3 c = color * (0.84 + h * 0.3);
-      c = mix(c, vec3(0.42, 0.78, 0.74) * (0.45 + dot(color, vec3(.33))), lejos * 0.55); // velo frío a lo lejos
-      vC = c * mix(1.0, 0.55, smoothstep(9.0, 16.0, d)); vA = rise * mix(1.0, 0.6, lejos); }`,
+      gl_PointSize = clamp(uPx * 0.0021 * uZ * (0.8 + h * 0.5) / max(d, 0.1) * 6.0, 1.2, 6.0 * uZ);
+      float lejos = smoothstep(45.0, 190.0, d); vec3 c = color * (0.84 + h * 0.3);
+      c = mix(c, vec3(0.5, 0.72, 0.7) * (0.55 + dot(color, vec3(.33))), lejos * 0.28); // velo frío a lo lejos
+      vC = c * mix(1.0, 0.6, smoothstep(80.0, 220.0, d)); vA = rise * mix(1.0, 0.6, lejos); }`,
   fragmentShader: `varying vec3 vC; varying float vA; void main(){ vec2 q = gl_PointCoord - 0.5; float d = dot(q, q); if (d > 0.25) discard; gl_FragColor = vec4(vC, vA * smoothstep(0.25, 0.1, d));
     #include <colorspace_fragment>
   }` });
@@ -174,15 +182,29 @@ const agenteDe = (k) => { const c = FAUNA.agentes.filter(a => a.k === k); return
 const SEL = {}; SEC.forEach(([k]) => { SEL[k] = agenteDe(k); });
 const cam0 = new THREE.PerspectiveCamera(M.fov, innerWidth / innerHeight, 0.05, 3000); cam0.lookAt(L0); cam0.updateMatrixWorld(); const vN = new THREE.Vector3();
 // la cámara no mira fuera de lo que se capturó (abajo y a los lados no hay puntos)
-const dentroCaptura = (v) => { vN.copy(v).project(cam0); vN.x = Math.max(-0.38, Math.min(0.38, vN.x)); vN.y = Math.max(-0.4, Math.min(0.45, vN.y)); return v.copy(vN.unproject(cam0)); };
+const dentroCaptura = (v) => v; const _dc = (v) => { vN.copy(v).project(cam0); vN.x = Math.max(-0.38, Math.min(0.38, vN.x)); vN.y = Math.max(-0.4, Math.min(0.45, vN.y)); return v.copy(vN.unproject(cam0)); };
 const objetivo = (i) => { if (i <= 0 || i > SEC.length) return lookBase; const a = SEL[SEC[i - 1][0]]; return a ? a.obj.position : lookBase; };
 function leerScroll() { sObj = scrollY / innerHeight; }
 addEventListener('scroll', leerScroll, { passive: true });
 function tam() { R.setSize(innerWidth, innerHeight, false); cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix(); U.uPx.value = R.getPixelRatio() * innerHeight; leerScroll(); }
 addEventListener('resize', tam); tam();
 $('pausa').onclick = () => { RMQ = !RMQ; $('pausa').textContent = RMQ ? 'Reanudar movimiento' : 'Pausar movimiento'; };
-$('nota').innerHTML = 'Huerta y especies reconstruidas con puntos desde fotografías y una profundidad estimada: representación, no un levantamiento. Huerta: <a href="https://commons.wikimedia.org/wiki/File:-2020-07-01_Vegetable_garden_with_raised_beds,_Trimingham,_Norfolk_(2).JPG" style="color:inherit">Wikimedia Commons, CC BY-SA 4.0</a>; especies: iNaturalist (CC). Animales aumentados para que se vean.';
+$('nota').textContent = 'Escena de la propuesta en puntos: árboles y plantas muestreados de modelos 3D reales; especies reconstruidas con puntos desde fotografías (iNaturalist, CC) y una profundidad estimada. Representación, no un levantamiento. Animales aumentados para que se vean.';
 
+/* ---------- RECORRER: caminar libre por la huerta ---------- */
+const lib = { on: false, x: 0, z: 0, yaw: 0, pitch: -0.1, k: {}, drag: null };
+const entrar = () => { lib.on = true; lib.x = cam.position.x; lib.z = cam.position.z; const d = new THREE.Vector3(); cam.getWorldDirection(d); lib.yaw = Math.atan2(d.x, d.z); lib.pitch = Math.asin(d.y); document.body.classList.add('libre'); scrollTo(0, 0); };
+const salir = () => { lib.on = false; document.body.classList.remove('libre'); fov = FOV0(); };
+$('b-rec').onclick = entrar; $('b-salir').onclick = salir;
+addEventListener('keydown', (e) => { lib.k[e.key.toLowerCase()] = true; if (e.key === 'Escape' && lib.on) salir(); });
+addEventListener('keyup', (e) => { lib.k[e.key.toLowerCase()] = false; });
+cv.addEventListener('pointerdown', (e) => { if (!lib.on) return; lib.drag = { x: e.clientX, y: e.clientY, yaw: lib.yaw, p: lib.pitch }; cv.setPointerCapture(e.pointerId); });
+cv.addEventListener('pointermove', (e) => { if (!lib.drag) return; lib.yaw = lib.drag.yaw - (e.clientX - lib.drag.x) * 0.004; lib.pitch = Math.max(-0.9, Math.min(0.6, lib.drag.p - (e.clientY - lib.drag.y) * 0.004)); });
+cv.addEventListener('pointerup', () => { lib.drag = null; });
+addEventListener('wheel', (e) => { if (!lib.on) return; e.preventDefault(); lib.x += Math.sin(lib.yaw) * -Math.sign(e.deltaY) * 1.2; lib.z += Math.cos(lib.yaw) * -Math.sign(e.deltaY) * 1.2; }, { passive: false });
+function caminar(dt) { const k = lib.k, v = (k.shift ? 9 : 3.5) * dt; let f = 0, l = 0; if (k.w || k.arrowup) f++; if (k.s || k.arrowdown) f--; if (k.a || k.arrowleft) l++; if (k.d || k.arrowright) l--;
+  lib.x += (Math.sin(lib.yaw) * f + Math.cos(lib.yaw) * l) * v; lib.z += (Math.cos(lib.yaw) * f - Math.sin(lib.yaw) * l) * v; lib.x = Math.max(-80, Math.min(80, lib.x)); lib.z = Math.max(-5, Math.min(70, lib.z));
+  fov += (FOV0() - fov) * 0.1; cam.fov = fov; cam.updateProjectionMatrix(); cam.position.set(lib.x, 0, lib.z); cam.lookAt(lib.x + Math.sin(lib.yaw) * Math.cos(lib.pitch), Math.sin(lib.pitch), lib.z + Math.cos(lib.yaw) * Math.cos(lib.pitch)); U.uZ.value = 1; }
 /* ---------- cuadro ---------- */
 const V = new THREE.Vector3(), V2 = new THREE.Vector3(); let t0 = performance.now(), tPrev = t0, secAct = -1;
 $('carga').style.opacity = 0; setTimeout(() => $('carga').remove(), 900);
@@ -190,6 +212,7 @@ function cuadro(t) {
   requestAnimationFrame(cuadro); const dt = Math.min(0.05, (t - tPrev) / 1000); tPrev = t; const tt = (t - t0) / 1000;
   U.uT.value = RMQ ? 0 : tt; U.uIn.value = Math.min(1, tt / 2.2);
   if (!RMQ) FAUNA.paso(dt, tt);
+  if (lib.on) { caminar(dt); for (const p of BILL) { p.getWorldPosition(V); p.lookAt(V2.copy(cam.position)); } R.render(S, cam); return; }
   s += (sObj - s) * (1 - Math.exp(-dt * 4)); const i0 = Math.floor(s), f = s - i0, k = f * f * (3 - 2 * f);
   // mira hacia la especie de la parada (y entre paradas, mezcla las dos); se acerca con el zoom
   const A = objetivo(i0), B = objetivo(i0 + 1); tmp.copy(A).lerp(B, k); dentroCaptura(tmp); look.lerp(tmp, 1 - Math.exp(-dt * 5));
