@@ -46,8 +46,8 @@ export async function crearEscenaHuerta({ THREE, MOV = false, progreso = () => {
     const h = (y1 - y0) || 1, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2; for (let i = 0; i < pts.length; i += 3) { pts[i] = (pts[i] - cx) / h * altoObj; pts[i + 1] = (pts[i + 1] - y0) / h * altoObj; pts[i + 2] = (pts[i + 2] - cz) / h * altoObj; }
     return { pts, cols, nor };
   }
-  const poner = (N, x, z, esc, rot, tinte = null) => { if (!N) return; const cs = Math.cos(rot), sn = Math.sin(rot), n = new THREE.Vector3();
-    for (let i = 0; i < N.pts.length; i += 3) { const px = N.pts[i] * esc, py = N.pts[i + 1] * esc, pz = N.pts[i + 2] * esc; n.set(N.nor[i], N.nor[i + 1], N.nor[i + 2]);
+  const poner = (N, x, z, esc, rot, tinte = null) => { if (!N) return; const cs = Math.cos(rot), sn = Math.sin(rot), n = new THREE.Vector3(), dd = Math.hypot(x, z), paso = dd > 90 ? 5 : dd > 55 ? 3 : dd > 28 ? 2 : 1;
+    for (let i = 0; i < N.pts.length; i += 3 * paso) { const px = N.pts[i] * esc, py = N.pts[i + 1] * esc, pz = N.pts[i + 2] * esc; n.set(N.nor[i], N.nor[i + 1], N.nor[i + 2]);
       let c = [N.cols[i], N.cols[i + 1], N.cols[i + 2]]; if (tinte) c = mezcla(c, tinte, 0.18); { const m = (c[0] + c[1] + c[2]) / 3; c = [m + (c[0] - m) * 1.5, m + (c[1] - m) * 1.5, m + (c[2] - m) * 1.5]; } /* más saturado */ const ao = 0.55 + 0.45 * Math.min(1, py / (esc * 0.6 + 0.01));
       pt(x + px * cs - pz * sn, py, z + px * sn + pz * cs, luz(c, n, ao)); } };
   progreso(0.05);
@@ -62,7 +62,7 @@ export async function crearEscenaHuerta({ THREE, MOV = false, progreso = () => {
   /* ---------- suelo: pasto con matas y tierra entre hileras ---------- */
   const PASTO = [hex('#4f7a32'), hex('#6b8f3c'), hex('#3d6a2c'), hex('#7d9a4a')], TIERRA = [hex('#5a4030'), hex('#6b4c37'), hex('#4a3426')];
   const nG = Math.round(700000 * K);
-  for (let i = 0; i < nG; i++) { const cerca = i % 3 === 0, x = cerca ? r2(-18, 18) : r2(-95, 95), z = cerca ? r2(-4, 20) : r2(-6, 150); const enCult = Math.abs(x) > 2.2 && Math.abs(x) < 42 && z > 4 && z < 62; if (enCult) continue;
+  for (let i = 0; i < nG; i++) { const cerca = i % 3 === 0, ga = Math.sqrt(-2 * Math.log(rnd() + 1e-9)), gb = r2(0, 6.28), x = cerca ? Math.cos(gb) * ga * 7 : r2(-95, 95), z = cerca ? 6 + Math.sin(gb) * ga * 6 : r2(-6, 150); const enCult = Math.abs(x) > 2.2 && Math.abs(x) < 42 && z > 4 && z < 62; if (enCult) continue;
     const enCamino = Math.abs(x) < 1.6 && z < 70; const c = enCamino ? null : PASTO[(rnd() * 4) | 0]; if (enCamino) continue;
     pt(x, rnd() * 0.06, z, luz(mezcla(c, [0.75, 0.8, 0.55], rnd() * 0.2), UP, 0.85 + rnd() * 0.25)); }
   // sendero de madera (tablas de 14 cm con junta)
@@ -109,6 +109,12 @@ export async function crearEscenaHuerta({ THREE, MOV = false, progreso = () => {
   for (let i = 0; i < 26; i++) arbol(r2(-90, 90), r2(92, 135), r2(10, 17));                                         // bosque detrás del pabellón
   for (let i = 0; i < 10; i++) { const s = rnd() < 0.5 ? -1 : 1; arbol(s * r2(62, 92), r2(-4, 80), r2(10, 16)); }
   arbol(-7, 66.5, 7.5); arbol(8, 67.5, 8); // dos árboles junto a la entrada del pabellón
+  // MÁS ÁRBOLES: bosquetes como el bosque de Bavaria (grupos densos), una alameda a lo largo del sendero y árboles sueltos en el campo
+  const bosquete = (cx, cz, n, rad, a0, a1) => { for (let i = 0; i < n; i++) { const a = r2(0, 6.28), r = rad * Math.sqrt(rnd()); arbol(cx + Math.cos(a) * r, cz + Math.sin(a) * r, r2(a0, a1)); } };
+  bosquete(-75, 20, 14, 18, 10, 16); bosquete(78, 35, 14, 18, 10, 16); bosquete(-70, 70, 12, 16, 11, 17); bosquete(72, 95, 12, 16, 11, 17);
+  bosquete(-35, 110, 12, 20, 12, 18); bosquete(30, 120, 12, 20, 12, 18); bosquete(-85, 120, 10, 18, 10, 16); bosquete(90, 130, 10, 18, 10, 16);
+  for (let z = 8; z < 66; z += r2(9, 12)) for (const s of [-1, 1]) arbol(s * r2(3.2, 3.8), z, r2(5.5, 7.5));       // alameda junto al sendero
+  for (let i = 0; i < 14; i++) { const s = rnd() < 0.5 ? -1 : 1; arbol(s * r2(9, 40), r2(14, 60), r2(5, 8)); }        // árboles sueltos que se conservan en el campo
   progreso(0.75);
 
   /* ---------- pabellón paramétrico (referentes 1 y 4): volumen de vidrio bajo y cubierta ondulada de costillas ---------- */
