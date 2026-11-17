@@ -92,9 +92,9 @@ import * as THREE from 'three';
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const RMQ = matchMedia('(prefers-reduced-motion: reduce)').matches, MOV = innerWidth <= 760;
-const M = await fetch('data3d/puntos/bavaria_campo.json?v=3').then(r => r.json());
+const M = await fetch('data3d/puntos/bavaria_campo.json?v=4').then(r => r.json());
 // ---------- puntos (con barra de carga) ----------
-const resp = await fetch('data3d/puntos/bavaria_campo.bin?v=2'), tot = +resp.headers.get('content-length') || M.n * 9, rd = resp.body.getReader(), partes = []; let lle = 0;
+const resp = await fetch('data3d/puntos/bavaria_campo.bin?v=3'), tot = +resp.headers.get('content-length') || M.n * 9, rd = resp.body.getReader(), partes = []; let lle = 0;
 for (;;) { const { done, value } = await rd.read(); if (done) break; partes.push(value); lle += value.length; $('cb').style.width = Math.min(100, lle / tot * 100) + '%'; }
 const raw = new Uint8Array(lle); { let o = 0; for (const p of partes) { raw.set(p, o); o += p.length; } }
 const N = M.n, I16 = new Int16Array(raw.buffer, 0, N * 3), COL = raw.subarray(N * 6, N * 9);
@@ -133,18 +133,10 @@ function camara() {
   const y = yaw0 + st.yaw, p = pitch0 + st.pitch, f = new THREE.Vector3(Math.sin(y) * Math.cos(p), Math.sin(p), Math.cos(y) * Math.cos(p));
   const fl = new THREE.Vector3(L0.x, 0, L0.z).normalize(); cam.position.copy(base).addScaledVector(fl, st.d); cam.lookAt(cam.position.clone().add(f));
 }
-// ---------- fauna animada: enjambres de puntos alrededor de cada animal ----------
+// ---------- fauna 3D: animales reales animados en lo que hacen en la huerta (data3d/puntos/fauna3d.js) ----------
 const ESP = M.especies, porK = Object.fromEntries(ESP.map(e => [e.k, e]));
-const BICH = { abeja: [40, 2.2, '#facc15', 2.4], abejorro: [14, 1.6, '#eab308', 1.6], mariposa: [12, 3.0, '#fb923c', 0.9], colibri: [5, 2.4, '#22d3ee', 3.2], mariquita: [16, 0.8, '#dc2626', 0.3],
-  copeton: [6, 3.0, '#d6d3d1', 1.4], mirla: [4, 3.0, '#57534e', 1.0], murcielago: [6, 6.0, '#c4b5fd', 2.2] };
-const FB = []; for (const [k, [cnt, rad, c, vel]] of Object.entries(BICH)) { const e = porK[k]; if (!e) continue; for (let i = 0; i < cnt; i++) FB.push({ e, rad: rad * (0.4 + Math.random() * 0.8), vel: vel * (0.6 + Math.random() * 0.8), f: Math.random() * 6.28, h: (Math.random() - 0.3) * rad * 0.5, c: new THREE.Color(c), tam: k === 'abeja' || k === 'mariquita' ? 5 : 8 }); }
-const fg = new THREE.BufferGeometry(), fp = new Float32Array(FB.length * 3), fc = new Float32Array(FB.length * 3), fs = new Float32Array(FB.length);
-FB.forEach((b, i) => { fc.set([b.c.r, b.c.g, b.c.b], i * 3); fs[i] = b.tam; });
-fg.setAttribute('position', new THREE.BufferAttribute(fp, 3)); fg.setAttribute('color', new THREE.BufferAttribute(fc, 3)); fg.setAttribute('s', new THREE.BufferAttribute(fs, 1));
-const fmat = new THREE.ShaderMaterial({ uniforms: { uPx: U.uPx }, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
-  vertexShader: 'attribute float s; varying vec3 vC; uniform float uPx; void main(){ vC = color; vec4 mv = modelViewMatrix * vec4(position,1.0); gl_Position = projectionMatrix * mv; gl_PointSize = clamp(s * uPx * 0.0011 / max(-mv.z, 0.5) * 6.0, 2.0, 14.0); }',
-  fragmentShader: 'varying vec3 vC; void main(){ vec2 q = gl_PointCoord - 0.5; float d = dot(q,q); if (d > 0.25) discard; gl_FragColor = vec4(vC * 1.4, smoothstep(0.25, 0.0, d));\n#include <colorspace_fragment>\n}', vertexColors: true });
-S.add(new THREE.Points(fg, fmat));
+const { crearFauna3D } = await import('./data3d/puntos/fauna3d.js?v=3');
+const FAUNA = crearFauna3D({ THREE, S, M, RMQ });
 // luciérnagas (luz ambiente, como en la referencia)
 const NL = 220, lg = new THREE.BufferGeometry(), lp = new Float32Array(NL * 3), lph = new Float32Array(NL); for (let i = 0; i < NL; i++) { const a = (Math.random() - 0.5) * 1.6 + yaw0, d = 4 + Math.random() * 70; lp.set([Math.sin(a) * d, -1.5 + Math.random() * 8, Math.cos(a) * d], i * 3); lph[i] = Math.random() * 6.28; }
 lg.setAttribute('position', new THREE.BufferAttribute(lp, 3)); lg.setAttribute('ph', new THREE.BufferAttribute(lph, 1));
@@ -164,7 +156,7 @@ for (const [a, b, t] of M.rel) { const A = porK[a], B = porK[b]; if (!A || !B) c
 $('ley').innerHTML = Object.entries(TIP).map(([t, c]) => `<span data-t="${esc(t)}"><i style="background:${c}"></i>${esc(t)}</span>`).join('');
 $('ley').onclick = (e) => { const s = e.target.closest('[data-t]'); if (!s) return; const t = s.dataset.t; tiposOn.has(t) ? tiposOn.delete(t) : tiposOn.add(t); s.classList.toggle('off', !tiposOn.has(t)); pintarRel(); };
 $('tit').innerHTML = `${M.rel.length} relaciones<br>entre ${ESP.length} especies`;
-$('nota').textContent = 'Puntos: color y profundidad del modelo 3D del simulador (huertas del distrito, invernaderos y árboles existentes del censo). Fotos: iNaturalist y red biótica del Humedal El Burro.';
+$('nota').textContent = 'Puntos: color y profundidad del modelo 3D del simulador (huertas de enseñanza del distrito, invernadero y árboles existentes). Animales en 3D: insectos a escala aumentada (×9) y aves (×2,4) para que se vean. Fotos: iNaturalist y red biótica del Humedal El Burro.';
 // ---------- etiquetas ----------
 const LB = ESP.map(e => { const d = document.createElement('div'); d.className = 'lb g-' + e.g; d.style.setProperty('--c', e.c); d.tabIndex = 0; d.setAttribute('role', 'button'); d.setAttribute('aria-label', `${e.n}, ${e.sci}`);
   d.innerHTML = `<b>${esc(e.n)}</b><i>${esc(e.sci)}</i><s></s><u></u>`; document.body.appendChild(d);
@@ -177,7 +169,7 @@ function pintarRel() { const k = sel || focoK; RL.forEach(r => { const on = tipo
 pintarRel();
 // ---------- lupa: el cuadro sobre la especie + vista ampliada (los mismos puntos, de cerca) + foto + qué hace ----------
 const RZ = new THREE.WebGLRenderer({ antialias: false }); RZ.setPixelRatio(1); RZ.setClearColor(0x050807, 1); const camZ = new THREE.PerspectiveCamera(8, 1, 0.1, 3000);
-const uPxZ = { value: 170 * 3 };
+const uPxZ = { value: 170 * 3 }; const fmat = { uniforms: { uPx: { value: 0 } } }; // (los animales ya no son puntos)
 function abrir(k) {
   sel = k; const e = porK[k]; document.body.classList.add('lupa'); LB.forEach(l => l.d.classList.toggle('sel', l.e.k === k)); foco(k);
   const rels = M.rel.filter(([a, b]) => a === k || b === k).map(([a, b, t]) => ({ o: porK[a === k ? b : a], t, dir: a === k ? 'con' : 'de' }));
@@ -215,9 +207,7 @@ function cuadro(t) {
   U.uT.value = RMQ ? 0 : tt; U.uIn.value = RMQ ? 1 : Math.min(1, tt / 2.2);
   if (st.rec) { st.dObj = 22 + Math.sin(tt * 0.12) * 22; st.yObj = Math.sin(tt * 0.09) * 0.28; }
   const k = 1 - Math.exp(-dt * 3); st.d += (st.dObj - st.d) * k; st.yaw += (st.yObj - st.yaw) * k; st.pitch += (st.pObj - st.pitch) * k; camara();
-  // fauna
-  FB.forEach((b, i) => { const a = b.f + tt * b.vel / Math.max(0.3, b.rad), p = b.e.p; fp[i * 3] = p[0] + Math.cos(a) * b.rad + Math.sin(a * 2.3) * 0.3; fp[i * 3 + 1] = p[1] + b.h + Math.sin(a * 1.7 + b.f) * b.rad * 0.25; fp[i * 3 + 2] = p[2] + Math.sin(a) * b.rad; });
-  fg.attributes.position.needsUpdate = true;
+  FAUNA.paso(dt, tt); // abejas, mariposas, colibrí, mariquitas, lombrices, copetón, mirla y murciélago
   R.render(S, cam);
   // etiquetas
   const W = innerWidth, H = innerHeight;
