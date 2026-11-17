@@ -30,12 +30,13 @@ export function iniciarEscenario({ T3, say = () => {} }) {
 #esc[data-e="proyecto"] .ley{display:flex}
 #esc .ley-h{display:none}
 #esc .est{position:relative;width:32px;height:32px;padding:0;border:0;border-radius:50%;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .2s,opacity .2s}
-#esc .est .ico{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--c);color:#fff;box-shadow:0 2px 6px rgba(0,0,0,.3);transition:box-shadow .2s}
+#esc .est .ico{position:relative;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.13);color:rgba(255,255,255,.82);transition:background .2s,border-color .2s,color .2s}
+#esc .est .ico::after{content:'';position:absolute;right:1px;bottom:1px;width:6px;height:6px;border-radius:50%;background:var(--c);opacity:.85}
 #esc .est .ico svg{width:14px;height:14px}
 #esc .est .tx,#esc .est small,#esc .est .nu{display:none}
-#esc .est:hover{transform:translateY(-1px)}#esc .est:hover .ico{box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 35%,transparent)}
-#esc .est.on .ico{box-shadow:0 0 0 2px #fff,0 0 12px var(--c)}
-#esc .est.off{opacity:.4}
+#esc .est:hover .ico{background:rgba(255,255,255,.14);color:#fff}
+#esc .est.on .ico{background:rgba(255,255,255,.22);border-color:rgba(255,255,255,.55);color:#fff}
+#esc .est.off{opacity:.45}
 #esc .est:focus-visible{outline:2px solid var(--c);outline-offset:2px}
 /* nombre de la estrategia: aparece debajo del panel al pasar o al escogerla */
 #esc .nom{position:absolute;left:50%;top:calc(100% + 6px);transform:translateX(-50%);padding:5px 11px;border-radius:9px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .2s;
@@ -44,12 +45,12 @@ export function iniciarEscenario({ T3, say = () => {} }) {
 .esc-pt{position:fixed;z-index:6;left:0;top:0;pointer-events:none;display:none;align-items:center;gap:7px;white-space:nowrap;
   font:600 11px var(--ui-sans,Inter,system-ui,sans-serif);color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9),0 0 10px rgba(0,0,0,.6)}
 .esc-pt .pin{position:relative;flex:none;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50% 50% 50% 4px;transform:rotate(-45deg) translate(10px,-10px);
-  display:flex;align-items:center;justify-content:center;background:linear-gradient(140deg,var(--c),color-mix(in srgb,var(--c) 55%,#000));
-  border:1.5px solid rgba(255,255,255,.85);box-shadow:0 6px 16px rgba(0,0,0,.45),0 0 0 4px color-mix(in srgb,var(--c) 25%,transparent)}
+  display:flex;align-items:center;justify-content:center;background:rgba(14,16,19,.82);
+  border:1.5px solid var(--c);box-shadow:0 6px 16px rgba(0,0,0,.45)}
 .esc-pt .pin svg{transform:rotate(45deg);color:#fff}
-.esc-pt .pin::after{content:'';position:absolute;inset:-6px;border-radius:inherit;border:2px solid var(--c);opacity:0;animation:escPin 2.6s ease-out infinite}
+.esc-pt .pin::after{content:'';position:absolute;inset:-6px;border-radius:inherit;border:1.5px solid rgba(255,255,255,.5);opacity:0;animation:escPin 2.6s ease-out infinite}
 @keyframes escPin{0%{opacity:.8;transform:scale(.8)}100%{opacity:0;transform:scale(1.6)}}
-.esc-pt span{padding:3px 8px;border-radius:7px;background:rgba(10,12,15,.62);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1px solid color-mix(in srgb,var(--c) 45%,transparent);text-shadow:none;transform:translateY(-14px)}
+.esc-pt span{padding:3px 8px;border-radius:7px;background:rgba(10,12,15,.62);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.12);text-shadow:none;transform:translateY(-14px)}
 .esc-pt.chico span{display:none}
 .esc-pt.chico .pin{width:22px;height:22px}.esc-pt.chico .pin svg{width:12px;height:12px}
 .esc-pt.col .pin{width:20px;height:20px}.esc-pt.col .pin svg{width:11px;height:11px}.esc-pt.col .pin::after{animation-duration:3.2s}
