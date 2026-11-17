@@ -42,7 +42,7 @@ export function crearDistritoBavaria({ T3, lw, D, ARB = [], SX = null }) {
     { k: 'alim', n: 'Cocina laboratorio', c: '#fde047', e: 7, g: 'Producir', m2: 400, p: 90, d: 'Transforma lo que no se vende: conservas, deshidratados y menús para comedores escolares.', x: 'Cocina industrial docente, cuarto de conservas y comedor de prueba.' },
     { k: 'torre', n: 'Mirador y estación del clima', c: '#22d3ee', e: 6, g: 'Info', m2: 120, p: 80, d: 'Los silos se vuelven mirador con estación meteorológica: desde arriba se ven todas las huertas.', x: 'Escalera-mirador, estación del clima y grabadora de cantos de aves.' },
     { k: 'campo', n: 'Huertas de enseñanza', c: '#4ade80', g: 'Practicar', m2: 0, p: 400, d: 'Diez tipos de huerta en los claros del bosque: aquí se practica lo aprendido antes de llevarlo a casa.', x: '' },
-    { k: 'comp', n: 'Planta de compostaje', c: '#d4a373', g: 'Producir', m2: 1440, p: 70, d: 'Vuelve abono los restos del mercado, la cocina y las huertas: pilas en hilera, lombrices, criba y bodega.', x: 'Nave de 640 m² con 5 pilas, lombricario de 4 camas, criba rotatoria, bodega de abono y composteras para enseñar. Unas 2 t de restos al día.' },
+    { k: 'comp', n: 'Planta de compostaje', c: '#d4a373', g: 'Producir', m2: 1440, p: 70, d: 'Vuelve abono los restos del mercado, la cocina y las huertas: pilas en hilera, lombrices, criba y bodega.', x: 'Cubierta de hojas curvas de 640 m² sobre 5 pilas: techo verde con flores, macetas colgantes, cajas nido y refugios de murciélagos. Lombricario de 4 camas, criba rotatoria, bodega de abono y composteras para enseñar. Unas 2 t de restos al día.' },
     { k: 'sol', n: 'Paneles solares', c: '#facc15', g: 'Energía', m2: 100, p: 0, d: '20 paneles sobre la cubierta con más sol: bombean el riego y enfrían la poscosecha.', x: '' }
   ];
   PROG.forEach(p => { p.a = p.m2 ? fmt(p.m2) + ' m²' : ''; });  const PK = Object.fromEntries(PROG.map(p => [p.k, p]));
@@ -363,20 +363,70 @@ export function crearDistritoBavaria({ T3, lw, D, ARB = [], SX = null }) {
       });
     }).catch(e => console.warn('modelos huertas Bavaria', e));
   }
-  /* --- planta de compostaje y lombricultura (48 x 30 m, entrada de servicio): nave abierta con 5 pilas en hilera (windrows),
+  /* --- planta de compostaje y lombricultura (48 x 30 m, entrada de servicio): cubierta paramétrica-hábitat sobre 5 pilas en hilera (windrows),
      lombricario, criba rotatoria, bodega de abono, recepción con canecas y composteras didácticas --- */
   {
     const g = new THREE.Group(); g.position.set(C_PLANTA[0], 0, C_PLANTA[1]); g.rotation.y = -ANG; gHu.add(g);
     const add = (geo, mat, x, y, z, ry = 0, sh = !MOV) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.rotation.y = ry; m.castShadow = sh; m.receiveShadow = true; g.add(m); return m; };
     add(new THREE.BoxGeometry(CL, 0.25, CW), mStd('#ffffff', { map: texConc, roughness: 0.95 }), 0, Y0, 0, 0, false);
-    // nave: 32 x 20 m, columnas cada 8 m, cubierta a dos aguas con franjas traslúcidas
-    const mAc = mStd('#7b8288', { metalness: 0.55, roughness: 0.45 }), NX = -6, NL = 32, NW = 20, HC = 6;
-    for (let x = -NL / 2; x <= NL / 2 + 0.01; x += 8) for (const z of [-NW / 2, NW / 2]) add(new THREE.BoxGeometry(0.3, HC, 0.3).translate(0, HC / 2, 0), mAc, NX + x, Y0, z);
-    for (let x = -NL / 2; x <= NL / 2 + 0.01; x += 8) { add(new THREE.BoxGeometry(0.25, 0.4, NW / 2 / Math.cos(0.18) + 0.4).translate(0, 0, NW / 4), mAc, NX + x, Y0 + HC + NW / 4 * Math.tan(0.18), 0).rotation.x = 0.18; add(new THREE.BoxGeometry(0.25, 0.4, NW / 2 / Math.cos(0.18) + 0.4).translate(0, 0, -NW / 4), mAc, NX + x, Y0 + HC + NW / 4 * Math.tan(0.18), 0).rotation.x = -0.18; }
-    const mTe = mStd('#c9ced1', { metalness: 0.5, roughness: 0.4, side: THREE.DoubleSide }), mTr = new THREE.MeshStandardMaterial({ color: '#eef4f2', transparent: true, opacity: 0.45, roughness: 0.2, side: THREE.DoubleSide, depthWrite: false });
-    for (const s of [1, -1]) { const ag = add(new THREE.BoxGeometry(NL + 1.2, 0.06, NW / 2 / Math.cos(0.18) + 0.8).translate(0, 0, s * NW / 4), mTe, NX, Y0 + HC + NW / 4 * Math.tan(0.18) + 0.25, 0); ag.rotation.x = s * 0.18;
-      for (let x = -12; x <= 12; x += 8) { const t = add(new THREE.BoxGeometry(2, 0.08, NW / 2 / Math.cos(0.18)).translate(0, 0, s * NW / 4), mTr, NX + x, Y0 + HC + NW / 4 * Math.tan(0.18) + 0.29, 0, 0, false); t.rotation.x = s * 0.18; } }
-    // 5 pilas en hilera bajo la nave: perfil de campana extruido, textura de compost con paja
+    // CUBIERTA PARAMÉTRICA HÁBITAT sobre las pilas (reemplaza la nave a dos aguas): cinco lóbulos-hoja que se entrecruzan, paralelos a los
+    // edificios, con membrana traslúcida (deja pasar luz y lluvia controlada), costillas blancas, borde tubular y columnas-árbol que se abren
+    // en ramas. Es también hábitat: techo verde en dos lóbulos con flores para polinizadores, jardineras colgantes en el borde, cajas nido y
+    // refugios de murciélagos en las columnas.
+    const mAc = mStd('#7b8288', { metalness: 0.55, roughness: 0.45 }), NX = -6;
+    {
+      const texCost = lienzoT(64, 256, (c, w, h) => { c.clearRect(0, 0, w, h); c.fillStyle = '#fff'; for (let y = 0; y < h; y += 20) c.fillRect(0, y, w, 2.4); c.fillRect(0, 0, 2.4, h); });
+      const texVerde = lienzoT(256, 256, (c, w, h) => { c.fillStyle = '#4f6b34'; c.fillRect(0, 0, w, h); for (let i = 0; i < 2600; i++) { const v = Math.random(); c.fillStyle = v < 0.35 ? '#3d5a2a' : v < 0.7 ? '#6d8f45' : v < 0.85 ? '#8aa85a' : v < 0.93 ? '#a3a14a' : '#55703a'; c.beginPath(); c.ellipse(Math.random() * w, Math.random() * h, 2 + Math.random() * 4, 1.2 + Math.random() * 2.5, Math.random() * 3, 0, 7); c.fill(); }
+        for (let i = 0; i < 220; i++) { c.fillStyle = ['#f2d14a', '#e9e4f5', '#d7609b', '#f08a24', '#b07ad9'][i % 5]; c.beginPath(); c.arc(Math.random() * w, Math.random() * h, 1.6 + Math.random() * 1.6, 0, 7); c.fill(); } }, 3, 3);
+      const texColg = lienzoT(128, 256, (c, w, h) => { c.clearRect(0, 0, w, h); for (let k = 0; k < 7; k++) { let x = 20 + k * 15, y = 0; c.strokeStyle = '#3f5f2c'; c.lineWidth = 2; c.beginPath(); c.moveTo(x, 0);
+        for (let s2 = 0; s2 < 14; s2++) { x += (Math.random() - 0.5) * 10; y += 12 + Math.random() * 8; c.lineTo(x, y); c.fillStyle = Math.random() < 0.15 ? '#e9a0c8' : ['#4c7a33', '#5f8f3c', '#3c6629'][s2 % 3]; c.save(); c.translate(x, y); c.rotate(Math.random() * 3); c.beginPath(); c.ellipse(0, 0, 7, 4, 0, 0, 7); c.fill(); c.restore(); } c.stroke(); } });
+      texColg.wrapS = texColg.wrapT = THREE.ClampToEdgeWrapping; texColg.repeat.set(1, 1);
+      const matMemb = new THREE.MeshStandardMaterial({ color: '#f3f6f2', transparent: true, opacity: 0.3, side: THREE.DoubleSide, roughness: 0.25, depthWrite: false });
+      const matCost = new THREE.MeshStandardMaterial({ color: '#f4f4f0', map: texCost, alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.4 });
+      const matVerde = mStd('#ffffff', { map: texVerde, roughness: 1, side: THREE.DoubleSide });
+      const matCol = mStd('#efefea', { roughness: 0.35, metalness: 0.2 }), matColg = new THREE.MeshStandardMaterial({ map: texColg, alphaTest: 0.45, side: THREE.DoubleSide, roughness: 0.8 });
+      const LOB = [{ cx: -15, cz: -3, rot: 0.22, A: 9, B: 6.5, H: 6.6, verde: false }, { cx: -5, cz: 3, rot: -0.18, A: 12, B: 7.5, H: 7.8, verde: true }, { cx: 4, cz: -4, rot: 0.3, A: 10, B: 6.5, H: 7.0, verde: false },
+        { cx: -9, cz: -7, rot: -0.35, A: 8, B: 4.5, H: 5.8, verde: true }, { cx: 0, cz: 8, rot: 0.12, A: 8, B: 4.5, H: 6.0, verde: false }];
+      const ENTRE = [-10, -6, -2, 2, 6, 10]; // las columnas van entre las hileras de compost
+      const tramo = (a2, b2, r0, r1) => { const d = b2.clone().sub(a2), Lh = d.length(), g2 = new THREE.CylinderGeometry(r1, r0, Lh, 8); g2.translate(0, Lh / 2, 0); g2.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize())); g2.translate(a2.x, a2.y, a2.z); return g2; };
+      const ramas = [], colgs = [], nidos = [], murc = [];
+      LOB.forEach((L, li) => {
+        const cs = Math.cos(L.rot), sn = Math.sin(L.rot), sem = li * 1.7 + 0.4;
+        const borde = (t) => { const rr = 1 + 0.13 * Math.sin(2 * t + sem) + 0.07 * Math.sin(3 * t + sem * 1.9); return [Math.cos(t) * L.A * rr, Math.sin(t) * L.B * (1 + 0.22 * Math.cos(2 * t))]; };
+        const alto = (t, f) => L.H + 1.5 * (1 - f * f) - 0.7 * Math.cos(2 * t) * f; // silla de montar: sube en las puntas, baja a los lados
+        const sup = (fMax, dy) => { const NU = 48, NV = 12, P = [], U = [], I = [];
+          for (let i = 0; i <= NU; i++) for (let j = 0; j <= NV; j++) { const t = i / NU * Math.PI * 2, f = j / NV * fMax, e = borde(t), x = e[0] * f, z = e[1] * f;
+            P.push(L.cx + x * cs - z * sn, Y0 + alto(t, f) + dy, L.cz + x * sn + z * cs); U.push(f * 4, t / (Math.PI * 2) * 14); if (i < NU && j < NV) { const a2 = i * (NV + 1) + j, b2 = a2 + NV + 1; I.push(a2, b2, a2 + 1, b2, b2 + 1, a2 + 1); } }
+          const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); geo.setAttribute('uv', new THREE.Float32BufferAttribute(U, 2)); geo.setIndex(I); geo.computeVertexNormals(); return geo; };
+        const gm = sup(1, 0); const m1 = new THREE.Mesh(gm, matMemb), m2 = new THREE.Mesh(gm, matCost); m1.renderOrder = 6; m2.castShadow = !MOV; g.add(m1, m2);
+        if (L.verde) { const v = new THREE.Mesh(sup(0.58, 0.12), matVerde); v.castShadow = !MOV; v.receiveShadow = true; g.add(v); } // techo verde con flores
+        const bp = []; for (let i = 0; i < 90; i++) { const t = i / 90 * Math.PI * 2, e = borde(t); bp.push(new THREE.Vector3(L.cx + e[0] * cs - e[1] * sn, Y0 + alto(t, 1), L.cz + e[0] * sn + e[1] * cs)); }
+        const tubo = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(bp, true), 180, 0.1, 6, true), matCol); tubo.castShadow = !MOV; g.add(tubo);
+        // jardineras colgantes del borde: cable + maceta + enredaderas que caen
+        for (let i = 0; i < 90; i += 15) { const q = bp[(i + li * 4) % 90]; const caida = 1.4 + (i % 30 ? 0.6 : 0); colgs.push([q.x, q.y, q.z, caida]); }
+        // columnas-árbol: fuste que se abre en cuatro ramas hasta la cubierta
+        for (const fx of [-0.42, 0.42]) { let bx = L.cx + fx * L.A * cs, bz = L.cz + fx * L.A * sn; bz = ENTRE.reduce((m, z) => Math.abs(z - bz) < Math.abs(m - bz) ? z : m, ENTRE[0]);
+          const pie = new THREE.Vector3(bx, Y0, bz), nudo = new THREE.Vector3(bx, Y0 + L.H * 0.6, bz); ramas.push(tramo(pie, nudo, 0.2, 0.15));
+          for (let q = 0; q < 4; q++) { const a2 = q / 4 * Math.PI * 2 + L.rot + 0.4, d = 2.6 + (q % 2) * 1.1; ramas.push(tramo(nudo, new THREE.Vector3(bx + Math.cos(a2) * d, Y0 + L.H + 0.9, bz + Math.sin(a2) * d), 0.1, 0.06)); }
+          (fx < 0 ? nidos : murc).push([bx, bz, L.H * 0.48, L.rot]); }
+      });
+      const gr = new THREE.Mesh(unir(ramas), matCol); gr.castShadow = !MOV; g.add(gr);
+      // jardineras colgantes
+      { const o = new THREE.Object3D(), N = colgs.length;
+        const cable = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.008, 0.008, 1, 4).translate(0, -0.5, 0), mStd('#2b2f33'), N);
+        const maceta = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.32, 0.22, 0.32, 12), mStd('#9a6a4a', { roughness: 0.8 }), N);
+        const cruz = (() => { const a2 = new THREE.PlaneGeometry(0.9, 1.8).translate(0, -0.9, 0), b2 = a2.clone().rotateY(Math.PI / 2); return unir([a2, b2]); })();
+        cruz.setAttribute('uv', new THREE.Float32BufferAttribute([0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1], 2)); // uv de las dos tarjetas (no indexadas)
+        const enred = new THREE.InstancedMesh(cruz, matColg, N);
+        colgs.forEach(([x, y, z, c], i) => { o.position.set(x, y, z); o.rotation.set(0, i, 0); o.scale.set(1, c, 1); o.updateMatrix(); cable.setMatrixAt(i, o.matrix); o.position.y = y - c; o.scale.set(1, 1, 1); o.updateMatrix(); maceta.setMatrixAt(i, o.matrix); o.position.y = y - c + 0.12; o.updateMatrix(); enred.setMatrixAt(i, o.matrix); });
+        maceta.castShadow = enred.castShadow = !MOV; g.add(cable, maceta, enred); }
+      // cajas nido (aves insectívoras) y refugios de murciélagos en las columnas
+      for (const [x, z, h, r] of nidos) { const caja = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.45, 0.3), mStd('#ffffff', { map: texTabla })); caja.position.set(x + 0.28, Y0 + h, z); caja.rotation.y = r; caja.castShadow = !MOV; g.add(caja);
+        const tej = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.04, 0.4), mStd('#56615a')); tej.position.set(x + 0.28, Y0 + h + 0.25, z); tej.rotation.set(0.25, r, 0); g.add(tej);
+        const hueco = new THREE.Mesh(new THREE.CircleGeometry(0.045, 12), mStd('#1a1410')); hueco.position.set(x + 0.28 + Math.sin(r) * 0.152, Y0 + h + 0.08, z + Math.cos(r) * 0.152); hueco.rotation.y = r; g.add(hueco); }
+      for (const [x, z, h, r] of murc) { const caja = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.7, 0.14), mStd('#5b4636', { roughness: 0.95 })); caja.position.set(x - 0.24, Y0 + h + 0.4, z); caja.rotation.y = r + Math.PI / 2; caja.castShadow = !MOV; g.add(caja); }
+    }
+    // 5 pilas en hilera bajo la cubierta: perfil de campana extruido, textura de compost con paja
     const perfil = new THREE.Shape(); perfil.moveTo(-1.6, 0); for (let i = 0; i <= 16; i++) { const t = i / 16, x = -1.6 + t * 3.2; perfil.lineTo(x, 1.55 * Math.pow(Math.sin(Math.PI * t), 0.75)); } perfil.lineTo(1.6, 0);
     const pila = new THREE.ExtrudeGeometry(perfil, { depth: 26, bevelEnabled: true, bevelThickness: 1.2, bevelSize: 0.3, bevelSegments: 4, curveSegments: 4 }).translate(0, 0, -13).rotateY(Math.PI / 2);
     { const P = pila.attributes.position, U = pila.attributes.uv; for (let i = 0; i < P.count; i++) U.setXY(i, P.getX(i) / 3, (P.getY(i) + P.getZ(i)) / 2); }
