@@ -56,8 +56,9 @@ E = [
     ['lombriz', 'Lombriz roja', 'Eisenia fetida', 'fauna', 660, 785, 0.05, '#b87c8c', 'Convierte el compost del distrito en suelo fértil para las camas.', 'Compost y suelo húmedo con materia orgánica.', 'Todas las camas: suelo vivo.'],
     ['copeton', 'Copetón', 'Zonotrichia capensis', 'fauna', 940, 452, 0.25, '#a3a3a3', 'Come semillas de maleza e insectos entre las camas.', 'Árboles existentes para posarse y nidos.', 'Menos malezas y orugas.'],
     ['mirla', 'Mirla patiamarilla', 'Turdus fuscater', 'fauna', 1120, 440, 0.3, '#78716c', 'Busca lombrices e insectos en el suelo húmedo del borde del bosque.', 'Árboles existentes y suelo con lombrices.', 'Control de babosas y orugas.'],
-    ['cernicalo', 'Cernícalo', 'Falco sparverius', 'fauna', 1250, 125, 0.6, '#f97316', 'Caza ratones y saltamontes desde las ramas altas.', 'Perchas altas y árboles existentes.', 'Menos roedores en las camas y en el compost.'],
-    ['lechuza', 'Lechuza', 'Tyto alba', 'fauna', 1395, 215, 0.5, '#e7e5e4', 'De noche controla roedores; anida en la caja de los silos.', 'Caja nido en los silos y bosque.', 'Cosecha y compost sin ratas.'],
+    # sin rapaces ni búhos en la huerta
+    # ['cernicalo', 'Cernícalo', 'Falco sparverius', 'fauna', 1250, 125, 0.6, '#f97316', 'Caza ratones y saltamontes desde las ramas altas.', 'Perchas altas y árboles existentes.', 'Menos roedores en las camas y en el compost.'],
+    # ['lechuza', 'Lechuza', 'Tyto alba', 'fauna', 1395, 215, 0.5, '#e7e5e4', 'De noche controla roedores; anida en la caja de los silos.', 'Caja nido en los silos y bosque.', 'Cosecha y compost sin ratas.'],
     ['murcielago', 'Murciélago', 'Glossophaga soricina', 'fauna', 860, 170, 0.6, '#a78bfa', 'Al anochecer come polillas y poliniza flores nocturnas.', 'Refugios de murciélagos en los árboles.', 'Menos polillas en el invernadero.'],
     ['eucalipto', 'Eucalipto', 'Eucalyptus globulus', 'arbol', 1310, 250, 2.0, '#4d7c0f', 'Árbol existente del bosque de Bavaria: se conserva. Sus flores dan néctar a las abejas en invierno.', 'Ya está: no se tala.', 'Percha del cernícalo y alimento de abejas.'],
     ['acacia', 'Acacia negra', 'Acacia melanoxylon', 'arbol', 1010, 255, 2.0, '#65a30d', 'Árbol existente: sombra y nido para copetones y mirlas al borde de las huertas.', 'Ya está: no se tala.', 'Nidos de aves insectívoras.'],
@@ -68,7 +69,7 @@ REL = [['abeja', 'fresa', 'Polinización'], ['abeja', 'calendula', 'Polinizació
        ['abejorro', 'fresa', 'Polinización'], ['mariposa', 'calendula', 'Polinización'], ['colibri', 'calendula', 'Polinización'], ['mariquita', 'lechuga', 'Control de plagas'],
        ['mariquita', 'acelga', 'Control de plagas'], ['lombriz', 'lechuga', 'Suelo vivo'], ['lombriz', 'acelga', 'Suelo vivo'], ['mirla', 'lombriz', 'Depredación'],
        ['copeton', 'acelga', 'Control de plagas'], ['copeton', 'acacia', 'Refugio'], ['mirla', 'acacia', 'Refugio'], ['cernicalo', 'eucalipto', 'Percha'],
-       ['lechuza', 'urapan', 'Refugio'], ['murcielago', 'urapan', 'Refugio'], ['murcielago', 'tomate', 'Control de plagas'], ['cernicalo', 'lechuga', 'Control de plagas']]
+       # ['lechuza', 'urapan', 'Refugio'], ['murcielago', 'urapan', 'Refugio'], ['murcielago', 'tomate', 'Control de plagas'], ['cernicalo', 'lechuga', 'Control de plagas']]
 TIPOS = {'Polinización': '#facc15', 'Control de plagas': '#f87171', 'Suelo vivo': '#c084fc', 'Depredación': '#fb923c', 'Refugio': '#4ade80', 'Percha': '#38bdf8'}
 FOTOS0 = json.load(open(os.path.join(RAIZ, 'data3d', 'especies_fotos.json'), encoding='utf-8'))['esp']
 out = []

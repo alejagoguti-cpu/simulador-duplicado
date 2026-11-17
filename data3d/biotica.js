@@ -144,7 +144,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
   const habitat = (n, polyModelo, cnt) => { const poly = polyModelo.map(p => lw(p[0], p[1])); let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const p of poly) { x0 = Math.min(x0, p[0]); x1 = Math.max(x1, p[0]); z0 = Math.min(z0, p[1]); z1 = Math.max(z1, p[1]); } return { n, tipo: 'parque', poly, borde: poly.concat([poly[0]]), x0, x1, z0, z1, cx: (x0 + x1) / 2, cz: (z0 + z1) / 2, ag: {}, k: 1, cnt }; };
   const EXTRA = []; if (BV && BV.sitio) EXTRA.push(habitat('Bosque de la antigua fábrica de Bavaria', BV.sitio, POR_BOSQUE));
   // con la propuesta: las ~6 ha de huertas del distrito Bavaria Común con sus módulos de fauna (apiario, nidos, perchas, refugios): solo existen en «proyecto»
-  if (BV && BV.sitio) { const h = habitat('Huertas del distrito Bavaria Común', BV.sitio, { abeja: 40, colibri: 8, copeton: 8, mirla: 6, cucarachero: 6, torcaza: 4, lombriz: 14, cernicalo: 1, buho: 1 }); h.tipo = 'huerta'; EXTRA.push(h); } if (CO && CO.poly) EXTRA.push(habitat('Corabastos', CO.poly, POR_CORA));
+  if (BV && BV.sitio) { const h = habitat('Huertas del distrito Bavaria Común', BV.sitio, { abeja: 40, colibri: 8, copeton: 8, mirla: 6, cucarachero: 6, torcaza: 4, lombriz: 14 } /* solo fauna buena para las huertas: polinizadores, insectívoras y suelo (sin rapaces ni búhos) */); h.tipo = 'huerta'; EXTRA.push(h); } if (CO && CO.poly) EXTRA.push(habitat('Corabastos', CO.poly, POR_CORA));
   const HAB = HUM.concat(PAR, HUE, EXTRA);
   // árboles reales (censo SIGAU) en toda la zona, en un índice espacial único
   const CEL = 20, GRID = new Map(), gk = (i, j) => i * 100003 + j;

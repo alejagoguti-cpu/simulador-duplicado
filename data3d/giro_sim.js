@@ -480,11 +480,11 @@ export async function iniciarSimulacion(cfg = {}) {
       const P = [], CI = [], CC = [], X = [];
       for (const s of SP.nuevos) { const b = P.length / 3, n = s.p.length, ci = rgb(s.i), cc = rgb(s.c);
         for (let k = 0; k < n; k++) { const a = s.p[Math.max(0, k - 1)], q = s.p[Math.min(n - 1, k + 1)]; let dx = q[0] - a[0], dy = q[1] - a[1]; const l = Math.hypot(dx, dy) || 1; dx /= l; dy /= l;
-          const x = s.p[k][0] + OX, z = s.p[k][1] + OZ, y = Y0 + 0.06 + (T3.alzaVia ? T3.alzaVia(x, z) : 0); P.push(x - dy * 4, y, z + dx * 4, x + dy * 4, y, z - dx * 4); CI.push(...ci, ...ci); CC.push(...cc, ...cc);
+          const x = s.p[k][0] + OX, z = s.p[k][1] + OZ, y = Y0 + 1.6 + (T3.alzaVia ? T3.alzaVia(x, z) : 0); P.push(x - dy * 5, y, z + dx * 5, x + dy * 5, y, z - dx * 5); /* encima de las huertas y del piso de los pasajes del distrito */ CI.push(...ci, ...ci); CC.push(...cc, ...cc);
           if (k < n - 1) { const v = b + k * 2; X.push(v, v + 1, v + 2, v + 1, v + 3, v + 2); } } }
       const g2 = new THREE.BufferGeometry(); g2.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g2.setAttribute('color', new THREE.BufferAttribute(new Float32Array(CI), 3)); g2.setIndex(X);
       NUEVAS = new THREE.Mesh(g2, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.95, toneMapped: false, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -5, polygonOffsetUnits: -20 }));
-      NUEVAS.renderOrder = 3; NUEVAS.frustumCulled = false; NUEVAS.visible = false; NUEVAS.userData.C = { i: new Float32Array(CI), c: new Float32Array(CC), d: new Float32Array(CI.length).map((_, k) => [0.13, 0.83, 0.93][k % 3]) }; T3.scene.add(NUEVAS); capa3D();
+      NUEVAS.renderOrder = 9; NUEVAS.frustumCulled = false; NUEVAS.visible = false; NUEVAS.userData.C = { i: new Float32Array(CI), c: new Float32Array(CC), d: new Float32Array(CI.length).map((_, k) => [0.13, 0.83, 0.93][k % 3]) }; T3.scene.add(NUEVAS); capa3D();
     }).catch(e => console.warn('sintaxis con la propuesta:', e));
     capa3D = () => { const pro = T3.escenario === 'proyecto' && !!(T3.PROP && T3.PROP.sintaxis); // con la propuesta: sintaxis con los pasajes de Bavaria Común
       { const cp = izq.querySelector('#gs-capa'); if (cp) cp.classList.remove('pro'); /* misma gama DepthmapX que «Kennedy hoy»: sin modo Cambio */

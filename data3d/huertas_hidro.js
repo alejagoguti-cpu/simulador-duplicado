@@ -200,7 +200,7 @@ export async function iniciarHidroponia({ THREE, T3, techos, movil = false }) {
   const MAXA = movil ? 160 : 520, red = new Float32Array(MAXA * 6), redC = new Float32Array(MAXA * 6), aristas = [];
   const gRed = new THREE.BufferGeometry(); gRed.setAttribute('position', new THREE.BufferAttribute(red, 3)); gRed.setAttribute('color', new THREE.BufferAttribute(redC, 3));
   const lineasRed = new THREE.LineSegments(gRed, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.85, depthWrite: false, blending: THREE.AdditiveBlending }));
-  lineasRed.frustumCulled = false; lineasRed.renderOrder = 8; grupo.add(lineasRed);
+  lineasRed.frustumCulled = false; lineasRed.renderOrder = 8; lineasRed.visible = false; grupo.add(lineasRed); // sin las líneas entre techos (se veían como fuegos artificiales)
   const COLE = Object.fromEntries(Object.entries(ESP).map(([k, e]) => [k, new THREE.Color(e.c)]));
   const conteo = { visitas: 0, edificios: new Set(), cruces: 0 };
   function visitar(a, f) {

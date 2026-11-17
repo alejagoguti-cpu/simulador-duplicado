@@ -92,7 +92,7 @@ import * as THREE from 'three';
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const RMQ = matchMedia('(prefers-reduced-motion: reduce)').matches, MOV = innerWidth <= 760;
-const M = await fetch('data3d/puntos/bavaria_campo.json?v=2').then(r => r.json());
+const M = await fetch('data3d/puntos/bavaria_campo.json?v=3').then(r => r.json());
 // ---------- puntos (con barra de carga) ----------
 const resp = await fetch('data3d/puntos/bavaria_campo.bin?v=2'), tot = +resp.headers.get('content-length') || M.n * 9, rd = resp.body.getReader(), partes = []; let lle = 0;
 for (;;) { const { done, value } = await rd.read(); if (done) break; partes.push(value); lle += value.length; $('cb').style.width = Math.min(100, lle / tot * 100) + '%'; }
@@ -136,7 +136,7 @@ function camara() {
 // ---------- fauna animada: enjambres de puntos alrededor de cada animal ----------
 const ESP = M.especies, porK = Object.fromEntries(ESP.map(e => [e.k, e]));
 const BICH = { abeja: [40, 2.2, '#facc15', 2.4], abejorro: [14, 1.6, '#eab308', 1.6], mariposa: [12, 3.0, '#fb923c', 0.9], colibri: [5, 2.4, '#22d3ee', 3.2], mariquita: [16, 0.8, '#dc2626', 0.3],
-  copeton: [6, 3.0, '#d6d3d1', 1.4], mirla: [4, 3.0, '#57534e', 1.0], murcielago: [6, 6.0, '#c4b5fd', 2.2], cernicalo: [1, 9.0, '#f97316', 0.5] };
+  copeton: [6, 3.0, '#d6d3d1', 1.4], mirla: [4, 3.0, '#57534e', 1.0], murcielago: [6, 6.0, '#c4b5fd', 2.2] };
 const FB = []; for (const [k, [cnt, rad, c, vel]] of Object.entries(BICH)) { const e = porK[k]; if (!e) continue; for (let i = 0; i < cnt; i++) FB.push({ e, rad: rad * (0.4 + Math.random() * 0.8), vel: vel * (0.6 + Math.random() * 0.8), f: Math.random() * 6.28, h: (Math.random() - 0.3) * rad * 0.5, c: new THREE.Color(c), tam: k === 'abeja' || k === 'mariquita' ? 5 : 8 }); }
 const fg = new THREE.BufferGeometry(), fp = new Float32Array(FB.length * 3), fc = new Float32Array(FB.length * 3), fs = new Float32Array(FB.length);
 FB.forEach((b, i) => { fc.set([b.c.r, b.c.g, b.c.b], i * 3); fs[i] = b.tam; });
