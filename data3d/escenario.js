@@ -15,74 +15,30 @@ export function iniciarEscenario({ T3, say = () => {} }) {
   const LC = { x: 5341.33, y: 3161.9 }, lw = (x, y) => [x - LC.x, LC.y - y]; // marco «modelo» -> mundo
   const css = document.createElement('style');
   css.textContent = `
-#esc{position:fixed;z-index:30;top:14px;left:50%;transform:translateX(-50%);width:min(468px,calc(100vw - 640px));min-width:360px;
-  font-family:var(--ui-sans,Inter,system-ui,sans-serif);color:var(--ui-tx,#e9ebec);background:linear-gradient(180deg,rgba(22,25,29,.86),rgba(12,14,17,.86));
-  border:1px solid rgba(255,255,255,.08);border-radius:16px;box-shadow:0 18px 40px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.05);
-  -webkit-backdrop-filter:blur(18px) saturate(1.15);backdrop-filter:blur(18px) saturate(1.15);padding:6px}
-#esc .sw{position:relative;display:grid;grid-template-columns:1fr 1fr;background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.05);border-radius:11px;padding:3px}
-#esc .sw i{position:absolute;top:3px;bottom:3px;left:3px;width:calc(50% - 3px);border-radius:8px;
-  background:linear-gradient(180deg,rgba(143,176,201,.24),rgba(143,176,201,.1));box-shadow:inset 0 0 0 1px rgba(143,176,201,.42),inset 0 1px 0 rgba(255,255,255,.08),0 4px 14px rgba(0,0,0,.3);
-  transition:transform .4s cubic-bezier(.3,.7,.2,1),background .4s,box-shadow .4s}
-#esc[data-e="proyecto"] .sw i{transform:translateX(100%);background:linear-gradient(180deg,rgba(226,165,91,.26),rgba(226,165,91,.1));box-shadow:inset 0 0 0 1px rgba(226,165,91,.5),inset 0 1px 0 rgba(255,255,255,.08),0 4px 14px rgba(0,0,0,.3)}
-#esc .sw button{position:relative;z-index:1;height:46px;border:0;background:none;color:var(--ui-tx2,#9aa2a7);cursor:pointer;padding:0 12px;
-  font:500 13px var(--ui-sans,Inter,system-ui,sans-serif);display:flex;align-items:center;justify-content:center;gap:10px;border-radius:8px;text-align:left;transition:color .3s}
-#esc .sw button span{display:flex;flex-direction:column;line-height:1.15}
-#esc .sw button small{font:400 10px var(--ui-mono,'JetBrains Mono',ui-monospace,monospace);letter-spacing:.04em;color:var(--ui-tx3,#646c71);margin-top:2px;transition:color .3s}
-#esc .sw button b{width:8px;height:8px;border-radius:50%;flex:none;opacity:.45;transition:opacity .3s,box-shadow .3s}
-#esc .sw button:hover{color:var(--ui-tx,#e9ebec)}
-#esc .sw button[aria-pressed="true"]{color:#fff}
-#esc .sw button[aria-pressed="true"] small{color:var(--ui-tx2,#b4bbc0)}
-#esc .sw button[data-e="hoy"][aria-pressed="true"] b{opacity:1;box-shadow:0 0 0 3px rgba(143,176,201,.22),0 0 10px rgba(143,176,201,.6)}
-#esc .sw button[data-e="proyecto"][aria-pressed="true"] b{opacity:1;box-shadow:0 0 0 3px rgba(226,165,91,.22),0 0 10px rgba(226,165,91,.6)}
-#esc .sw button:focus-visible{outline:2px solid var(--ui-acc,#e2a55b);outline-offset:1px}
-#esc .ley{display:none;flex-wrap:wrap;gap:6px;padding:10px 4px 4px}
-#esc[data-e="proyecto"] .ley{display:flex;animation:escIn .35s ease-out}
-@keyframes escIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
-#esc .ley-h{flex:1 0 100%;display:flex;justify-content:space-between;align-items:baseline;padding:0 4px 2px;font:500 9.5px var(--ui-mono,'JetBrains Mono',monospace);letter-spacing:.16em;text-transform:uppercase;color:var(--ui-tx3,#646c71)}
-#esc .ley-h small{font:400 10px var(--ui-sans,Inter,sans-serif);letter-spacing:0;text-transform:none}
-  font:500 11px var(--ui-sans,Inter,system-ui,sans-serif);color:#f4f5f6;text-shadow:0 1px 3px rgba(0,0,0,.9),0 0 8px rgba(0,0,0,.6);white-space:nowrap}
-@keyframes escCol{0%{box-shadow:0 0 0 0 rgba(232,121,249,.75),0 1px 4px rgba(0,0,0,.6)}70%{box-shadow:0 0 0 9px rgba(232,121,249,0),0 1px 4px rgba(0,0,0,.6)}100%{box-shadow:0 0 0 0 rgba(232,121,249,0),0 1px 4px rgba(0,0,0,.6)}}
-body.esc-solo-col #hid-red{display:none!important}
-@property --escAng{syntax:'<angle>';inherits:false;initial-value:0deg}
-#esc{--escC:#8fb0c9;isolation:isolate}
-#esc[data-e="proyecto"]{--escC:#e2a55b}
-#esc::before{content:'';position:absolute;inset:-1px;border-radius:17px;padding:1px;pointer-events:none;z-index:2;
-  background:conic-gradient(from var(--escAng),transparent 0 62%,color-mix(in srgb,var(--escC) 90%,#fff) 78%,transparent 92%);
-  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;animation:escGira 6s linear infinite;opacity:.85}
-@keyframes escGira{to{--escAng:360deg}}
-#esc::after{content:'';position:absolute;inset:0;border-radius:16px;pointer-events:none;z-index:3;opacity:0;
-  background:linear-gradient(105deg,transparent 35%,color-mix(in srgb,var(--escC) 30%,transparent) 48%,rgba(255,255,255,.14) 50%,transparent 62%);background-size:250% 100%}
-#esc.barre::after{animation:escBarre .9s cubic-bezier(.3,.7,.2,1)}
-@keyframes escBarre{0%{opacity:1;background-position:120% 0}100%{opacity:0;background-position:-40% 0}}
-#esc .cab{display:flex;justify-content:space-between;align-items:center;padding:3px 8px 7px;font:500 9.5px var(--ui-mono,'JetBrains Mono',monospace);letter-spacing:.16em;text-transform:uppercase;color:var(--ui-tx3,#646c71)}
-#esc .cab .st{display:inline-flex;align-items:center;gap:7px;letter-spacing:.08em;color:var(--escC);transition:color .4s}
-#esc .cab .st i{width:6px;height:6px;border-radius:50%;background:var(--escC);box-shadow:0 0 8px var(--escC);animation:escLate 1.8s ease-in-out infinite}
-@keyframes escLate{50%{opacity:.35}}
-#esc .sw button kbd{margin-left:auto;font:500 9.5px var(--ui-mono,'JetBrains Mono',monospace);color:var(--ui-tx3,#646c71);padding:2px 5px;border-radius:4px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04)}
-#esc .sw button[aria-pressed="true"] kbd{color:var(--escC);border-color:color-mix(in srgb,var(--escC) 50%,transparent)}
-#esc .sw button:active{transform:scale(.98)}
-@media(max-width:760px){#esc .sw button kbd{display:none}#esc .cab{padding:2px 6px 5px}}
-@media(prefers-reduced-motion:reduce){#esc::before,#esc .cab .st i{animation:none}#esc.barre::after{animation:none}}
-/* ---------- estrategias: tarjetas con ícono ---------- */
-#esc .ley{display:none;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:10px 2px 2px}
-#esc[data-e="proyecto"] .ley{display:grid}
-@media(min-width:1101px){#esc[data-e="proyecto"]{width:min(620px,calc(100vw - 620px))}}
-#esc .ley-h{grid-column:1/-1}
-#esc .est{position:relative;display:flex;align-items:center;gap:9px;min-width:0;padding:9px 10px 9px 9px;border-radius:12px;cursor:pointer;text-align:left;overflow:hidden;
-  border:1px solid rgba(255,255,255,.09);background:linear-gradient(150deg,color-mix(in srgb,var(--c) 13%,rgba(255,255,255,.03)),rgba(255,255,255,.02));color:var(--ui-tx,#e9ebec);
-  transition:transform .2s,border-color .2s,box-shadow .2s,opacity .2s,background .2s}
-#esc .est::after{content:'';position:absolute;inset:auto -20% -60% auto;width:70%;height:120%;border-radius:50%;background:radial-gradient(color-mix(in srgb,var(--c) 30%,transparent),transparent 70%);opacity:.5;pointer-events:none}
-#esc .est .ico{flex:none;width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;
-  background:linear-gradient(140deg,var(--c),color-mix(in srgb,var(--c) 55%,#000));box-shadow:0 4px 14px color-mix(in srgb,var(--c) 40%,transparent),inset 0 1px 0 rgba(255,255,255,.3)}
-#esc .est .tx{display:flex;flex-direction:column;min-width:0}
-#esc .est b{font:600 12px/1.2 var(--ui-sans,Inter,sans-serif);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#esc .est small{font:400 10px/1.3 var(--ui-sans,Inter,sans-serif);color:var(--ui-tx2,#b9c1c6);margin-top:2px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-#esc .est small em{font:500 10px var(--ui-mono,monospace);font-style:normal;color:var(--c)}
-#esc .est .nu{position:absolute;right:8px;top:6px;font:500 9px var(--ui-mono,'JetBrains Mono',monospace);color:rgba(255,255,255,.28);letter-spacing:.06em}
-#esc .est:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--c) 55%,transparent);box-shadow:0 10px 24px color-mix(in srgb,var(--c) 22%,transparent)}
-#esc .est.on{border-color:var(--c);box-shadow:0 0 0 1px var(--c),0 10px 28px color-mix(in srgb,var(--c) 32%,transparent);background:linear-gradient(150deg,color-mix(in srgb,var(--c) 28%,transparent),rgba(255,255,255,.03))}
-#esc .est.off{opacity:.4}
-#esc .est:focus-visible{outline:2px solid var(--c);outline-offset:2px}
+/* ---------- selector de escenario: sobrio, como un control del sistema ---------- */
+#esc{position:fixed;z-index:30;top:14px;left:50%;transform:translateX(-50%);width:max-content;max-width:min(640px,calc(100vw - 620px));padding:5px;
+  font-family:var(--ui-sans,Inter,system-ui,sans-serif);color:var(--ui-tx,#e9ebec)}
+#esc .sw{position:relative;display:grid;grid-template-columns:1fr 1fr;width:300px;margin:0 auto;background:rgba(255,255,255,.07);border-radius:12px;padding:3px}
+#esc .sw i{position:absolute;top:3px;bottom:3px;left:3px;width:calc(50% - 3px);border-radius:9px;background:rgba(255,255,255,.2);box-shadow:0 1px 4px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.18);transition:transform .35s cubic-bezier(.3,.7,.2,1)}
+#esc[data-e="proyecto"] .sw i{transform:translateX(100%)}
+#esc .sw button{position:relative;z-index:1;height:32px;border:0;background:none;color:rgba(255,255,255,.62);cursor:pointer;font:500 13px var(--ui-sans,Inter,system-ui,sans-serif);border-radius:9px;transition:color .25s}
+#esc .sw button:hover{color:#fff}#esc .sw button[aria-pressed="true"]{color:#fff}
+#esc .sw button:focus-visible{outline:2px solid rgba(255,255,255,.7);outline-offset:1px}
+#esc .sw button b,#esc .sw button small,#esc .sw button kbd{display:none}
+#esc .sw button span{display:inline}
+/* estrategias: una fila de botones pequeños con su ícono */
+#esc .ley{display:none;flex-wrap:wrap;justify-content:center;gap:2px;padding:6px 2px 1px}
+#esc[data-e="proyecto"] .ley{display:flex}
+#esc .ley-h{display:none}
+#esc .est{display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 11px 0 4px;border:0;border-radius:15px;background:none;color:rgba(255,255,255,.78);
+  font:500 12px var(--ui-sans,Inter,sans-serif);cursor:pointer;white-space:nowrap;transition:background .2s,color .2s,opacity .2s}
+#esc .est .ico{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--c);color:#fff;flex:none}
+#esc .est .ico svg{width:12px;height:12px}
+#esc .est .tx b{font-weight:500}#esc .est small,#esc .est .nu{display:none}
+#esc .est:hover{background:rgba(255,255,255,.08);color:#fff}
+#esc .est.on{background:color-mix(in srgb,var(--c) 26%,transparent);color:#fff}
+#esc .est.off{opacity:.45}
+#esc .est:focus-visible{outline:2px solid var(--c);outline-offset:1px}
 /* ---------- marcadores en el mapa: pin con ícono y anillo que late ---------- */
 .esc-pt{position:fixed;z-index:6;left:0;top:0;pointer-events:none;display:none;align-items:center;gap:7px;white-space:nowrap;
   font:600 11px var(--ui-sans,Inter,system-ui,sans-serif);color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9),0 0 10px rgba(0,0,0,.6)}
@@ -97,20 +53,20 @@ body.esc-solo-col #hid-red{display:none!important}
 .esc-pt.chico .pin{width:22px;height:22px}.esc-pt.chico .pin svg{width:12px;height:12px}
 .esc-pt.col .pin{width:20px;height:20px}.esc-pt.col .pin svg{width:11px;height:11px}.esc-pt.col .pin::after{animation-duration:3.2s}
 .esc-pt.col span{display:none}.esc-pt.col.cerca span{display:inline}
-@media(max-width:760px){#esc .ley{display:none;grid-auto-flow:column;grid-auto-columns:minmax(170px,1fr);grid-template-columns:none;overflow-x:auto;scrollbar-width:none;padding:8px 2px 2px}#esc[data-e="proyecto"] .ley{display:grid}#esc .ley::-webkit-scrollbar{display:none}#esc .est{padding:7px 8px}#esc .est .ico{width:30px;height:30px}}
+
 @media(prefers-reduced-motion:reduce){.esc-pt .pin::after{animation:none}}
 /* la propuesta anterior no se ofrece mientras se redefine: botón y lista de estrategias del panel, y la Visión */
 body .gs-est, body .gs-sub:has(+ .gs-est), body #gs-cv-b, body #vi-btn{display:none!important}
 body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
-@media(max-width:1100px){#esc{width:min(468px,calc(100vw - 32px));min-width:0;top:auto;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 70px)}}
-@media(max-width:760px){#esc{min-width:0;width:calc(100vw - 16px);padding:5px;border-radius:14px}#esc .sw button{height:42px;font-size:12.5px;gap:8px;padding:0 8px}#esc .sw button small{font-size:9.5px}#esc .ley{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding:8px 2px 2px;-webkit-mask:linear-gradient(90deg,#000 88%,transparent)}#esc .ley::-webkit-scrollbar{display:none}#esc .ley-h{display:none}
+@media(max-width:1100px){#esc{max-width:calc(100vw - 32px);top:auto;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 70px)}}
+@media(max-width:760px){#esc{width:calc(100vw - 16px);max-width:none;padding:4px}#esc .sw{width:100%}#esc .ley{flex-wrap:nowrap;justify-content:flex-start;overflow-x:auto;scrollbar-width:none}#esc .ley::-webkit-scrollbar{display:none}
   body.tb-abierto #esc,body.gs-abierto #esc{display:none} /* con el panel de simulación abierto en celular, el selector no lo tapa */
   body #hid-red{bottom:calc(max(12px,env(safe-area-inset-bottom)) + 196px)!important}}
 @media(min-width:761px) and (max-width:1100px){body #hid-red{bottom:calc(max(12px,env(safe-area-inset-bottom)) + 180px)!important}}
 @media(prefers-reduced-motion:reduce){#esc .sw i{transition:none}#esc[data-e="proyecto"] .ley{animation:none}.esc-pt.col i{animation:none}}`;
   document.head.appendChild(css);
   const el = document.createElement('section'); el.id = 'esc'; el.setAttribute('aria-label', 'Escenario del territorio'); el.dataset.e = 'hoy';
-  el.innerHTML = `<div class="cab"><span>Escenario</span><span class="st"><i></i><em id="esc-st" style="font-style:normal">Kennedy hoy</em></span></div><div class="sw" role="group" aria-label="Escenario"><i aria-hidden="true"></i>
+  el.innerHTML = `<div class="sw" role="group" aria-label="Escenario"><i aria-hidden="true"></i>
       <button type="button" data-e="hoy" aria-pressed="true"><b style="background:${CHOY}"></b><span>Kennedy hoy<small>el territorio actual</small></span><kbd>H</kbd></button>
       <button type="button" data-e="proyecto" aria-pressed="false"><b style="background:${CPRO}"></b><span>Con la propuesta<small>las 5 estrategias</small></span><kbd>P</kbd></button></div>
     <div class="ley" id="esc-ley"></div>`;
@@ -128,11 +84,11 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
   const svg = (id, s = 18) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[id]}</svg>`;
   const EST5 = [
     { id: 'bav', n: 'Bavaria Común', t: 'Distrito de ciencia y alimento', c: '#ef4444' },
-    { id: 'mer', n: 'Plazas de Barrio', t: 'Mercados cerca de casa', c: '#38bdf8' },
-    { id: 'cor', n: 'Corabastos Abierto', t: 'Menos camiones, más humedal', c: '#f59e0b' },
-    { id: 'res', n: 'Ciclo Cero', t: 'Los residuos vuelven a la tierra', c: '#a78bfa' },
-    { id: 'red', n: 'Ruta Verde', t: 'Huertas y triciclos de reparto', c: '#4ade80' },
-    { id: 'col', n: 'Aulas Vivas', t: 'Colegios en red con huertas', c: '#e879f9' } // solo se prenden al escogerlas
+    { id: 'mer', n: 'Mercados de barrio', t: 'Mercados cerca de casa', c: '#38bdf8' },
+    { id: 'cor', n: 'Corabastos', t: 'Menos camiones, más humedal', c: '#f59e0b' },
+    { id: 'res', n: 'Residuos a compost', t: 'Los residuos vuelven a la tierra', c: '#a78bfa' },
+    { id: 'red', n: 'Reparto en bici', t: 'Huertas y triciclos de reparto', c: '#4ade80' },
+    { id: 'col', n: 'Colegios', t: 'Colegios en red con huertas', c: '#e879f9' } // solo se prenden al escogerlas
   ];
   $ley().innerHTML = `<div class="ley-h">Estrategias<small>toca una para verla sola</small></div>` + EST5.map((s, i) => `<button type="button" class="est" data-s="${s.id}" title="Ver solo ${s.n}" style="--c:${s.c}"><span class="ico">${svg(s.id)}</span><span class="tx"><b>${s.n}</b><small>${s.t}${s.id === 'col' ? ' · <em id="esc-ncol"></em>' : ''}</small></span><span class="nu">0${i + 1}</span></button>`).join('');
   function $ley() { return el.querySelector('#esc-ley'); }
