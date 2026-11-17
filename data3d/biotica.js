@@ -132,11 +132,11 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
   for (const p of PAR) p.k = Math.max(0.35, Math.min(2.2, Math.sqrt(p.area) / 110));
   // huertas en lotes baldíos (P4 de la simulación): colmenas, lombrices y las aves que atrae la huerta
   // sitios de huerta: los de las estrategias E1 y E2 (cfg.huertas, ya en el mundo) o, sin estrategias, las huertas de giro_sim.json
-  const fuenteH = huertas ? huertas.map(h => ({ n: h.id + ' · ' + h.n, poly: h.poly })) : (D.huertas || []).map(h => ({ n: h.n, poly: h.poly.map(p => [p[0] + OX, p[1] + OZ]) }));
+  const fuenteH = huertas ? huertas.map(h => ({ n: h.id + ' · ' + h.n, poly: h.poly, cnt: h.cnt })) : (D.huertas || []).map(h => ({ n: h.n, poly: h.poly.map(p => [p[0] + OX, p[1] + OZ]) }));
   const HUE = fuenteH.filter(h => h.poly.length >= 3).map(h => {
     const poly = h.poly; let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9, cx = 0, cz = 0; for (const p of poly) { x0 = Math.min(x0, p[0]); x1 = Math.max(x1, p[0]); z0 = Math.min(z0, p[1]); z1 = Math.max(z1, p[1]); cx += p[0]; cz += p[1]; }
     const borde = poly.concat([poly[0]]);
-    return { n: h.n, tipo: 'huerta', poly, borde, x0, x1, z0, z1, cx: cx / poly.length, cz: cz / poly.length, ag: {}, k: 1 };
+    return { n: h.n, tipo: 'huerta', poly, borde, x0, x1, z0, z1, cx: cx / poly.length, cz: cz / poly.length, ag: {}, k: 1, cnt: h.cnt };
   });
   // bosque de la antigua fábrica de Bavaria y predio de Corabastos: hábitats con sus propias especies
   const POR_BOSQUE = { copeton: 10, mirla: 8, torcaza: 8, chamon: 4, cucarachero: 6, colibri: 4, abeja: 6, lombriz: 5, curi: 6, comadreja: 2, rata: 5, lagartija: 5, culebra: 2, caracol: 6, cernicalo: 1, buho: 1 };
@@ -648,7 +648,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
     const tt = pan.querySelector('#bt-tot'); if (tt) tt.textContent = `${tot.toLocaleString('es-CO')} individuos · ${HUM.length} humedales, ${PAR.length} zonas verdes${pro ? ` y ${NHUE} huertas` : ''}`;
     const bp = pan.querySelector('#bt-pro'); if (bp) { bp.classList.toggle('on', pro);
       const top = Object.entries(suma).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([k, x]) => `${ESP[k].n.toLowerCase()} +${x}`).join(', ');
-      bp.innerHTML = pro ? `<b>Con la propuesta llegan +${extra.toLocaleString('es-CO')} animales</b> a ${NHUE} huertas (lotes, techos y el distrito Bavaria Común): ${top}. Son polinizadores, aves que comen plagas y lombrices del suelo; las relaciones nuevas se ven arriba en «conexiones ahora».` : ''; }
+      bp.innerHTML = pro ? `<b>Con la propuesta llegan +${extra.toLocaleString('es-CO')} animales</b> a ${NHUE} huertas (lotes baldíos, parques de barrio y el distrito Bavaria Común): ${top}. Son polinizadores, aves que comen plagas y lombrices del suelo; las relaciones nuevas se ven arriba en «conexiones ahora».` : ''; }
   }
   addEventListener('escenario', () => setTimeout(pintarEscenario, 50)); setInterval(pintarEscenario, 1500);
   const ficha = document.createElement('div'); ficha.id = 'bt-ficha';

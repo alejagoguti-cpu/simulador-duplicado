@@ -145,7 +145,11 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
   }
   const cj = (u) => (window.cargarJSON ? window.cargarJSON(u) : fetch(u).then(r => r.json()));
   /* ---------- Av. Ciudad de Cali: con la propuesta baja su tráfico (data3d/alivio_cali.js); el conteo corre también en «hoy» ---------- */
-  let CALI = null;
+  let CALI = null, HBAR = null, pHBar = null;
+  /* huertas de barrio (lotes baldíos y parques vecinales): bancales reales, solo con la propuesta (data3d/huertas_barrio.js) */
+  const huertasBarrio = (on) => { if (HBAR) { HBAR.ver(on); return; } if (!on || pHBar) return;
+    pHBar = Promise.all([import('./huertas_barrio.js?v=1'), cj('data3d/huertas_barrio.json?v=1')]).then(([m, D]) => m.crearHuertasBarrio({ THREE: T3.THREE, T3, D, movil: matchMedia('(pointer:coarse)').matches }))
+      .then(h => { HBAR = h; window.KEN_HBAR = h; HBAR.ver(T3.escenario === 'proyecto' && solo !== 'col'); }).catch(e => console.warn('huertas de barrio:', e)); };
   Promise.all([import('./alivio_cali.js?v=1'), cj('data3d/alivio_cali.json?v=1')]).then(([m, D]) => { CALI = m.crearAlivioCali({ T3, D }); window.KEN_CALI = CALI; CALI.ver(T3.escenario === 'proyecto' && !solo); }).catch(e => console.warn('Av. Ciudad de Cali:', e));
   const centro = (P) => [P.reduce((a, p) => a + p[0], 0) / P.length, P.reduce((a, p) => a + p[1], 0) / P.length];
   const poner = (sid, x, z, n) => { const s = EST5.find(q => q.id === sid), d = document.createElement('div'); d.className = 'esc-pt';
@@ -208,7 +212,8 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
     const co = T3.scene && T3.scene.getObjectByName('corabastos'); if (co && co.userData.quitadas) co.userData.quitadas.visible = true;
     if (T3.bio && T3.bio.ESTADO) T3.bio.ESTADO.escenario = pro && T3.PROP.fauna ? 'proyecto' : 'hoy'; // fauna e interacciones de las huertas
     if (T3.sintaxisEscenario) T3.sintaxisEscenario();
-    if (CALI) CALI.ver(pro && !solo); // Av. Ciudad de Cali con menos tráfico (se oculta al mirar una sola estrategia)
+    if (CALI) CALI.ver(pro && !solo);
+    huertasBarrio(hu); // Av. Ciudad de Cali con menos tráfico (se oculta al mirar una sola estrategia)
   }
   function aplicar(e) {
     T3.escenario = e; el.dataset.e = e; { const nm = el.querySelector('#esc-nom'); if (nm && e !== 'proyecto') nm.classList.remove('on'); } const st = el.querySelector('#esc-st'); if (st) st.textContent = e === 'proyecto' ? 'Con la propuesta' : 'Kennedy hoy';
