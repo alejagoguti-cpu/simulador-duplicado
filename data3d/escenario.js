@@ -15,10 +15,10 @@ export function iniciarEscenario({ T3, say = () => {} }) {
   const LC = { x: 5341.33, y: 3161.9 }, lw = (x, y) => [x - LC.x, LC.y - y]; // marco «modelo» -> mundo
   const css = document.createElement('style');
   css.textContent = `
-/* ---------- selector de escenario: sobrio, como un control del sistema ---------- */
-#esc{position:fixed;z-index:30;top:14px;left:50%;transform:translateX(-50%);width:max-content;max-width:min(640px,calc(100vw - 620px));padding:5px;
+/* ---------- selector de escenario: una sola fila (hoy | propuesta · íconos de las estrategias) ---------- */
+#esc{position:fixed;z-index:30;top:14px;left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100vw - 32px);padding:5px;display:flex;align-items:center;gap:6px;
   font-family:var(--ui-sans,Inter,system-ui,sans-serif);color:var(--ui-tx,#e9ebec)}
-#esc .sw{position:relative;display:grid;grid-template-columns:1fr 1fr;width:300px;margin:0 auto;background:rgba(255,255,255,.07);border-radius:12px;padding:3px}
+#esc .sw{position:relative;display:grid;grid-template-columns:1fr 1fr;width:280px;background:rgba(255,255,255,.07);border-radius:12px;padding:3px;flex:none}
 #esc .sw i{position:absolute;top:3px;bottom:3px;left:3px;width:calc(50% - 3px);border-radius:9px;background:rgba(255,255,255,.2);box-shadow:0 1px 4px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.18);transition:transform .35s cubic-bezier(.3,.7,.2,1)}
 #esc[data-e="proyecto"] .sw i{transform:translateX(100%)}
 #esc .sw button{position:relative;z-index:1;height:32px;border:0;background:none;color:rgba(255,255,255,.62);cursor:pointer;font:500 13px var(--ui-sans,Inter,system-ui,sans-serif);border-radius:9px;transition:color .25s}
@@ -26,20 +26,21 @@ export function iniciarEscenario({ T3, say = () => {} }) {
 #esc .sw button:focus-visible{outline:2px solid rgba(255,255,255,.7);outline-offset:1px}
 #esc .sw button b,#esc .sw button small,#esc .sw button kbd{display:none}
 #esc .sw button span{display:inline}
-/* estrategias: una fila de botones pequeños con su ícono */
-#esc .ley{display:none;flex-wrap:wrap;justify-content:center;gap:2px;padding:6px 2px 1px}
+#esc .ley{display:none;align-items:center;gap:4px;padding:0 2px 0 4px;border-left:1px solid rgba(255,255,255,.12)}
 #esc[data-e="proyecto"] .ley{display:flex}
 #esc .ley-h{display:none}
-#esc .est{display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 11px 0 4px;border:0;border-radius:15px;background:none;color:rgba(255,255,255,.78);
-  font:500 12px var(--ui-sans,Inter,sans-serif);cursor:pointer;white-space:nowrap;transition:background .2s,color .2s,opacity .2s}
-#esc .est .ico{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--c);color:#fff;flex:none}
-#esc .est .ico svg{width:12px;height:12px}
-#esc .est .tx b{font-weight:500}#esc .est small,#esc .est .nu{display:none}
-#esc .est:hover{background:rgba(255,255,255,.08);color:#fff}
-#esc .est.on{background:color-mix(in srgb,var(--c) 26%,transparent);color:#fff}
-#esc .est.off{opacity:.45}
-#esc .est:focus-visible{outline:2px solid var(--c);outline-offset:1px}
-/* ---------- marcadores en el mapa: pin con ícono y anillo que late ---------- */
+#esc .est{position:relative;width:32px;height:32px;padding:0;border:0;border-radius:50%;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .2s,opacity .2s}
+#esc .est .ico{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--c);color:#fff;box-shadow:0 2px 6px rgba(0,0,0,.3);transition:box-shadow .2s}
+#esc .est .ico svg{width:14px;height:14px}
+#esc .est .tx,#esc .est small,#esc .est .nu{display:none}
+#esc .est:hover{transform:translateY(-1px)}#esc .est:hover .ico{box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 35%,transparent)}
+#esc .est.on .ico{box-shadow:0 0 0 2px #fff,0 0 12px var(--c)}
+#esc .est.off{opacity:.4}
+#esc .est:focus-visible{outline:2px solid var(--c);outline-offset:2px}
+/* nombre de la estrategia: aparece debajo del panel al pasar o al escogerla */
+#esc .nom{position:absolute;left:50%;top:calc(100% + 6px);transform:translateX(-50%);padding:5px 11px;border-radius:9px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .2s;
+  font:500 12px var(--ui-sans,Inter,sans-serif);color:#fff;background:rgba(12,14,17,.72);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.12)}
+#esc .nom.on{opacity:1}#esc .nom i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;background:var(--c)}/* ---------- marcadores en el mapa: pin con ícono y anillo que late ---------- */
 .esc-pt{position:fixed;z-index:6;left:0;top:0;pointer-events:none;display:none;align-items:center;gap:7px;white-space:nowrap;
   font:600 11px var(--ui-sans,Inter,system-ui,sans-serif);color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9),0 0 10px rgba(0,0,0,.6)}
 .esc-pt .pin{position:relative;flex:none;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50% 50% 50% 4px;transform:rotate(-45deg) translate(10px,-10px);
@@ -59,7 +60,7 @@ export function iniciarEscenario({ T3, say = () => {} }) {
 body .gs-est, body .gs-sub:has(+ .gs-est), body #gs-cv-b, body #vi-btn{display:none!important}
 body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
 @media(max-width:1100px){#esc{max-width:calc(100vw - 32px);top:auto;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 70px)}}
-@media(max-width:760px){#esc{width:calc(100vw - 16px);max-width:none;padding:4px}#esc .sw{width:100%}#esc .ley{flex-wrap:nowrap;justify-content:flex-start;overflow-x:auto;scrollbar-width:none}#esc .ley::-webkit-scrollbar{display:none}
+@media(max-width:760px){#esc{width:calc(100vw - 16px);max-width:none;padding:4px;flex-wrap:wrap;justify-content:center}#esc .sw{width:100%}#esc .ley{border-left:0;justify-content:center;width:100%;padding:4px 0 0}#esc .nom{top:auto;bottom:calc(100% + 6px)}
   body.tb-abierto #esc,body.gs-abierto #esc{display:none} /* con el panel de simulación abierto en celular, el selector no lo tapa */
   body #hid-red{bottom:calc(max(12px,env(safe-area-inset-bottom)) + 196px)!important}}
 @media(min-width:761px) and (max-width:1100px){body #hid-red{bottom:calc(max(12px,env(safe-area-inset-bottom)) + 180px)!important}}
@@ -69,7 +70,7 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
   el.innerHTML = `<div class="sw" role="group" aria-label="Escenario"><i aria-hidden="true"></i>
       <button type="button" data-e="hoy" aria-pressed="true"><b style="background:${CHOY}"></b><span>Kennedy hoy<small>el territorio actual</small></span><kbd>H</kbd></button>
       <button type="button" data-e="proyecto" aria-pressed="false"><b style="background:${CPRO}"></b><span>Con la propuesta<small>las 5 estrategias</small></span><kbd>P</kbd></button></div>
-    <div class="ley" id="esc-ley"></div>`;
+    <div class="ley" id="esc-ley"></div><div class="nom" id="esc-nom" aria-live="polite"></div>`;
   document.body.appendChild(el);
 
   /* ---------- las 5 estrategias: un punto en cada lugar ---------- */
@@ -84,13 +85,13 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
   const svg = (id, s = 18) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[id]}</svg>`;
   const EST5 = [
     { id: 'bav', n: 'Bavaria Común', t: 'Distrito de ciencia y alimento', c: '#ef4444' },
-    { id: 'mer', n: 'Mercados de barrio', t: 'Mercados cerca de casa', c: '#38bdf8' },
+    { id: 'mer', n: 'Red de mercados de barrio', t: 'Mercados cerca de casa', c: '#38bdf8' },
     { id: 'cor', n: 'Corabastos', t: 'Menos camiones, más humedal', c: '#f59e0b' },
-    { id: 'res', n: 'Residuos a compost', t: 'Los residuos vuelven a la tierra', c: '#a78bfa' },
-    { id: 'red', n: 'Reparto en bici', t: 'Huertas y triciclos de reparto', c: '#4ade80' },
+    { id: 'res', n: 'Gestión de residuos', t: 'Los residuos vuelven a la tierra', c: '#a78bfa' },
+    { id: 'red', n: 'Red de distribución alimentaria', t: 'Huertas y triciclos de reparto', c: '#4ade80' },
     { id: 'col', n: 'Colegios', t: 'Colegios en red con huertas', c: '#e879f9' } // solo se prenden al escogerlas
   ];
-  $ley().innerHTML = `<div class="ley-h">Estrategias<small>toca una para verla sola</small></div>` + EST5.map((s, i) => `<button type="button" class="est" data-s="${s.id}" title="Ver solo ${s.n}" style="--c:${s.c}"><span class="ico">${svg(s.id)}</span><span class="tx"><b>${s.n}</b><small>${s.t}${s.id === 'col' ? ' · <em id="esc-ncol"></em>' : ''}</small></span><span class="nu">0${i + 1}</span></button>`).join('');
+  $ley().innerHTML = `<div class="ley-h">Estrategias<small>toca una para verla sola</small></div>` + EST5.map((s, i) => `<button type="button" class="est" data-s="${s.id}" title="Ver solo ${s.n}" aria-label="${s.n}" style="--c:${s.c}"><span class="ico">${svg(s.id)}</span><span class="tx"><b>${s.n}</b><small>${s.t}${s.id === 'col' ? ' · <em id="esc-ncol"></em>' : ''}</small></span><span class="nu">0${i + 1}</span></button>`).join('');
   function $ley() { return el.querySelector('#esc-ley'); }
   const PUNTOS = []; // { s, x, z, d (div), vis }
   let solo = null; // estrategia escogida en la leyenda (solo esa se prende)
@@ -181,8 +182,12 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
     $ley().querySelectorAll('[data-s]').forEach(sp => { sp.classList.toggle('on', sp.dataset.s === solo); sp.classList.toggle('off', !!solo && sp.dataset.s !== solo); sp.setAttribute('aria-pressed', String(sp.dataset.s === solo)); });
   }
   T3.escSolo = () => solo;
+  const NOM = () => el.querySelector('#esc-nom'); const verNombre = (id) => { const n = NOM(), s = EST5.find(q => q.id === id); if (!n) return; if (!s) { n.classList.remove('on'); return; } n.style.setProperty('--c', s.c); n.innerHTML = `<i></i>${s.n}`; n.classList.add('on'); };
+  $ley().addEventListener('pointerover', (e) => { const b = e.target.closest('[data-s]'); if (b) verNombre(b.dataset.s); });
+  $ley().addEventListener('pointerleave', () => verNombre(solo));
+  $ley().addEventListener('focusin', (e) => { const b = e.target.closest('[data-s]'); if (b) verNombre(b.dataset.s); });
   $ley().addEventListener('click', (ev) => { const sp = ev.target.closest('[data-s]'); if (!sp) return;
-    solo = solo === sp.dataset.s ? null : sp.dataset.s; filtrar(); limpiarAnterior();
+    solo = solo === sp.dataset.s ? null : sp.dataset.s; filtrar(); limpiarAnterior(); verNombre(solo);
     if (solo === 'col') say(`Colegios de Kennedy: ${PUNTOS.filter(p => p.s.id === 'col').length} (OpenStreetMap)`, 3000);
     const L = PUNTOS.filter(p => p.vis); if (!L.length || !T3.orbit || solo === 'bav' || solo === 'col') return; // Bavaria y colegios: la cámara la mueve su módulo
     let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const p of L) { x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); z0 = Math.min(z0, p.z); z1 = Math.max(z1, p.z); }
@@ -205,7 +210,7 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
     if (CALI) CALI.ver(pro && !solo); // Av. Ciudad de Cali con menos tráfico (se oculta al mirar una sola estrategia)
   }
   function aplicar(e) {
-    T3.escenario = e; el.dataset.e = e; const st = el.querySelector('#esc-st'); if (st) st.textContent = e === 'proyecto' ? 'Con la propuesta' : 'Kennedy hoy';
+    T3.escenario = e; el.dataset.e = e; { const nm = el.querySelector('#esc-nom'); if (nm && e !== 'proyecto') nm.classList.remove('on'); } const st = el.querySelector('#esc-st'); if (st) st.textContent = e === 'proyecto' ? 'Con la propuesta' : 'Kennedy hoy';
     el.querySelectorAll('.sw button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.e === e)));
     limpiarAnterior(); verPuntos(e === 'proyecto'); resaltarColegios();
     const re = document.getElementById('ruido-esc'); if (re) re.textContent = nombre();
