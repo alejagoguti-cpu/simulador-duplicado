@@ -3609,7 +3609,7 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
       T3.planBavaria = PLAN; T3.planCorabastos = CPLAN; T3.EST = EST;
       // selector KENNEDY HOY / CON LA PROPUESTA (data3d/escenario.js): arranca en hoy; la propuesta prende huertas, Bavaria Común,
       // Corabastos reducido, sintaxis con los pasajes, camiones -> furgonetas (ruido) y la fauna de las huertas
-      import('./data3d/escenario.js?v=46').then(me2 => me2.iniciarEscenario({ T3, say })).catch(e => console.warn('escenario:', e));
+      import('./data3d/escenario.js?v=47').then(me2 => me2.iniciarEscenario({ T3, say })).catch(e => console.warn('escenario:', e));
       const lista = EST ? EST.lista.slice() : []; if (PLAN) lista.unshift(PLAN.entrada);
       return m.iniciarSimulacion({ T3, say, sinFauna: FAUNA_RED, sinMalla: ['abeja'], estrategias: lista.length ? lista : null, verEstrategia: (id, on, sola) => { /* la red de gobernanza (data3d/red_gobernanza.js) ya no se muestra al elegir estrategia */ if (on && sola && id !== 'E8' && EST && EST.lugar) volarEstrategia(EST.lugar(id)); if (id === 'E1') { if (EST) EST.marcar('E1', on); if (!window.__colB) window.__colB = import('./data3d/colectivo_bavaria.js?v=4').then(m => m.crearColectivo({ THREE: T3.THREE, T3, lw })); window.__colB.then(cb => cb.ver(on)).catch(e => console.warn('colectivo Bavaria:', e)); return PLAN && PLAN.ver(on); } if (id === 'E3' && CPLAN) { if (EST) EST.marcar('E3', on); return CPLAN.ver(on); } return EST && EST.ver(id, on); } }); // todas muestran su lugar; las conexiones entre estrategias se ven cuando las dos están prendidas
     })
@@ -3629,11 +3629,11 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
       if (KEN && !document.getElementById('us-btn')) { /* usos del suelo: edificios pintados por su uso real + panel (data3d/usos_suelo.js) */
         const fb = document.getElementById('ar-btn'), b = document.createElement('button'); b.id = 'us-btn'; b.textContent = 'Usos del suelo'; b.title = 'Pinta cada edificio con su uso real (shapefile Usos_kennedy)'; b.style.cssText = 'width:100%;margin-top:6px';
         b.onclick = async () => { const on = !b.classList.contains('on'); b.classList.toggle('on', on); T3.roofU.uUsos.value = on ? 1 : 0;
-          import('./data3d/usos_suelo.js?v=6').then(m => m.verPlazas({ THREE: T3.THREE, T3, on })).catch(e => console.warn('plazas:', e)); /* plazas de mercado existentes en color fuerte */
-          const pintar = () => import('./data3d/usos_suelo.js?v=6').then(m => m.pintarModelos({ THREE: T3.THREE, T3, on: b.classList.contains('on') })).catch(e => console.warn('usos modelos:', e)); /* biblioteca, conjuntos, torres, Bavaria, Corabastos */
+          import('./data3d/usos_suelo.js?v=7').then(m => m.verPlazas({ THREE: T3.THREE, T3, on })).catch(e => console.warn('plazas:', e)); /* plazas de mercado existentes en color fuerte */
+          const pintar = () => import('./data3d/usos_suelo.js?v=7').then(m => m.pintarModelos({ THREE: T3.THREE, T3, on: b.classList.contains('on') })).catch(e => console.warn('usos modelos:', e)); /* biblioteca, conjuntos, torres, Bavaria, Corabastos */
           pintar(); if (on) for (const t of [4000, 12000, 30000, 60000]) setTimeout(pintar, t); /* los modelos que terminan de cargar después */
           const pn = document.getElementById('usos-panel'); if (!on) { if (pn) pn.remove(); return; }
-          try { (await import('./data3d/usos_suelo.js?v=6')).panelUsos({ T3 }); } catch (e) { console.warn('usos del suelo:', e); } };
+          try { (await import('./data3d/usos_suelo.js?v=7')).panelUsos({ T3 }); } catch (e) { console.warn('usos del suelo:', e); } };
         (fb || ag.parentElement).insertAdjacentElement('afterend', b);
       }
       if (KEN && !document.getElementById('rc-btn')) { /* ruido de los carros y cierre de vía (data3d/ruido_cierre.js, como en el módulo 08) */
