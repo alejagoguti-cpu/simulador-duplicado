@@ -18,7 +18,7 @@ export function crearRedColegios({ T3, lw, COLE = null }) {
     .catch(e => console.warn('red de colegios:', e));
 
   function armar(R, C) {
-    const COL = { red: '#e879f9', hue: '#a3e635', inst: '#60a5fa', lab: '#c084fc', campo: '#4ade80', acc: '#fbbf24' };
+    const COL = { red: '#76b7b2', hue: '#a3e635', inst: '#60a5fa', lab: '#c084fc', campo: '#4ade80', acc: '#fbbf24' };
     const DEST = { inst: { n: 'Instituto de enseñanza', c: COL.inst, f: 'Jornadas mensuales en bus', d: 'Más de 4 km: la visita es larga y poco frecuente; se aprovecha en el aula (módulos del ensayo, datos de su huerta y presentación de resultados).' },
       lab: { n: 'Centro de laboratorios NBIC', c: COL.lab, f: 'Salidas quincenales', d: 'Entre 2,2 y 4 km: traen las muestras y registros de su parque-huerta para analizarlos (suelo, sensores, germinación).' },
       campo: { n: 'Campo experimental', c: COL.campo, f: 'Salidas semanales a pie o en bici', d: 'A menos de 2,2 km: práctica directa de cultivo en las camas docentes y los invernaderos del distrito.' } };
@@ -61,7 +61,7 @@ void main(){ float d=fract((vD-uT*uV)/uS); float f=smoothstep(0.,10.,vD)*smooths
        1. grupos: los colegios que comparten huerta, unidos entre sí solo dentro del grupo (líneas bajas, sin cruzar toda Kennedy)
        2. a la huerta: de cada colegio, una línea baja de su color hasta su huerta
        3. a Bavaria: UNA línea gruesa por huerta hasta el edificio de Bavaria Común que le toca (no 74 líneas sueltas) */
-    const PAL = ['#a3e635', '#22d3ee', '#f472b6', '#fbbf24', '#a78bfa', '#34d399', '#fb7185', '#60a5fa', '#f97316', '#e879f9', '#2dd4bf', '#facc15'];
+    const PAL = ['#a3e635', '#22d3ee', '#f472b6', '#fbbf24', '#a78bfa', '#34d399', '#fb7185', '#60a5fa', '#f97316', '#76b7b2', '#2dd4bf', '#facc15'];
     const CG = H.map((_, k) => PAL[k % PAL.length]); // color de cada grupo
     const borde = (h, p) => { const dx = p[0] - h.c[0], dz = p[1] - h.c[1], n = Math.hypot(dx, dz) || 1, t = h.r + 4; return [h.c[0] + dx / n * t, h.c[1] + dz / n * t]; }; // borde de la huerta circular
     H.forEach((h, k) => {
@@ -211,7 +211,7 @@ void main(){ float d=fract((vD-uT*uV)/uS); float f=smoothstep(0.,10.,vD)*smooths
 .cr-lb .pt{position:absolute;left:10px;top:100%;width:1px;height:18px;background:linear-gradient(var(--c),transparent)}
 .cr-lb.act .cj,.cr-lb:hover .cj{border-color:var(--c);box-shadow:0 0 0 1px var(--c),0 8px 22px rgba(0,0,0,.45)}
 .cr-lb.dim{opacity:.4}
-.cr-lb:focus-visible{outline:2px solid #e879f9;outline-offset:2px;border-radius:6px}
+.cr-lb:focus-visible{outline:2px solid #76b7b2;outline-offset:2px;border-radius:6px}
 @media(max-width:760px){.cr-lb small{display:none}.cr-lb b{font-size:10px}.cr-lb .t{padding:3px 6px}.cr-lb.sec{display:none!important}}
 #cr{position:fixed;z-index:32;right:14px;top:14px;width:380px;max-height:calc(100vh - 118px);display:none;flex-direction:column;font-family:Inter,system-ui,sans-serif;color:#e9ebec;
   background:rgba(12,14,17,.84);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.08);border-radius:12px;box-shadow:0 18px 44px rgba(0,0,0,.4);overflow:hidden}
@@ -221,8 +221,8 @@ body.cr-on #dock{display:none!important}
 #cr header,#cr .tabs{flex:none}#cr .cuerpo{flex:1 1 auto;min-height:0}
 #cr header{position:relative;padding:14px 16px 10px;border-bottom:1px solid rgba(255,255,255,.06)}
 #cr .cerrar{position:absolute;right:10px;top:10px;width:28px;height:28px;border-radius:7px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#cfd5d9;font:400 17px/1 Inter,system-ui,sans-serif;cursor:pointer}
-#cr .cerrar:hover{background:rgba(255,255,255,.1);color:#fff}#cr .cerrar:focus-visible{outline:2px solid #e879f9;outline-offset:1px}
-#cr .ey{padding-right:34px;font:500 9.5px 'JetBrains Mono',ui-monospace,monospace;letter-spacing:.16em;text-transform:uppercase;color:#e879f9}
+#cr .cerrar:hover{background:rgba(255,255,255,.1);color:#fff}#cr .cerrar:focus-visible{outline:2px solid #76b7b2;outline-offset:1px}
+#cr .ey{padding-right:34px;font:500 9.5px 'JetBrains Mono',ui-monospace,monospace;letter-spacing:.16em;text-transform:uppercase;color:#76b7b2}
 #cr h2{margin:5px 0 6px;font:600 18px Inter,system-ui,sans-serif;letter-spacing:-.01em}
 #cr .lead{margin:0;font-size:12.5px;line-height:1.5;color:#b9c1c6}
 #cr .kp{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:10px}
@@ -231,12 +231,12 @@ body.cr-on #dock{display:none!important}
 #cr .kp span{font-size:10px;color:#8e979d;line-height:1.25;display:block;margin-top:2px}
 #cr .tabs{display:flex;gap:2px;padding:6px 8px 0;overflow-x:auto;scrollbar-width:none}
 #cr .tabs button{flex:none;border:0;background:none;color:#8e979d;font:500 11.5px Inter,system-ui,sans-serif;padding:7px 9px;border-radius:7px 7px 0 0;cursor:pointer;border-bottom:2px solid transparent}
-#cr .tabs button[aria-selected="true"]{color:#fff;border-bottom-color:#e879f9}
-#cr .tabs button:focus-visible{outline:2px solid #e879f9;outline-offset:-2px}
+#cr .tabs button[aria-selected="true"]{color:#fff;border-bottom-color:#76b7b2}
+#cr .tabs button:focus-visible{outline:2px solid #76b7b2;outline-offset:-2px}
 #cr .cuerpo{overflow:auto;padding:10px 12px 12px;border-top:1px solid rgba(255,255,255,.06);overscroll-behavior:contain}
 #cr .it{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:2px 9px;align-items:start;padding:8px 6px;border-radius:8px;cursor:pointer}
 #cr .it:hover,#cr .it.act{background:rgba(255,255,255,.05)}
-#cr .it:focus-visible{outline:2px solid #e879f9;outline-offset:-2px}
+#cr .it:focus-visible{outline:2px solid #76b7b2;outline-offset:-2px}
 #cr .it i{grid-row:span 2;width:22px;height:22px;border-radius:6px;background:var(--c);display:flex;align-items:center;justify-content:center;font:600 10px 'JetBrains Mono',ui-monospace,monospace;color:#0b0d10;font-style:normal}
 #cr .it b{font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis}
 #cr .it em{font:500 10.5px 'JetBrains Mono',ui-monospace,monospace;color:#cfd5d9;font-style:normal;white-space:nowrap}
@@ -258,7 +258,7 @@ body.cr-on #dock{display:none!important}
 #cr .lg{display:flex;flex-wrap:wrap;gap:4px 12px;font:500 10px 'JetBrains Mono',ui-monospace,monospace;color:#9aa4ab}
 #cr .lg span{display:inline-flex;align-items:center;gap:5px}#cr .lg i{width:8px;height:8px;border-radius:2px}
 #cr .esc{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:5px 6px;border-radius:6px;font-size:11.5px;color:#cfd5d9;cursor:pointer}
-#cr .esc:hover{background:rgba(255,255,255,.05)}#cr .esc:focus-visible{outline:2px solid #e879f9;outline-offset:-2px}
+#cr .esc:hover{background:rgba(255,255,255,.05)}#cr .esc:focus-visible{outline:2px solid #76b7b2;outline-offset:-2px}
 #cr .esc span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #cr .esc .e{font:600 9.5px 'JetBrains Mono',ui-monospace,monospace;color:#0b0d10;background:#fbbf24;border-radius:4px;padding:1px 5px}
 #cr .esc .d{font:500 10.5px 'JetBrains Mono',ui-monospace,monospace;color:#8e979d;min-width:44px;text-align:right}
@@ -267,10 +267,10 @@ body.cr-on #dock{display:none!important}
 #cr .paso span{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:600 13px 'JetBrains Mono',monospace;color:#0b0d10;background:linear-gradient(135deg,#a3e635,#22d3ee)}
 #cr .paso b{display:block;color:#fff;font-size:12.5px;font-weight:600;margin-bottom:2px}
 #cr .paso:hover{border-color:rgba(255,255,255,.2)}#cr .paso.on{border-color:#a3e635;background:rgba(163,230,53,.1)}
-#cr .paso:focus-visible{outline:2px solid #e879f9;outline-offset:1px}
+#cr .paso:focus-visible{outline:2px solid #76b7b2;outline-offset:1px}
 #cr .pie{flex:none;display:flex;gap:6px;padding:10px 12px;border-top:1px solid rgba(255,255,255,.06)}
 #cr .pie button{flex:1;height:34px;border-radius:8px;cursor:pointer;font:500 12px Inter,system-ui,sans-serif;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#cfd5d9}
-#cr .pie button:hover{background:rgba(255,255,255,.1);color:#fff}#cr .pie button:focus-visible{outline:2px solid #e879f9;outline-offset:1px}
+#cr .pie button:hover{background:rgba(255,255,255,.1);color:#fff}#cr .pie button:focus-visible{outline:2px solid #76b7b2;outline-offset:1px}
 @media(max-width:760px){
   #cr{left:8px;right:8px;width:auto;top:auto;bottom:calc(max(8px,env(safe-area-inset-bottom)) + 66px);max-height:56vh}
   #cr.min .cuerpo,#cr.min .tabs,#cr.min .kp,#cr.min .lead,#cr.min .pie{display:none}

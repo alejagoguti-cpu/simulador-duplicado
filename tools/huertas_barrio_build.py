@@ -10,7 +10,8 @@ Cada módulo es un rectángulo de bancales (26x16, 20x12 o 13x9 m), alineado con
 Uso: python tools/huertas_barrio_build.py
 """
 import json, math, os
-from shapely.geometry import Polygon, Point, box
+from shapely.geometry import Polygon, Point, box, LineString
+from shapely.ops import unary_union
 from shapely import affinity
 from shapely.strtree import STRtree
 
@@ -40,7 +41,7 @@ for p in J('parques.json'):
     if p.get('tipo') not in ('PARQUE VECINAL', 'PARQUE DE BOLSILLO') or len(p.get('pts') or []) < 4: continue
     pg = Polygon([lw(*q) for q in p['pts']]).buffer(0)
     if pg.geom_type == 'MultiPolygon': pg = max(pg.geoms, key=lambda g: g.area)
-    if pg.is_empty or not (1000 <= pg.area <= 20000) or not LIM.contains(pg.representative_point()): continue
+    if pg.is_empty or not (1000 <= pg.area <= 40000) or not LIM.contains(pg.representative_point()): continue
     if pg.intersects(TIN) or any(pg.distance(c) < 250 for c in COLH): continue
     PAR.append({'n': p.get('nombre') or 'Parque vecinal', 'pg': pg})
 print('lotes', len(LOTES), 'parques candidatos', len(PAR))
@@ -51,7 +52,7 @@ TR = J('trees.json')['t']
 obst = []
 for t in TR:
     q = Point(*lw(t[0], t[1]))
-    if len(zt.query(q, predicate='intersects')): obst.append(q.buffer(max(3.5, min(7, (t[2] if len(t) > 2 else 3) * 0.9))))
+    if len(zt.query(q, predicate='intersects')): obst.append(q.buffer(max(2.6, min(6, (t[2] if len(t) > 2 else 3) * 0.8))))
 print('árboles cerca', len(obst))
 for c in J('canchas.json')['canchas']:
     x, z = giro(*c['c']); r = box(-c['L'] / 2 - 3, -c['W'] / 2 - 3, c['L'] / 2 + 3, c['W'] / 2 + 3)
@@ -112,18 +113,93 @@ for k, pg in enumerate(LOTES):  # lotes baldíos: varios módulos
         _, x, y, a, L, W, rc = m; ya.append(rc); mods.append({'c': [R(x), R(y)], 'a': round(a, 4), 'l': L, 'w': W})
     if mods: OUT.append({'n': 'Huerta en lote baldío', 'tipo': 'lote', 'm': mods})
     print('lote', k, round(pg.area), len(mods))
+# ---------- parques: huertas EFÍMERAS que siguen los senderos (vainas orgánicas a lado y lado del camino) ----------
+SEND = []
+try:
+    for w in json.load(open(os.path.join(RAIZ, 'tools', 'cache', 'osm_senderos.json'), encoding='utf-8'))['elements']:
+        g = w.get('geometry') or []
+        if len(g) >= 2: SEND.append(LineString([xy(q['lon'], q['lat']) for q in g]))
+except FileNotFoundError: print('sin senderos OSM: python tools/osm_senderos_bajar.py')
+ST = STRtree(SEND); print('senderos', len(SEND))
+
+def plano(geom):
+    if geom.is_empty: return []
+    if geom.geom_type == 'LineString': return [geom]
+    if hasattr(geom, 'geoms'): return [x for g in geom.geoms for x in plano(g)]
+    return []
+
+def espina(pg):  # sin senderos: línea media del parque (centros de cortes perpendiculares al eje largo)
+    a = eje(pg); c, s = math.cos(a), math.sin(a); x0, y0 = pg.centroid.x, pg.centroid.y; P = []
+    for t in range(-400, 401, 6):
+        px, py = x0 + c * t, y0 + s * t
+        cut = LineString([(px - s * 300, py + c * 300), (px + s * 300, py - c * 300)]).intersection(pg)
+        L = plano(cut)
+        if L: m = max(L, key=lambda l: l.length); P.append(m.interpolate(0.5, normalized=True).coords[0])
+    return [LineString(P)] if len(P) >= 3 else []
+
+CULTP = ['lechuga', 'fresa', 'acelga', 'flores', 'cebolla', 'morada', 'cilantro', 'repollo', 'flores']
+def vaina(line, s0, s1, lado, d0, D):
+    out, inn = [], []
+    for k in range(15):
+        t = k / 14; s = s0 + (s1 - s0) * t
+        p = line.interpolate(s); a = line.interpolate(max(0, s - 0.6)); b = line.interpolate(min(line.length, s + 0.6))
+        tx, ty = b.x - a.x, b.y - a.y; l = math.hypot(tx, ty) or 1; nx, ny = -ty / l * lado, tx / l * lado
+        w = D * math.sin(math.pi * t) ** 0.65; di = d0 + 0.5 * (1 - math.sin(math.pi * t))
+        inn.append((p.x + nx * di, p.y + ny * di)); out.append((p.x + nx * (di + max(w, 0.15)), p.y + ny * (di + max(w, 0.15))))
+    return Polygon(out + inn[::-1]).buffer(0.25, resolution=4).buffer(-0.1)
+
+def adentro(g):
+    i = g.buffer(-0.35)
+    return max(i.geoms, key=lambda x: x.area) if i.geom_type == 'MultiPolygon' else (i if not i.is_empty else g)
+
+def huerta_parque(p, k0):
+    pg = p['pg']; pin = pg.buffer(-1.5)
+    if pin.is_empty: return None
+    L = [x for i in ST.query(pg) for x in plano(SEND[i].intersection(pg)) if x.length >= 10]
+    fuente = 'senderos'
+    if sum(l.length for l in L) < 25: L = [x for x in espina(pg.buffer(-2)) if x.length >= 12]; fuente = 'espina'
+    if not L: return None
+    pista = unary_union([l.buffer(1.4) for l in L])
+    tope = int(min(16, max(4, pg.area / 1100))); pods = []
+    for li, line in enumerate(sorted(L, key=lambda l: -l.length)):
+        for lado in (1, -1):
+            s = 2.5 + (3.5 if lado < 0 else 0)
+            while s < line.length - 4 and len(pods) < tope:
+                ph = s * 0.19 + li * 1.7 + lado
+                Lp = 8 + 8 * (0.5 + 0.5 * math.sin(ph)); D = 3 + 3 * (0.5 + 0.5 * math.sin(ph * 0.7 + 2))
+                if s + Lp > line.length - 2: break
+                v = vaina(line, s, s + Lp, lado, 2.1, D)
+                ok = v.geom_type == 'Polygon' and v.is_valid and not v.is_empty and pin.contains(v) and not v.intersects(pista) and not any(v.intersects(q['g'].buffer(1.6)) for q in pods)
+                if ok: ok = not any(obst[i].intersects(v) for i in OB.query(v))
+                if ok:
+                    c = v.centroid; a0, b0 = line.interpolate(s), line.interpolate(s + Lp)
+                    pods.append({'g': v, 'c': (c.x, c.y), 'ang': math.atan2(b0.y - a0.y, b0.x - a0.x), 'L': Lp, 'D': D}); s += Lp + 2.2 + 1.5 * (0.5 + 0.5 * math.sin(ph * 1.3))
+                else: s += 2.0
+        if len(pods) >= tope: break
+    if len(pods) < 2: return None
+    nom = ('Huerta efímera del parque ' + p['n'].replace('PARQUE ', '').title()) if p['n'] else 'Huerta efímera de parque'
+    cub = [{'c': [R(q['c'][0]), R(q['c'][1])], 'rot': round(q['ang'], 3), 'A': R(q['L'] * 0.62), 'B': R(q['D'] * 0.75 + 1.2), 'H': R(3.8 + (i % 3) * 0.6)} for i, q in enumerate(pods) if i % 3 == 0 and q['L'] >= 8]
+    fau = []
+    for i, q in enumerate(pods):
+        if i % 4 == 1: fau.append([R(q['c'][0]), R(q['c'][1]), 'hotel'])
+        if i % 4 == 3: fau.append([R(q['c'][0]), R(q['c'][1]), 'percha'])
+    hull = unary_union([q['g'] for q in pods]).convex_hull
+    return {'n': nom, 'tipo': 'parque', 'fuente': fuente, 'c': [R(hull.centroid.x), R(hull.centroid.y)],
+            'pods': [{'p': [[R(x), R(y)] for x, y in list(q['g'].exterior.coords)[:-1]], 'pi': [[R(x), R(y)] for x, y in list(adentro(q['g']).exterior.coords)[:-1]], 'ang': round(q['ang'], 3), 'cul': CULTP[(k0 + i) % len(CULTP)]} for i, q in enumerate(pods)],
+            'cub': cub, 'fau': fau, 'area': round(sum(q['g'].area for q in pods)), 'hull': [[R(x), R(y)] for x, y in list(hull.exterior.coords)[:-1]]}
+
+BURRO = Point(2095.67, -109.06)
 PAR.sort(key=lambda p: -p['pg'].area)
 puestos = [Point(*h['m'][0]['c']) for h in OUT]
 for p in PAR:
     c = p['pg'].centroid
-    if any(c.distance(q) < 320 for q in puestos): continue
-    m = modulo(p['pg'], [])
-    if not m: continue
-    _, x, y, a, L, W, rc = m
-    OUT.append({'n': 'Huerta del parque ' + p['n'].replace('PARQUE ', '').title() if p['n'] else 'Huerta de parque', 'tipo': 'parque', 'm': [{'c': [R(x), R(y)], 'a': round(a, 4), 'l': L, 'w': W}]})
-    puestos.append(Point(x, y))
-    if len(OUT) >= 48: break
-area = sum(m['l'] * m['w'] for h in OUT for m in h['m'])
-print('huertas', len(OUT), 'módulos', sum(len(h['m']) for h in OUT), 'm2', area)
+    if any(c.distance(q) < (110 if c.distance(BURRO) < 800 else 300) for q in puestos): continue  # alrededor del Humedal El Burro, varias
+    h = huerta_parque(p, len(OUT) * 3)
+    if not h: continue
+    OUT.append(h); puestos.append(c)
+    if len(OUT) >= 56: break
+area = sum(m['l'] * m['w'] for h in OUT for m in h.get('m', [])) + sum(h.get('area', 0) for h in OUT)
+print('huertas', len(OUT), 'parques', sum(1 for h in OUT if h['tipo'] == 'parque'), 'vainas', sum(len(h.get('pods', [])) for h in OUT), 'm2', area,
+      'por espina', sum(1 for h in OUT if h.get('fuente') == 'espina'))
 json.dump({'fuente': 'tools/huertas_barrio_build.py: lotes baldíos E8 + parques vecinales y de bolsillo (IDRD), sin árboles, canchas, edificios ni agua',
            'area': area, 'huertas': OUT}, open(D('huertas_barrio.json'), 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))

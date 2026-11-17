@@ -105,11 +105,11 @@ body #bt-pan .bt-nota{color:var(--ui-tx3)!important}
 
 /* ============ VIDRIO OSCURO tipo iPhone (todos los paneles): negro translúcido que deja ver el fondo desenfocado y con color,
    brillo especular arriba a la izquierda, borde de luz fino y sombra suave ============ */
-:root{ --ui-bg:linear-gradient(160deg,rgba(38,42,50,.44),rgba(8,10,14,.54));
-  --ui-glass:radial-gradient(130% 70% at 12% 0%,rgba(255,255,255,.11),rgba(255,255,255,0) 55%),linear-gradient(160deg,rgba(38,42,50,.44),rgba(8,10,14,.56));
+:root{ --ui-bg:linear-gradient(160deg,rgba(38,42,50,.33),rgba(8,10,14,.43));
+  --ui-glass:radial-gradient(130% 70% at 12% 0%,rgba(255,255,255,.11),rgba(255,255,255,0) 55%),linear-gradient(160deg,rgba(38,42,50,.33),rgba(8,10,14,.45));
   --ui-glass-bd:rgba(255,255,255,.16);
   --ui-glass-sh:0 22px 50px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.24),inset 0 -1px 0 rgba(255,255,255,.05),inset 1px 0 0 rgba(255,255,255,.06),inset -1px 0 0 rgba(255,255,255,.03);
-  --ui-glass-fx:blur(26px) saturate(1.9) brightness(.82);
+  --ui-glass-fx:blur(24px) saturate(1.9) brightness(.88);
   --ui-tx2:#c3cace; --ui-tx3:#949da3; } /* textos secundarios más claros: se leen sobre el vidrio aunque detrás haya cielo */
 body .gs-pan, body #bt-pan, body #cvMarca, body #cvMini, body #dock, body #usos-panel, body #ruido-panel, body #cierre-panel, body #toast, body #cvAyuda,
 body #esc, body #tb, body #cr, body #tp, body #bd, body #hud-c, body #gs-tog, body #bt-tog, body #alivio-et{
