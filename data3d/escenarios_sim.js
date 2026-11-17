@@ -48,6 +48,37 @@ export async function iniciarEscenariosSim({ T3, cj }) {
   const PART = Array.from({ length: NP }, (_, i) => ({ r: 'rell', k: i % Math.max(1, EST.length), f: Math.random(), on: false }));
   const COLR = { rell: new THREE.Color('#9aa1a6'), est: new THREE.Color('#c8a26a'), bav: new THREE.Color('#e2a55b') };
   // trampas ecológicas: huertas del borde del humedal en rojo (luz y vidrio sin medida antitrampa)
+  /* ---------- CAPA DE CAMBIOS: se lee desde lejos (los cambios reales miden metros y desde 1 km no se verían) ----------
+     · cada huerta abierta = punto verde con halo que nunca baja de ~9 px (parques y lotes en el orden en que se abren, Bavaria y colegios)
+     · Av. Ciudad de Cali = línea de puntos que va de rojo (mucho tráfico hacia Corabastos) a verde (menos) */
+  const COLR2 = await cj('data3d/colegios_red.json?v=3').catch(() => null);
+  const MK = []; // [x, z, radio m, tipo, orden]
+  const parques = HB.huertas.filter(h => h.tipo === 'parque').sort((a, b) => Math.hypot(a.c[0] - BAV[0], a.c[1] - BAV[1]) - Math.hypot(b.c[0] - BAV[0], b.c[1] - BAV[1]));
+  parques.forEach((h, i) => MK.push([h.c[0], h.c[1], 22, 'par', i / Math.max(1, parques.length)]));
+  HB.huertas.filter(h => h.tipo === 'lote').forEach(h => h.m.forEach(m => MK.push([m.c[0], m.c[1], 16, 'lote', 0.06])));
+  (COLR2 && COLR2.huertas || []).forEach(h => MK.push([h.c[0], h.c[1], h.r || 30, 'col', 0.02]));
+  const gm = new THREE.BufferGeometry(), mP = new Float32Array(MK.length * 3), mR = new Float32Array(MK.length), mO = new Float32Array(MK.length);
+  MK.forEach((m, i) => { mP.set([m[0], Y + 3, m[1]], i * 3); mR[i] = m[2]; });
+  gm.setAttribute('position', new THREE.BufferAttribute(mP, 3)); gm.setAttribute('rad', new THREE.BufferAttribute(mR, 1)); gm.setAttribute('on', new THREE.BufferAttribute(mO, 1));
+  const UM = { uPx: { value: innerHeight * Math.min(2, devicePixelRatio || 1) }, uT: { value: 0 }, uA: { value: 0 } };
+  const marcas = new THREE.Points(gm, new THREE.ShaderMaterial({ uniforms: UM, transparent: true, depthWrite: false, depthTest: false, toneMapped: false,
+    vertexShader: `attribute float rad, on; uniform float uPx, uT; varying float vO; void main(){ vO = on; vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_Position = projectionMatrix * mv;
+      float px = rad * 2.6 * uPx / max(-mv.z, 1.0) * 0.55; gl_PointSize = on > 0.01 ? clamp(px, 18.0, 110.0) : 0.0; }`,
+    fragmentShader: `uniform float uT, uA; varying float vO; void main(){ vec2 q = gl_PointCoord - 0.5; float d = length(q) * 2.0; if (d > 1.0) discard;
+      float nucleo = smoothstep(0.42, 0.3, d), halo = smoothstep(1.0, 0.45, d) * 0.45, anillo = smoothstep(0.08, 0.0, abs(d - 0.62)) * 0.8;
+      vec3 c = mix(vec3(0.3, 0.85, 0.35), vec3(0.85, 1.0, 0.7), nucleo); gl_FragColor = vec4(c, (nucleo * 0.95 + halo + anillo) * vO * uA);
+      #include <colorspace_fragment>
+    }` }));
+  marcas.renderOrder = 12; marcas.frustumCulled = false; grupo.add(marcas);
+  // Av. Ciudad de Cali: puntos a lo largo de la vía (de la cinta de data3d/alivio_cali.js)
+  let via = null;
+  const armarVia = () => { const C = window.KEN_CALI; if (via || !C || !C.cinta) return; const P = C.cinta.geometry.attributes.position, A = [];
+    const mid = (i) => [(P.getX(i) + P.getX(i + 1)) / 2, P.getY(i) + 1.5, (P.getZ(i) + P.getZ(i + 1)) / 2];
+    for (let i = 0; i + 3 < P.count; i += 2) { const a = mid(i), b = mid(i + 2), L = Math.hypot(b[0] - a[0], b[2] - a[2]); if (L > 400) continue; const n = Math.max(1, Math.ceil(L / 6)); for (let k = 0; k < n; k++) { const t = k / n; A.push(a[0] + (b[0] - a[0]) * t, a[1], a[2] + (b[2] - a[2]) * t); } }
+    const gv = new THREE.BufferGeometry(); gv.setAttribute('position', new THREE.Float32BufferAttribute(A, 3));
+    via = new THREE.Points(gv, new THREE.PointsMaterial({ size: 9, sizeAttenuation: false, color: '#e15759', transparent: true, opacity: 0.9, depthTest: false, depthWrite: false, toneMapped: false }));
+    via.renderOrder = 12; via.frustumCulled = false; grupo.add(via); };
+  let fMarcas = 0;
   const TR = BORDE.map(p => { const m = anillo(16, 22, '#ff5a4f'); m.position.set(p[0], Y + 1.5, p[1]); m.visible = false; return m; });
 
   /* ---------------- etiquetas sobre el territorio ---------------- */
@@ -76,7 +107,7 @@ export async function iniciarEscenariosSim({ T3, cj }) {
 #esim .nota{color:#8d969b;font-size:10.5px;margin:6px 0 0}#esim .ir{all:unset;cursor:pointer;display:block;text-align:center;margin-top:10px;padding:8px;border-radius:9px;background:rgba(255,255,255,.07);font-weight:500}
 #esim .ir:hover{background:rgba(255,255,255,.12)}
 #esim.min .cuerpo,#esim.min .exp{display:none}#esim.min{min-height:0}
-#esim .exp{margin:0 14px 8px;font-size:11px;line-height:1.45;color:#c3cace}
+#esim .exp{margin:0 14px 8px;font-size:11px;line-height:1.45;color:#c3cace}#esim .ley2 i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:-1px}
 #esim li button{all:unset;cursor:pointer;grid-column:1/-1;justify-self:start;margin-top:4px;font-size:10.5px;font-weight:600;color:#f2c995}#esim li button:hover{text-decoration:underline}#esim li button:focus-visible{outline:2px solid #fff;outline-offset:2px}
 #esim .aviso{margin:6px 12px 0;padding:8px 10px;border-radius:10px;background:rgba(226,165,91,.14);border:1px solid rgba(226,165,91,.35);font-size:11px;line-height:1.4;color:#f3e3cc;display:flex;gap:8px;align-items:center}
 #esim .aviso[hidden]{display:none}#esim .aviso span{flex:1}#esim .aviso button{all:unset;cursor:pointer;font-weight:600;color:#fff;padding:4px 8px;border-radius:7px;background:rgba(255,255,255,.12);white-space:nowrap}
@@ -95,6 +126,7 @@ body.tb-abierto #esim{display:none}
   const el = document.createElement('section'); el.id = 'esim'; el.setAttribute('aria-label', 'Escenarios de la simulación');
   el.innerHTML = `<div class="cab"><b>Escenarios · 10 años de la propuesta</b><button type="button" data-guia aria-label="Cómo se usa" title="Cómo se usa">?</button><button type="button" data-min aria-label="Plegar" title="Plegar">–</button></div>
 <p class="exp">Escoge un escenario y dale ▶: corren 10 años y el mapa cambia. Mueve las variables de abajo y mira qué pasa en el territorio.</p>
+<p class="exp ley2"><i style="background:#8fd18a"></i>huertas abiertas <i style="background:#e15759;margin-left:10px"></i>Av. Ciudad de Cali: rojo = mucho tráfico a Corabastos, verde = menos</p>
 <div class="seg" role="group" aria-label="Escenario"><button type="button" data-e="A"><b>A</b>Kennedy hoy</button><button type="button" data-e="B"><b>B</b>Nodo central</button><button type="button" data-e="C"><b>C</b>Clúster rotativo</button></div>
 <div class="tl"><button type="button" data-play aria-label="Correr 10 años">▶</button><input type="range" min="0" max="${SEM - 1}" value="${SIMST.t}" data-t aria-label="Semana de la simulación"><output data-año></output></div>
 <div class="aviso" data-aviso hidden></div><div class="cuerpo"><ul data-kpi></ul>
@@ -141,8 +173,11 @@ ${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, FMT.luz)}${slider(
     // SIM-01 · huertas abiertas y Corabastos
     const f = e === 'A' ? 0 : s1.act[t] / R.S1.C.N; let ab = null;
     const HBAR = window.KEN_HBAR; if (HBAR && HBAR.fraccion && Math.abs(f - ultHB) > 0.004) { ab = HBAR.fraccion(f); ultHB = f; }
+    { const vis = e === 'A' ? 0 : f; if (Math.abs(vis - fMarcas) > 0.002 || e === 'A') { fMarcas = vis; MK.forEach((m, i) => { mO[i] = e === 'A' ? 0 : (m[3] === 'par' ? (m[4] < vis ? 1 : 0) : m[3] === 'lote' ? (vis > 0.06 ? 1 : 0) : 1); }); gm.attributes.on.needsUpdate = true; } }
+    armarVia();
     const dep = s1.dep[t], al = T3.alivio; if (al) { al.KEEP = e === 'A' ? 1 : 0.3 + 0.7 * dep; al.KEEP_CAM = e === 'A' ? 1 : 0.1 + 0.9 * dep; }
-    aCor.material.color.set(dep > 0.66 ? '#e15759' : dep > 0.33 ? '#f28e2b' : '#59a14f'); aCor.material.opacity = 0.35 + 0.4 * dep;
+    aCor.material.color.set(dep > 0.66 ? '#e15759' : dep > 0.33 ? '#f28e2b' : '#59a14f');
+    if (via) { const k2 = e === 'A' ? 1 : Math.max(0, Math.min(1, (dep - 0.2) / 0.8)); via.material.color.setRGB(0.35 + 0.53 * k2, 0.63 - 0.29 * k2, 0.31 + 0.04 * k2); } aCor.material.opacity = 0.35 + 0.4 * dep;
     // SIM-02 · orgánicos
     const gen = s2.gen, rel = s2.relleno[t] / gen, des = s2.desv[t] / gen;
     ESTM.forEach(s => { s.g.visible = e === 'B'; const o = s2.ocup[t]; s.pilas.forEach((p, i) => { p.scale.set(1.4, Math.max(0.05, Math.min(1.6, o * 1.4 - i * 0.25)), 1); p.material.color.set(o > 1 ? '#5a2a1f' : '#3b2b1f'); }); });
@@ -212,6 +247,8 @@ ${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, FMT.luz)}${slider(
     for (let i = 0; i < NP; i++) { const p = PART[i]; if (!p.on || !EST.length) { PP[i * 3 + 1] = -999; continue; }
       const rutas = RUTAS[p.r], cv = rutas[p.k % rutas.length]; const v = p.r === 'rell' ? 0.05 : 0.11; cv.getPoint((p.f + tt * v) % 1, V); PP[i * 3] = V.x; PP[i * 3 + 1] = V.y; PP[i * 3 + 2] = V.z; }
     gp.attributes.position.needsUpdate = true;
+    { const y = T3.camera.position.y, lejos = Math.max(0, Math.min(1, (y - 120) / 260)), solo = T3.escSolo && T3.escSolo(); UM.uA.value = solo === 'bav' || solo === 'col' ? 0 : lejos; UM.uPx.value = innerHeight * Math.min(2, devicePixelRatio || 1);
+      if (via) { via.visible = !solo && lejos > 0.05; via.material.opacity = 0.9 * lejos; } }
     const cam = T3.camera, W = innerWidth, H = innerHeight;
     for (const k in ET) { const d = ET[k]; if (!d.innerHTML || (k === 'comp' && e === 'A') || document.body.classList.contains('tb-abierto') || (T3.escSolo && T3.escSolo()) || cam.position.y < 140) { d.style.display = 'none'; continue; }
       const p = POS[k](); V.set(p[0], p[1], p[2]).project(cam); const ok = V.z < 1 && Math.abs(V.x) < 0.92 && Math.abs(V.y) < 0.9; d.style.display = ok ? 'block' : 'none';
@@ -220,5 +257,5 @@ ${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, FMT.luz)}${slider(
   requestAnimationFrame(cuadro);
   aplicar();
   setTimeout(() => import('./guia.js?v=1').then(m => m.abrirGuia(false)).catch(() => {}), 2500); // la primera vez: cómo se usa
-  return { aplicar, arrancar, get R() { return R; } };
+  return { aplicar, arrancar, get R() { return R; }, get via() { return via; }, marcas, mO };
 }
