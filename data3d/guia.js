@@ -2,7 +2,7 @@
    Sale sola la primera vez (se recuerda en este navegador) y con el botón «?» del panel de escenarios.
    Cada paso resalta la parte de la pantalla de la que habla. */
 const PASOS = [
-  { sel: null, t: 'Bienvenida al simulador de Kennedy', d: 'Aquí puedes ver Kennedy en 3D <b>hoy</b> y <b>con la propuesta</b>, y simular qué pasa en el territorio durante <b>10 años</b> si cambian las decisiones: cuántas huertas hay, cuánto se depende de Corabastos, a dónde van los residuos y cómo están las aves del humedal.' },
+  { sel: null, t: 'Bienvenida al simulador de Kennedy', d: 'Aquí puedes ver Kennedy en 3D <b>hoy</b> y <b>con la propuesta</b>, y simular qué pasa en el territorio durante <b>10 años</b> si cambian las decisiones: cuántas huertas hay, cuánto se depende de Corabastos, a dónde van los residuos y cómo están las aves del humedal.<br><small style="color:#949da3">La base 3D, el marco del mundo y el modelo de agentes se armaron en <b>Unreal Engine 5</b> con Cesium (proyecto en unreal/Kennedy360).</small>' },
   { sel: '#esc .sw', t: '1 · Hoy o con la propuesta', d: 'Cambia entre <b>Kennedy hoy</b> y <b>Con la propuesta</b>. Con la propuesta aparecen las huertas, Bavaria Común y la red de mercados.' },
   { sel: '#esc-ley', t: '2 · Las estrategias', d: 'Cada ícono es una estrategia de la propuesta. Tócalo para verla sola en el mapa; tócalo otra vez para volver a verlas todas.' },
   { sel: '#esim .seg', t: '3 · Escoge un escenario', d: '<b>A</b> es Kennedy como está hoy. <b>B</b> y <b>C</b> son dos formas de hacer la propuesta (un centro que decide todo, o barrios que se turnan la decisión).' },

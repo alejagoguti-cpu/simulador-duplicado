@@ -218,7 +218,7 @@ ${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, FMT.luz)}${slider(
   el.addEventListener('click', (ev) => {
     const b = ev.target.closest('button'); if (!b) return;
     if (b.dataset.ir) { LUGAR[b.dataset.ir].ir(); return; }
-    if (b.dataset.guia !== undefined) { import('./guia.js?v=1').then(m => m.abrirGuia(true)); return; }
+    if (b.dataset.guia !== undefined) { import('./guia.js?v=2').then(m => m.abrirGuia(true)); return; }
     if (b.dataset.min !== undefined) { el.classList.toggle('min'); b.textContent = el.classList.contains('min') ? '+' : '–'; return; }
     if (b.dataset.play !== undefined) { play ? parar() : arrancar(); return; }
     if (b.dataset.tab !== undefined) { const t = document.getElementById('b-tablero'); if (t) t.click(); return; }
@@ -256,7 +256,7 @@ ${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, FMT.luz)}${slider(
   }
   requestAnimationFrame(cuadro);
   aplicar();
-  setTimeout(() => import('./guia.js?v=1').then(m => m.abrirGuia(false)).catch(() => {}), 2500); // la primera vez: cómo se usa
+  setTimeout(() => import('./guia.js?v=2').then(m => m.abrirGuia(false)).catch(() => {}), 2500); // la primera vez: cómo se usa
   import('./capas_escenario.js?v=1').then(m => m.iniciarCapasEscenario({ T3 })).catch(e => console.warn('capas:', e)); // sintaxis, ruido, usos e indicadores cambian con la propuesta
   return { aplicar, arrancar, get R() { return R; }, get via() { return via; }, marcas, mO };
 }

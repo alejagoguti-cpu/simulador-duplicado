@@ -1,5 +1,14 @@
 <!DOCTYPE html>
 <html lang="es">
+<!--
+  SIMULADOR DE KENNEDY · Federación Policéntrica
+  Hecho con UNREAL ENGINE 5 + Cesium for Unreal: el proyecto está en unreal/Kennedy360 (Kennedy360.uproject y scripts de Python).
+  De Unreal vienen el marco de coordenadas del mundo (origen en el humedal El Burro; ver lw() y el desfase 2095.67, -109.06),
+  el modelo de agentes de alimentos y fauna (unreal/Kennedy360/Scripts/simular_agentes.py -> Importar/agentes/nodos.json ->
+  tools/propuesta_datos.py -> data3d/propuesta.json), el giro fotorrealista 360 (giro_render.html) y la calibración de árboles y luz.
+  Detalle: unreal/Kennedy360/README.md
+-->
+
 <head>
 <meta charset="UTF-8">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -1212,7 +1221,7 @@ function actualizarMallaIn(T, tl, dt) {
   else if (REALISTA && T.calibXZ && T.tilesT > 4 && Math.hypot(o.x - T.calibXZ[0], o.z - T.calibXZ[1]) > 700) { T.tilesT = 0; calibrarMalla(T); } // al ir a otra zona se vuelve a medir el suelo
   if ((T.tilesAtrib -= dt) <= 0) {
     T.tilesAtrib = 1.5;
-    try { const t = tl.getAttributions().filter(a => a.type === 'string').map(a => a.value).join(' · '); $('atrib').textContent = /^google/i.test(t) ? t : 'Google' + (t ? ' · ' + t : ''); } catch (e) {}
+    try { const t = tl.getAttributions().filter(a => a.type === 'string').map(a => a.value).join(' · '); $('atrib').textContent = (/^google/i.test(t) ? t : 'Google' + (t ? ' · ' + t : '')) + ' · Base: Unreal Engine 5 + Cesium'; } catch (e) {}
   }
 }
 async function initTodoReal() {
@@ -3609,7 +3618,7 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
       T3.planBavaria = PLAN; T3.planCorabastos = CPLAN; T3.EST = EST;
       // selector KENNEDY HOY / CON LA PROPUESTA (data3d/escenario.js): arranca en hoy; la propuesta prende huertas, Bavaria Común,
       // Corabastos reducido, sintaxis con los pasajes, camiones -> furgonetas (ruido) y la fauna de las huertas
-      import('./data3d/escenario.js?v=47').then(me2 => me2.iniciarEscenario({ T3, say })).catch(e => console.warn('escenario:', e));
+      import('./data3d/escenario.js?v=48').then(me2 => me2.iniciarEscenario({ T3, say })).catch(e => console.warn('escenario:', e));
       const lista = EST ? EST.lista.slice() : []; if (PLAN) lista.unshift(PLAN.entrada);
       return m.iniciarSimulacion({ T3, say, sinFauna: FAUNA_RED, sinMalla: ['abeja'], estrategias: lista.length ? lista : null, verEstrategia: (id, on, sola) => { /* la red de gobernanza (data3d/red_gobernanza.js) ya no se muestra al elegir estrategia */ if (on && sola && id !== 'E8' && EST && EST.lugar) volarEstrategia(EST.lugar(id)); if (id === 'E1') { if (EST) EST.marcar('E1', on); if (!window.__colB) window.__colB = import('./data3d/colectivo_bavaria.js?v=4').then(m => m.crearColectivo({ THREE: T3.THREE, T3, lw })); window.__colB.then(cb => cb.ver(on)).catch(e => console.warn('colectivo Bavaria:', e)); return PLAN && PLAN.ver(on); } if (id === 'E3' && CPLAN) { if (EST) EST.marcar('E3', on); return CPLAN.ver(on); } return EST && EST.ver(id, on); } }); // todas muestran su lugar; las conexiones entre estrategias se ven cuando las dos están prendidas
     })
@@ -3680,7 +3689,7 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
   });
   // propuesta (descentralizar Corabastos): espera la red de vías y el panel del simulador
   const datos = window.cargarJSON('data3d/propuesta.json');
-  const mod = import('./data3d/propuesta.js?v=1');
+  const mod = import('./data3d/propuesta.js?v=2');
   const listo = () => T3 && T3.net && document.querySelector('#gevUI .g-left') ? Promise.resolve() : new Promise(r => setTimeout(() => r(listo()), 400));
   Promise.all([datos, mod, listo()]).then(([d, pm]) => {
     PROP = pm.crearPropuesta({ T3: () => T3, traf: () => TRAF, peat: () => PEAT, sim: SIM, lw, say, datos: d });

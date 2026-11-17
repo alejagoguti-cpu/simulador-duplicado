@@ -1,6 +1,6 @@
 """Prepara data3d/propuesta.json para el simulador web (panel PROPUESTA de data3d/propuesta.js).
 
-Toma los nodos del modelo de agentes de Unreal (tools/unreal/simular_agentes.py -> Importar/agentes/nodos.json:
+Toma los nodos del modelo de agentes de UNREAL ENGINE (unreal/Kennedy360/Scripts/simular_agentes.py -> unreal/Kennedy360/Importar/agentes/nodos.json:
 Corabastos, tiendas, comedores, colegios, huertas, área cedida) y los parques de data3d/parques.json como lugares
 candidatos para huertas, y los pasa a coordenadas del mundo 3D del index (x, z en metros, ver lw() en index.html).
 Uso: python tools/propuesta_datos.py [ruta a nodos.json]
@@ -8,7 +8,7 @@ Uso: python tools/propuesta_datos.py [ruta a nodos.json]
 import json, math, os, sys
 
 RAIZ = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
-NODOS = sys.argv[1] if len(sys.argv) > 1 else r'C:\Users\ACER\Documents\Unreal Projects\Kennedy360\Importar\agentes\nodos.json'
+NODOS = sys.argv[1] if len(sys.argv) > 1 else os.path.join(RAIZ, 'unreal', 'Kennedy360', 'Importar', 'agentes', 'nodos.json')  # salida del modelo de agentes de Unreal
 MXg = 111320 * math.cos(math.radians(4.63)); MYg = 110540.0
 DX = -5193.24 - (-74.149778 + 74.17) * MXg; DY = -2090.06 - (4.640683 - 4.63) * MYg  # marco 'en' de simular_agentes.py
 LC = (5341.33, 3161.9)                                                                   # LC de index.html

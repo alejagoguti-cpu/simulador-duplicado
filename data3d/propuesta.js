@@ -1,4 +1,6 @@
 /* ============ SIMULADOR DE LA PROPUESTA: descentralizar Corabastos (mercados de barrio + huertas) ============
+   Datos: data3d/propuesta.json, de los nodos del MODELO DE AGENTES DE UNREAL ENGINE (unreal/Kennedy360/Scripts/simular_agentes.py ->
+   unreal/Kennedy360/Importar/agentes/nodos.json) pasados al mundo 3D con tools/propuesta_datos.py.
    Se monta sobre el simulador tipo God's Eye (simulador.js): agrega dos paneles (PROPUESTA y RESULTADOS), los nodos
    en el mapa (Corabastos, mercados de barrio, huertas) y los agentes de abastecimiento que recorren las vías reales.
    Pide la guía del Corte III (§4.1): cambiar variables del territorio mientras corre y saltar la cámara de un agente a otro.

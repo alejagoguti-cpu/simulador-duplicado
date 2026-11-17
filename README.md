@@ -1,5 +1,9 @@
 # REN3D realista · Maqueta de Kennedy
 
+## Hecho con Unreal Engine (`unreal/Kennedy360`)
+
+La base del simulador se armó en **Unreal Engine 5** con **Cesium for Unreal** y la malla fotorrealista de Google: el proyecto completo está en [`unreal/Kennedy360`](unreal/Kennedy360/README.md) (`Kennedy360.uproject`, niveles, materiales y los scripts de Python en `unreal/Kennedy360/Scripts`). De ahí salen el marco de coordenadas del mundo 3D (origen en el humedal El Burro), el modelo de agentes de alimentos y fauna (`Scripts/simular_agentes.py` → `unreal/Kennedy360/Importar/agentes/` → `tools/propuesta_datos.py` → `data3d/propuesta.json`), los agentes de calle, el giro fotorrealista de 360° (`giro_render.html`) y la calibración de árboles y luz. El navegador no corre Unreal: usa lo que el proyecto produjo. El detalle, archivo por archivo, está en `unreal/Kennedy360/README.md`.
+
 ## Presentación «Distrito Bavaria Común» (`bavaria.html`)
 
 Web: https://anasoficasca-code.github.io/simulador/bavaria.html
@@ -55,8 +59,8 @@ Web: https://anasoficasca-code.github.io/REN3D-realista/giro.html (el giro rende
 - 72 fotogramas renderizados en **Unreal Engine 5.8** con **Cesium for Unreal 2.30** y la malla fotorrealista de Google (Cesium ion, asset 2275207): la ciudad, los techos y los cerros son reales. Sol de Bogotá a las 10:48 a. m., bruma y gradación de color.
 - La cámara gira alrededor del humedal El Burro (650 m de radio, 260 m de altura, lente de 20 mm), con el look de las maquetas de Umbra: sol de media mañana, saturación 1,22, sombras abiertas, imagen cálida y luminosa, bruma azulada solo a lo lejos.
 - El visor (`giro.html`) carga primero vistas livianas (`giro/s_NNN.webp`) para girar de inmediato y luego la vista en alta (`giro/f_NNN.webp`) del ángulo donde se detiene. Los marcadores se proyectan con la misma cámara del render.
-- Encima de la malla de Google van los edificios de REN3D (41 mil huellas con altura en 1,5 km alrededor del humedal, fachadas PBR de ladrillo fotográfico Poly Haven "Brick 4" con ventanas, marcos y placas) y 33.900 árboles tipo maqueta como instancias. Se generan con `python tools/unreal/exportar_edificios.py` (OBJ, árboles y texturas en `Kennedy360/Importar`), se importan con `importar_ren3d.py` y se ubican con `colocar_ren3d.py` (después de `armar_escena.py`, `ajustes_mundo.py`, `fijar_geo.py` y `ajustes_giro.py`).
-- Para regenerar: el proyecto de Unreal (`tools/unreal/`: `Kennedy360.uproject`, `DefaultEngine.ini` y los scripts de Python) se arma con `UnrealEditor-Cmd ... -run=pythonscript -script=armar_escena.py` (el token de Cesium ion va en `Config/cesium_ion_token.txt`, que no se sube), se renderiza con Movie Render Queue y los fotogramas se convierten con `python tools/giro_build.py`.
+- Encima de la malla de Google van los edificios de REN3D (41 mil huellas con altura en 1,5 km alrededor del humedal, fachadas PBR de ladrillo fotográfico Poly Haven "Brick 4" con ventanas, marcos y placas) y 33.900 árboles tipo maqueta como instancias. Se generan con `python unreal/Kennedy360/Scripts/exportar_edificios.py` (OBJ, árboles y texturas en `Kennedy360/Importar`), se importan con `importar_ren3d.py` y se ubican con `colocar_ren3d.py` (después de `armar_escena.py`, `ajustes_mundo.py`, `fijar_geo.py` y `ajustes_giro.py`).
+- Para regenerar: el proyecto de Unreal (`unreal/Kennedy360/`: `Kennedy360.uproject`, `Config/DefaultEngine.ini` y los scripts de Python en `Scripts/`) se arma con `UnrealEditor-Cmd ... -run=pythonscript -script=armar_escena.py` (el token de Cesium ion va en `Config/cesium_ion_token.txt`, que no se sube), se renderiza con Movie Render Queue y los fotogramas se convierten con `python tools/giro_build.py`.
 - Las manchas blancas como nubes vienen de la propia malla de Google (fotos aéreas con nubes).
 
 Maqueta 3D de Kennedy (Bogotá) sobre la **malla fotorrealista de Google** (Google Photorealistic 3D Tiles), cargada dentro de la misma escena Three.js que el modelo propio.
