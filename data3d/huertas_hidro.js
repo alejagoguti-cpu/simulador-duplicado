@@ -75,13 +75,14 @@ export async function iniciarHidroponia({ THREE, T3, techos, movil = false }) {
   const INST = { rack: [], torre: [], tunel: [], tanque: [], jard: [], caseta: [] }; // [x, y, z, rotY, celda]
   const FLORES = []; // puntos que visitan los polinizadores: [x, y, z, tipo(0 techo, 1 balcón), techo]
   const CELDA = 150, celdas = new Map(), clave = (x, z) => Math.floor(x / CELDA) + ',' + Math.floor(z / CELDA);
-  const meter = (k, x, y, z, r) => { const c = clave(x, z); INST[k].push([x, y, z, r, c]); };
+  let tiAct = 0; const TCEN = new Map(); // techo -> [x, y, z] (orden de apertura y resalte)
+  const meter = (k, x, y, z, r) => { const c = clave(x, z); INST[k].push([x, y, z, r, c, tiAct]); };
   techos.forEach((t, ti) => {
     const W = t.W, n = W.length; if (n < 3) return;
     let cx = 0, cz = 0, A = 0, Lmax = 0, ang = 0;
     for (let i = 0; i < n; i++) { const p = W[i], q = W[(i + 1) % n]; A += p[0] * q[1] - q[0] * p[1]; cx += p[0]; cz += p[1]; const l = Math.hypot(q[0] - p[0], q[1] - p[1]); if (l > Lmax) { Lmax = l; ang = Math.atan2(q[1] - p[1], q[0] - p[0]); } }
     { let mejor = 1e18; for (let i = 0; i < n; i++) { const p = W[i], q = W[(i + 1) % n], a0 = Math.atan2(q[1] - p[1], q[0] - p[0]), c0 = Math.cos(a0), s0 = Math.sin(a0); let u0 = 1e9, u1 = -1e9, v0 = 1e9, v1 = -1e9; for (const r of W) { const u = r[0] * c0 + r[1] * s0, v = -r[0] * s0 + r[1] * c0; u0 = Math.min(u0, u); u1 = Math.max(u1, u); v0 = Math.min(v0, v); v1 = Math.max(v1, v); } const ar = (u1 - u0) * (v1 - v0); if (ar < mejor - 1e-6) { mejor = ar; ang = (u1 - u0) >= (v1 - v0) ? a0 : a0 + Math.PI / 2; } } } // rectángulo mínimo: racks alineados con la cubierta
-    cx /= n; cz /= n; const area = Math.abs(A) / 2, y = t.h - 0.88; // sobre la losa, que queda 0,9 m bajo el remate del antepecho // sobre la capa de la cubierta de E8 (que se pinta 0,3 m sobre el techo)
+    cx /= n; cz /= n; const area = Math.abs(A) / 2, y = t.h - 0.88; tiAct = ti; TCEN.set(ti, [cx, t.h, cz]); // sobre la losa, que queda 0,9 m bajo el remate del antepecho // sobre la capa de la cubierta de E8 (que se pinta 0,3 m sobre el techo)
     if (area < 40) return;
     const inclinado = window.esDosAguas && window.esDosAguas(W.map(q => [q[0], q[1]]), t.h); // casas a dos aguas: sin huerta
     if (inclinado) return;
@@ -114,6 +115,11 @@ export async function iniciarHidroponia({ THREE, T3, techos, movil = false }) {
     }
   });
   // índice espacial de flores (para que los polinizadores elijan la siguiente cerca)
+  /* APERTURA AÑO A AÑO (data3d/escenarios_sim.js llama fraccion(f)): las cubiertas se abren desde Bavaria Común hacia afuera, donde se forman
+     los promotores, con algo de azar; ORD[ti] en [0, 1] y solo se dibujan las cubiertas con ORD <= frac */
+  const ORD = new Map(); { const BAV = [4136, 96], L = [...new Set(Object.values(INST).flat().map(p => p[5]))].map(ti => { const c = TCEN.get(ti) || [0, 0, 0]; return [ti, Math.hypot(c[0] - BAV[0], c[2] - BAV[1]) * (0.75 + rnd() * 0.5)]; }).sort((a, b) => a[1] - b[1]);
+    L.forEach(([ti], i) => ORD.set(ti, L.length > 1 ? i / (L.length - 1) : 0)); }
+  let frac = 1;
   const FC = new Map(); FLORES.forEach((f, i) => { const c = clave(f[0], f[2]); if (!FC.has(c)) FC.set(c, []); FC.get(c).push(i); });
 
   // ---------- instancias: solo las cercanas a lo que mira la cámara ----------
@@ -139,7 +145,7 @@ export async function iniciarHidroponia({ THREE, T3, techos, movil = false }) {
     if (ultimo && ultimo.distanceTo(c) < R * 0.12) return; ultimo = (ultimo || new THREE.Vector3()).copy(c);
     const r2 = R * R;
     for (const k of Object.keys(IM)) {
-      let n = 0; const lista = INST[k].filter(p => (p[0] - c.x) ** 2 + (p[2] - c.z) ** 2 < r2).sort((a, b) => ((a[0] - c.x) ** 2 + (a[2] - c.z) ** 2) - ((b[0] - c.x) ** 2 + (b[2] - c.z) ** 2));
+      let n = 0; const lista = INST[k].filter(p => ORD.get(p[5]) <= frac && (p[0] - c.x) ** 2 + (p[2] - c.z) ** 2 < r2).sort((a, b) => ((a[0] - c.x) ** 2 + (a[2] - c.z) ** 2) - ((b[0] - c.x) ** 2 + (b[2] - c.z) ** 2));
       for (const p of lista) { if (n >= CAP[k]) break; o3.position.set(p[0], p[1], p[2]); o3.rotation.set(0, p[3], 0); o3.updateMatrix(); for (const im of IM[k]) im.setMatrixAt(n, o3.matrix); n++; }
       for (const im of IM[k]) { im.count = n; im.instanceMatrix.needsUpdate = true; }
     }
@@ -315,7 +321,12 @@ export async function iniciarHidroponia({ THREE, T3, techos, movil = false }) {
   T3.hidroAgentes = AG; T3.hidroMesh = MESH; // para depurar
   const total = Object.fromEntries(Object.entries(INST).map(([k, v]) => [k, v.length]));
   return {
-    grupo, total, flores: FLORES.length,
+    grupo, total, flores: FLORES.length, techos: ORD.size,
+    // f en [0, 1]: fracción de cubiertas con huerta; las que se abren en este paso disparan un pulso de luz (data3d/resaltes.js)
+    fraccion(f) { f = Math.max(0, Math.min(1, f)); if (Math.abs(f - frac) < 0.002) return; const antes = frac; frac = f;
+      if (f > antes && grupo.visible) import('./resaltes.js?v=1').then(m => { const R2 = m.resaltes(T3); let k = 0; for (const [ti, o] of ORD) if (o > antes && o <= f && k++ < 60) { const c = TCEN.get(ti); if (c) R2.pulso(c[0], c[1], c[2], 25); } }).catch(() => {});
+      ultimo = null; if (grupo.visible) recalcular(); },
+    get frac() { return frac; },
     ver: (on) => { grupo.visible = on; panel.style.display = on ? 'flex' : 'none'; const v = on ? '1' : '0'; if (panel.dataset.on !== v) { panel.dataset.on = v; dispatchEvent(new Event('dock-cambio')); } if (on) { ultimo = null; recalcular(); } }
   };
 }

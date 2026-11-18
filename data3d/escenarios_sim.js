@@ -226,6 +226,11 @@ ${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, FMT.luz)}${slider(
     // SIM-01 · huertas abiertas y Corabastos
     const f = e === 'A' ? 0 : s1.act[t] / R.S1.C.N; let ab = null;
     const HBAR = window.KEN_HBAR; if (HBAR && HBAR.fraccion && Math.abs(f - ultHB) > 0.004) { ab = HBAR.fraccion(f); ultHB = f; } if (ab) ultAb = ab; else ab = ultAb;
+    /* la red crece año a año: las huertas en cubiertas se abren y la fauna de las huertas llega en la misma proporción (al año 10, todas):
+       las relaciones bióticas suben de a poco hasta llegar a muchas */
+    { const fin = s1.act[SEM - 1] / R.S1.C.N, g = e === 'A' ? 0 : Math.max(0.03, Math.min(1, f / Math.max(0.01, fin)));
+      const HI = window.KEN_HIDRO; if (HI && HI.fraccion) HI.fraccion(g);
+      const BIo = T3.bio && T3.bio.ESTADO; if (BIo) BIo.proFrac = g; }
     { const vis = e === 'A' ? 0 : f; if (Math.abs(vis - fMarcas) > 0.002 || e === 'A') { fMarcas = vis; MK.forEach((m, i) => { mO[i] = e === 'A' ? 0 : (m[3] === 'par' ? (m[4] < vis ? 1 : 0) : m[3] === 'lote' ? (vis > 0.06 ? 1 : 0) : 1); }); gm.attributes.on.needsUpdate = true; } }
     const dep = s1.dep[t], al = T3.alivio; if (al) { al.KEEP = e === 'A' ? 1 : 0.3 + 0.7 * dep; al.KEEP_CAM = e === 'A' ? 1 : 0.1 + 0.9 * dep; }
     kTr = e === 'A' ? 1 : 0.3 + 0.7 * dep; UB.uC.value.copy(colorTr(kTr)); // franja de tráfico de la Av. Ciudad de Cali
