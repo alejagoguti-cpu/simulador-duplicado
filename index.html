@@ -1211,8 +1211,8 @@ function actualizarMallaIn(T, tl, dt) {
   }
   /* mientras está la portada, la foto 3D baja gruesa y con pocas descargas a la vez: antes pedía 470 teselas (13 MB) en el primer minuto y dejaba
      sin conexión a los árboles, las vías y el tráfico. Con la maqueta abierta se afina hasta su nitidez normal (T.errMeta) */
-  const abierta = KEN ? $('loader').classList.contains('hidden') && !!document.getElementById('gs-izq') : true, /* y con el panel ya armado (árboles y vías bajaron) */ meta = abierta ? T.errMeta : Math.max(T.errMeta, 24);
-  if (tl.downloadQueue) tl.downloadQueue.maxJobs = abierta ? 12 : 4;
+  const abierta = KEN ? $('loader').classList.contains('hidden') && !!document.getElementById('gs-izq') : true, /* y con el panel ya armado (árboles y vías bajaron) */ meta = abierta ? T.errMeta : Math.max(T.errMeta, 40);
+  if (tl.downloadQueue) tl.downloadQueue.maxJobs = abierta ? 12 : 2;
   if (tl.errorTarget > meta && tl.stats.downloading === 0 && tl.stats.parsing === 0 && tl.stats.visible > 3) tl.errorTarget = Math.max(meta, Math.round(tl.errorTarget * 0.62));
   if (T.debug) {
     const s = tl.stats; let mallas = 0; tl.group.traverse(x => { if (x.isMesh) mallas++; });
