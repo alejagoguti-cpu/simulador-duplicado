@@ -253,6 +253,7 @@ if (!/[?&](modo|solo)=/.test(location.search)) {
   ['data3d/trees.json', 'data3d/net.json', 'data3d/parques.json', 'data3d/water_bodies.json', 'data3d/edif/index.json', 'data3d/usos_edif.json?v=1', 'data3d/inem/celdas.json?v=1',
    'data3d/bavaria.json?v=3', 'data3d/corabastos.json?v=3', 'data3d/tintal.json?v=2', 'data3d/conjuntos.json?v=3', 'data3d/estrategias.json?v=5', 'data3d/giro_sim.json',
    'data3d/biotica.json?v=2', 'data3d/huertas_barrio.json?v=3', 'data3d/bavaria_arboles.json?v=3'].forEach(u => window.cargarJSON(u).catch(() => {}));
+  { const im = new Image(); im.src = 'data3d/textures/techos_kennedy.jpg'; } /* cubiertas reales (400 KB): antes se pedía tarde, detrás de la foto 3D */
   /* los modelos 3D de los árboles NO se piden aquí: son ~4 MB y le quitaban la conexión al código de la página (giro_sim.js tardaba 49 s) */
 }
 /* ============================================================
@@ -1227,7 +1228,7 @@ function actualizarMallaIn(T, tl, dt) {
   /* mientras está la portada, la foto 3D baja gruesa y con pocas descargas a la vez: antes pedía 470 teselas (13 MB) en el primer minuto y dejaba
      sin conexión a los árboles, las vías y el tráfico. Con la maqueta abierta se afina hasta su nitidez normal (T.errMeta) */
   const abierta = KEN ? $('loader').classList.contains('hidden') : true, meta = abierta ? T.errMeta : Math.max(T.errMeta, 14); /* antes de abrir: nitidez media */
-  if (tl.downloadQueue) tl.downloadQueue.maxJobs = panelOk ? 12 : 2;
+  if (tl.downloadQueue) tl.downloadQueue.maxJobs = abierta ? 12 : panelOk ? 6 : 2;
   if (tl.errorTarget > meta && tl.stats.downloading === 0 && tl.stats.parsing === 0 && tl.stats.visible > 3) tl.errorTarget = Math.max(meta, Math.round(tl.errorTarget * 0.62));
   if (T.debug) {
     const s = tl.stats; let mallas = 0; tl.group.traverse(x => { if (x.isMesh) mallas++; });
