@@ -16,7 +16,14 @@
 import { SEM, AÑO, POB_K, PAR, SIMST, avisar, sim03, correrTodo } from './sim_modelos.js?v=2';
 export function iniciarSimulaciones({ T3, tb, verPestana }) {
   const { P1, P2, P3 } = PAR; // los mismos parámetros que el panel de escenarios del mapa (data3d/sim_modelos.js)
-  const COL = { A: '#8fb0c9', B: '#7f8a93', C: '#e2a55b' } /* los mismos del simulador: hoy azul grisáceo, propuesta ámbar */, NOMBRE = { A: 'A · sin intervención', B: 'B · nodo central', C: 'C · clúster rotativo' };
+  // colores fijos de los escenarios (los mismos en el mapa): A hoy azul grisáceo, B morado, C ámbar (la propuesta)
+  const COL = { A: '#8fb0c9', B: '#b07aa1', C: '#e2a55b' }, NOMBRE = { A: 'A · Kennedy hoy', B: 'B · Nodo central', C: 'C · Clúster rotativo' };
+  const CORTO = { A: 'Kennedy hoy', B: 'Nodo central', C: 'Clúster rotativo' };
+  // qué significa cada escenario en cada simulación, en una frase
+  const ESCD = {
+    S1: { A: 'Nada cambia: unas pocas huertas caseras, sin apoyo.', B: 'Bavaria forma promotores y una sola oficina central decide todo.', C: 'Bavaria forma promotores y los barrios, agrupados en clústeres, se turnan las decisiones.' },
+    S2: { A: 'Los orgánicos se van en camión al relleno Doña Juana, a 28 km.', B: 'Cada barrio composta en una estación pequeña, cerca de sus huertas.', C: 'Todo se composta en la planta grande de Bavaria Común.' },
+    S3: { A: 'Sin huertas nuevas cerca del humedal.', B: 'Huertas donde haya espacio, sin pensar en las aves.', C: 'Huertas unidas por corredores verdes entre parches de hábitat.' } };
   const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const fmt = (v, d = 0) => (v == null || !isFinite(v)) ? '–' : v.toLocaleString('es-CO', { maximumFractionDigits: d, minimumFractionDigits: d });
   const fmtK = (v) => v >= 1e6 ? fmt(v / 1e6, 1) + ' M' : v >= 1e4 ? fmt(v / 1e3, 0) + ' mil' : fmt(v);
@@ -70,12 +77,47 @@ export function iniciarSimulaciones({ T3, tb, verPestana }) {
 #tb .cmp .cb{display:grid;grid-template-columns:104px minmax(0,1fr) 74px;gap:8px;align-items:center;font-size:11px;color:var(--ui-tx2,#b9c1c6);margin-top:4px}
 #tb .cmp .cb i{display:block;height:10px;border-radius:5px;background:rgba(255,255,255,.05);overflow:hidden}#tb .cmp .cb i b{display:block;height:100%;border-radius:5px;transition:width .4s}
 #tb .cmp .cb strong{text-align:right;font:600 12px var(--ui-sans,Inter,sans-serif);color:#fff;font-variant-numeric:tabular-nums}
-#tb .sim-gp canvas{height:170px}
+#tb .sim-gp canvas{height:200px}
 #tb .sim-tec{margin:4px 0 12px;border-radius:12px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.02)}
 #tb .sim-tec > summary{cursor:pointer;padding:10px 12px;font:500 11.5px var(--ui-sans,Inter,sans-serif);color:var(--ui-tx2,#c0c7cb);list-style:none}#tb .sim-tec > summary::-webkit-details-marker{display:none}
 #tb .sim-tec > summary::before{content:'+ ';color:#e2a55b}#tb .sim-tec[open] > summary::before{content:'– '}
 #tb .sim-tec-c{padding:0 10px 4px}
-#tb .sim-nota{font-size:10px;line-height:1.45;color:var(--ui-tx3,#8e979d);margin:4px 0 6px}`;
+#tb .sim-nota{font-size:10px;line-height:1.45;color:var(--ui-tx3,#8e979d);margin:4px 0 6px}
+#tb .sim-h{display:flex;align-items:center;gap:8px;margin:16px 0 8px;font:600 10px var(--ui-mono,monospace);letter-spacing:.14em;text-transform:uppercase;color:#cfd5d9}
+#tb .sim-h::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.1)}
+#tb .sim-lead{margin:0 0 10px;font-size:11.5px;line-height:1.45;color:var(--ui-tx2,#b9c1c6)}#tb .sim-lead b{color:#fff;font-weight:600}
+#tb .sim-lead i{display:inline-block;width:9px;height:9px;border-radius:2px;margin:0 4px 0 2px;vertical-align:-1px}
+/* filas hoy vs. propuesta (también las usa la pestaña «Hoy vs. proyecto») */
+#tb .vss{display:grid;gap:8px;margin:0 0 12px}
+#tb .vs{padding:10px 12px 9px;border-radius:12px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07)}
+#tb .vs-n{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin:0 0 7px;font:600 12px/1.3 var(--ui-sans,Inter,sans-serif);color:#fff}
+#tb .vs-n small{display:block;font:400 10px var(--ui-sans,Inter,sans-serif);color:#959ea4;margin-top:1px}
+#tb .vs-n em{flex:none;font:600 10.5px var(--ui-sans,Inter,sans-serif);font-style:normal;padding:3px 8px;border-radius:10px;white-space:nowrap}
+#tb .vs-n em.bien{background:rgba(143,209,138,.15);color:#a9e0a5}#tb .vs-n em.mal{background:rgba(255,138,128,.14);color:#ffa59d}#tb .vs-n em.igual{background:rgba(255,255,255,.07);color:#b9c1c6}
+#tb .vs-b{display:grid;grid-template-columns:92px minmax(0,1fr) 78px;gap:8px;align-items:center;margin-top:4px;font-size:11px;color:var(--ui-tx2,#b9c1c6)}
+#tb .vs-b i{display:block;height:12px;border-radius:3px;background:rgba(255,255,255,.05);overflow:hidden}#tb .vs-b i b{display:block;height:100%;border-radius:3px;transition:width .4s}
+#tb .vs-b strong{text-align:right;font:600 12.5px var(--ui-sans,Inter,sans-serif);font-variant-numeric:tabular-nums;color:#fff}
+/* los 3 escenarios lado a lado */
+#tb .esd{display:grid;gap:4px;margin:0 0 10px}
+#tb .esd button{all:unset;cursor:pointer;display:grid;grid-template-columns:26px minmax(0,1fr);gap:2px 10px;align-items:center;padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.025)}
+#tb .esd button:hover{background:rgba(255,255,255,.05)}#tb .esd button:focus-visible{outline:2px solid #fff;outline-offset:1px}
+#tb .esd button.on{border-color:var(--c);background:color-mix(in srgb,var(--c) 12%,transparent)}
+#tb .esd button > b{grid-row:span 2;width:26px;height:26px;border-radius:7px;display:grid;place-items:center;font:700 12px var(--ui-sans,Inter,sans-serif);color:#15171a;background:var(--c)}
+#tb .esd button span{font:600 11.5px var(--ui-sans,Inter,sans-serif);color:#fff}#tb .esd button span em{font:400 10px var(--ui-sans,Inter,sans-serif);font-style:normal;color:var(--c);margin-left:6px}
+#tb .esd button small{font-size:10.5px;line-height:1.35;color:var(--ui-tx2,#b9c1c6)}
+#tb .abc{display:grid;gap:0;margin:0 0 12px;border-radius:12px;border:1px solid rgba(255,255,255,.07);overflow:hidden}
+#tb .abc-r{display:grid;grid-template-columns:minmax(0,1.25fr) repeat(3,minmax(0,1fr));align-items:stretch}
+#tb .abc-r + .abc-r{border-top:1px solid rgba(255,255,255,.06)}
+#tb .abc-r > *{padding:7px 8px;min-width:0}
+#tb .abc-r .n{font-size:11px;line-height:1.3;color:#e3e7e9;align-self:center}#tb .abc-r .n small{display:block;font-size:9.5px;color:var(--ui-tx3,#8e979d)}
+#tb .abc-h{background:rgba(255,255,255,.04)}#tb .abc-h div{display:flex;align-items:center;gap:5px;font:600 11px var(--ui-sans,Inter,sans-serif);color:#fff}
+#tb .abc-h div i{width:9px;height:9px;border-radius:2px;flex:none}#tb .abc-h div{flex-wrap:wrap;align-content:center}#tb .abc-h div small{flex-basis:100%;font-weight:400;color:var(--ui-tx3,#8e979d);font-size:9.5px;line-height:1.2}
+#tb .abc-r .c{display:flex;flex-direction:column;justify-content:center;gap:4px;font-variant-numeric:tabular-nums}
+#tb .abc-r .c strong{font:500 12px var(--ui-sans,Inter,sans-serif);color:#cfd5d9}
+#tb .abc-r .c i{display:block;height:5px;border-radius:3px;background:rgba(255,255,255,.05);overflow:hidden}#tb .abc-r .c i b{display:block;height:100%;border-radius:3px}
+#tb .abc-r .c.best{background:rgba(143,209,138,.07)}#tb .abc-r .c.best strong{color:#fff;font-weight:700}#tb .abc-r .c.best strong::after{content:' ▲';font-size:8.5px;color:#a9e0a5;vertical-align:1px}
+#tb .abc-nota{margin:-6px 0 12px;font-size:10px;color:var(--ui-tx3,#8e979d)}#tb .abc-nota b{color:#a9e0a5;font-weight:600}
+@media(max-width:760px){#tb .vs-b{grid-template-columns:70px minmax(0,1fr) 66px}#tb .abc-r{grid-template-columns:minmax(0,1.1fr) repeat(3,minmax(0,1fr))}#tb .abc-r > *{padding:6px 5px}#tb .abc-h div small{font-size:9px}}`;
   document.head.appendChild(css);
 
   /* ---------------- estructura en el tablero ---------------- */
@@ -88,21 +130,32 @@ export function iniciarSimulaciones({ T3, tb, verPestana }) {
   const escAct = () => (T3.escenario === 'proyecto' ? escP : 'A');
 
   /* ---------------- gráfica de líneas o áreas apiladas (un solo eje) ---------------- */
-  function grafica(cv, { series, y, yfmt, apilar, x }) {
-    const dpr = Math.min(2, devicePixelRatio || 1), W = cv.clientWidth || 400, H = 150; cv.width = W * dpr; cv.height = H * dpr; const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const L = 40, R = 8, Tp = 8, B = 20, n = series[0].data.length, X = x || ((i) => L + i / (n - 1) * (W - L - R));
+  // brecha: [i, j] sombrea el espacio entre dos series (lo que gana la propuesta); fin: rótulo con nombre y valor al final de cada línea
+  function grafica(cv, { series, y, yfmt, apilar, x, brecha, fin }) {
+    const dpr = Math.min(2, devicePixelRatio || 1), W = cv.clientWidth || 400, H = cv.clientHeight || 150; cv.width = W * dpr; cv.height = H * dpr; const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const L = 44, R = 8, Tp = 10, B = 20, n = series[0].data.length, X = x || ((i) => L + i / (n - 1) * (W - L - R));
     let max = 0; if (apilar) { for (let i = 0; i < n; i++) { let s = 0; for (const se of series) s += se.data[i] || 0; max = Math.max(max, s); } } else for (const se of series) for (const v of se.data) if (v != null && isFinite(v)) max = Math.max(max, v);
-    max = y && y.max != null ? y.max : max * 1.08 || 1; const Y = (v) => H - B - v / max * (H - B - Tp);
+    if (y && y.max != null) max = y.max; else { const m0 = max * 1.05 || 1, p10 = Math.pow(10, Math.floor(Math.log10(m0))); max = [1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10].find(k => k * p10 >= m0) * p10; } /* tope redondo: las marcas del eje quedan en números limpios */ const Y = (v) => H - B - v / max * (H - B - Tp);
     g.clearRect(0, 0, W, H); g.font = '400 10px Inter,system-ui,sans-serif'; g.fillStyle = '#8e979d'; g.textAlign = 'right'; g.textBaseline = 'middle';
     for (const k of [0, 0.5, 1]) { const v = max * k, yy = Math.round(Y(v)) + 0.5; g.strokeStyle = 'rgba(255,255,255,.07)'; g.lineWidth = 1; g.beginPath(); g.moveTo(L, yy); g.lineTo(W - R, yy); g.stroke(); g.fillText(yfmt(v), L - 5, yy); }
-    g.textAlign = 'center'; g.textBaseline = 'alphabetic'; if (!x) for (let a = 0; a <= 10; a += 2) { g.textAlign = a === 0 ? 'left' : a === 10 ? 'right' : 'center'; g.fillText('año ' + a, X(Math.min(n - 1, a * AÑO)), H - 5); } g.textAlign = 'center';
+    g.textAlign = 'center'; g.textBaseline = 'alphabetic'; if (!x) { for (let a = 0; a <= 8; a += 2) { g.textAlign = a === 0 ? 'left' : 'center'; g.fillText(String(2027 + a), X(a * AÑO), H - 5); } g.textAlign = 'right'; g.fillText('2036', X(n - 1), H - 5); } g.textAlign = 'center';
     const lim = x ? n : t + 1;
+    if (brecha && !apilar) { const s0 = series[brecha[0]].data, s1 = series[brecha[1]].data, yy = (v) => Y(Math.min(Math.max(v || 0, 0), max)); g.beginPath();
+      for (let i = 0; i < lim; i++) g.lineTo(X(i), yy(s1[i])); for (let i = lim - 1; i >= 0; i--) g.lineTo(X(i), yy(s0[i])); g.closePath(); g.fillStyle = series[brecha[1]].color; g.globalAlpha = 0.16; g.fill(); g.globalAlpha = 1; }
     if (apilar) { const base = new Float32Array(n);
       for (const se of series) { g.beginPath(); for (let i = 0; i < lim; i++) g.lineTo(X(i), Y(base[i] + (se.data[i] || 0))); for (let i = lim - 1; i >= 0; i--) g.lineTo(X(i), Y(base[i])); g.closePath(); g.fillStyle = se.color; g.globalAlpha = 0.85; g.fill(); g.globalAlpha = 1;
         g.strokeStyle = '#141619'; g.lineWidth = 1.5; g.beginPath(); for (let i = 0; i < lim; i++) g.lineTo(X(i), Y(base[i] + (se.data[i] || 0))); g.stroke(); for (let i = 0; i < n; i++) base[i] += se.data[i] || 0; } }
     else for (const se of series) { g.beginPath(); let on = false; for (let i = 0; i < lim; i++) { const v = se.data[i]; if (v == null || !isFinite(v)) { on = false; continue; } const px = X(i), py = Y(Math.min(v, max)); on ? g.lineTo(px, py) : g.moveTo(px, py); on = true; }
       g.strokeStyle = se.color; g.lineWidth = se.w || 2; g.globalAlpha = se.alfa || 1; g.setLineDash(se.dash || []); g.stroke(); g.setLineDash([]); g.globalAlpha = 1; }
-    if (!x && t < n - 1) { const xx = Math.round(X(t)) + 0.5; g.strokeStyle = 'rgba(226,165,91,.7)'; g.lineWidth = 1; g.beginPath(); g.moveTo(xx, Tp); g.lineTo(xx, H - B); g.stroke(); }
+    if (!x && t < n - 1) { const xx = Math.round(X(t)) + 0.5; g.strokeStyle = 'rgba(255,255,255,.25)'; g.lineWidth = 1; g.beginPath(); g.moveTo(xx, Tp); g.lineTo(xx, H - B); g.stroke(); }
+    if (fin && !apilar) { // rótulos directos: punto al final de cada línea y «nombre: valor» sin que se monten
+      const i = Math.min(n, lim) - 1, xx = X(i), izq = xx > W * 0.5;
+      const P = series.map(s => ({ s, v: s.data[i] })).filter(o => o.v != null && isFinite(o.v)).map(o => ({ ...o, y: Y(Math.min(o.v, max)) })).sort((a, b) => a.y - b.y);
+      let prev = -1e9; for (const o of P) { o.ly = Math.max(o.y - (izq ? 9 : 0), prev + 14, Tp + 6); prev = o.ly; }
+      const sobra = prev - (H - B - 4); if (sobra > 0) P.forEach(o => { o.ly -= sobra; });
+      g.font = '600 11px Inter,system-ui,sans-serif'; g.textBaseline = 'middle'; g.textAlign = izq ? 'right' : 'left';
+      for (const o of P) { g.fillStyle = o.s.color; g.beginPath(); g.arc(xx, o.y, 3.8, 0, 6.29); g.fill(); g.strokeStyle = '#15171a'; g.lineWidth = 1.5; g.stroke();
+        const txt = `${o.s.corto || o.s.name}: ${yfmt(o.v)}`, tx = izq ? xx - 9 : xx + 9; g.lineWidth = 3; g.strokeStyle = 'rgba(16,18,21,.85)'; g.strokeText(txt, tx, o.ly); g.fillText(txt, tx, o.ly); } }
     cv._g = { X, Y, n, L, R, W, series, yfmt, x: !!x };
   }
   function hover(cv, xlabel) {
@@ -112,7 +165,7 @@ export function iniciarSimulaciones({ T3, tb, verPestana }) {
       tip.style.display = 'block'; tip.style.left = Math.min(innerWidth - 220, ev.clientX + 14) + 'px'; tip.style.top = (ev.clientY + 12) + 'px'; });
     cv.addEventListener('pointerleave', () => { tip.style.display = 'none'; });
   }
-  const semLabel = (i) => `Año ${Math.floor(i / AÑO) + 1}, semana ${i % AÑO + 1}`;
+  const semLabel = (i) => `Año ${2027 + Math.floor(i / AÑO)}, semana ${i % AÑO + 1}`;
   const ley = (L) => `<div class="sim-ley">${L.map(([c, n, d]) => `<span><i style="background:${c};${d ? 'background:repeating-linear-gradient(90deg,' + c + ' 0 4px,transparent 4px 7px)' : ''}"></i>${esc(n)}</span>`).join('')}</div>`;
   const slider = (P, k, n, min, max, paso, f = (v) => v) => `<label>${esc(n)}<output data-o="${k}">${f(P[k])}</output><input type="range" data-k="${k}" min="${min}" max="${max}" step="${paso}" value="${P[k]}"></label>`;
 
@@ -176,50 +229,82 @@ export function iniciarSimulaciones({ T3, tb, verPestana }) {
     dibujar(); conectar();
   }
   /* ---------- resumen: una frase, la comparación hoy / con la propuesta y una sola gráfica ---------- */
-  const proK = () => (T3.escenario === 'proyecto' ? escP : 'C');
+  const proK = () => (escP === 'A' || !escP ? 'C' : escP); // la propuesta que se compara con hoy: B o C (por defecto C)
   const año10 = () => Math.floor(t / AÑO) + 1;
-  function fila(n, hoy, pro, f, menos) {
-    const m = Math.max(hoy, pro, 1e-9), mejor = menos ? pro < hoy : pro > hoy, igual = Math.abs(pro - hoy) < 1e-9 * m;
-    const chip = igual ? 'igual' : hoy > 0 && pro / hoy >= 2 ? '×' + fmt(pro / hoy, pro / hoy < 10 ? 1 : 0) : hoy > 0 && hoy / pro >= 2 && menos ? '÷' + fmt(hoy / pro, hoy / pro < 10 ? 1 : 0) : (pro >= hoy ? '+' : '−') + fmt(Math.abs(pro - hoy) / Math.max(hoy, 1e-9) * 100) + ' %';
-    return `<div class="cmp"><div class="cn">${esc(n)}<em class="${igual ? '' : mejor ? 'up' : 'dn'}">${chip}</em></div>
-      <div class="cb"><span>Hoy</span><i><b style="width:${(hoy / m * 100).toFixed(1)}%;background:${COL.A}"></b></i><strong>${f(hoy)}</strong></div>
-      <div class="cb"><span>Con la propuesta</span><i><b style="width:${(pro / m * 100).toFixed(1)}%;background:${COL.C}"></b></i><strong>${f(pro)}</strong></div></div>`;
+  // indicadores de cada simulación para un escenario k, en la semana t (los de residuos suman el último año)
+  function IND(k) {
+    const ti = Math.floor(t), sem = (arr) => arr.slice(Math.max(0, ti - 51), ti + 1).reduce((s, v) => s + v, 0);
+    if (sim === 'S1') { const r = S.S1[k]; return [
+      { n: 'Hogares con huerta', v: r.act[t], f: (v) => fmt(v) },
+      { n: 'Personas que comen de las huertas', v: r.pers[t], f: fmtK },
+      { n: 'Dependencia de Corabastos', s: `zona de ${fmtK(P1.zona)} habitantes`, v: r.dep[t] * 100, f: (v) => fmt(v) + ' %', menos: true },
+      { n: 'Comida producida por semana', v: r.prod[t], f: (v) => fmtK(v) + ' kg' }]; }
+    if (sim === 'S2') { const r = S.S2[k]; return [
+      { n: 'Abono que vuelve a la tierra', s: 'toneladas al año', v: sem(r.vuelve) / 1000, f: (v) => fmt(v) + ' t' },
+      { n: 'Residuos que se van al relleno', s: 'toneladas al año', v: sem(r.relleno) / 1000, f: (v) => fmtK(v) + ' t', menos: true },
+      { n: 'Km que viajan los residuos', s: 'en camión, al año', v: sem(r.km), f: (v) => fmtK(v) + ' km', menos: true },
+      { n: 'Hongos para comer', s: 'kg al año', v: sem(r.hongos), f: (v) => fmtK(v) + ' kg' }]; }
+    const r = S.S3[k]; return [
+      { n: 'Aves en el borde del humedal', v: r.aves[t], f: (v) => fmt(v) },
+      { n: 'Especies de aves', v: r.riq[t], f: (v) => fmt(v) },
+      { n: 'Estado del humedal', s: 'integridad', v: r.hum[t], f: (v) => fmt(v) + ' %' },
+      { n: 'Aves muertas por luz y vidrio', s: 'acumulado', v: r.trampa[t], f: (v) => fmt(v), menos: true }];
+  }
+  // una fila «hoy vs. propuesta»: dos barras en la misma escala y una etiqueta que dice cuánto cambia y si es mejor o peor
+  function filaVs(I, hoy, pro, kP, nHoy = 'Hoy', nPro = 'Propuesta ' + kP, cHoy = COL.A, cPro = COL[kP]) {
+    const m = Math.max(Math.abs(hoy), Math.abs(pro), 1e-9), igual = Math.abs(pro - hoy) < 0.005 * m, mejor = I.menos ? pro < hoy : pro > hoy;
+    const veces = (a, b) => fmt(a / b, a / b < 10 ? 1 : 0) + ' veces';
+    const cambio = igual ? 'igual' : hoy > 0 && pro / hoy >= 2 ? veces(pro, hoy) + ' más' : pro > 0 && hoy / pro >= 2 ? veces(hoy, pro) + ' menos' : !hoy ? 'nuevo' : (pro >= hoy ? '+' : '−') + fmt(Math.abs(pro - hoy) / Math.abs(hoy) * 100) + ' %';
+    const w = (v) => Math.max(1.5, Math.abs(v) / m * 100).toFixed(1);
+    return `<div class="vs"><div class="vs-n"><span>${esc(I.n)}${I.s || I.menos ? `<small>${esc([I.s, I.menos ? 'menos es mejor' : ''].filter(Boolean).join(' · '))}</small>` : ''}</span><em class="${igual ? 'igual' : mejor ? 'bien' : 'mal'}">${cambio}${igual ? '' : mejor ? ' · mejor' : ' · peor'}</em></div>
+      <div class="vs-b"><span>${esc(nHoy)}</span><i><b style="width:${w(hoy)}%;background:${cHoy}"></b></i><strong>${I.f(hoy)}</strong></div>
+      <div class="vs-b"><span>${esc(nPro)}</span><i><b style="width:${w(pro)}%;background:${cPro}"></b></i><strong style="color:${cPro}">${I.f(pro)}</strong></div></div>`;
+  }
+  // tabla A · B · C: mismo indicador en los tres escenarios, el mejor marcado
+  function tablaABC() {
+    const T = { A: IND('A'), B: IND('B'), C: IND('C') };
+    return `<div class="abc"><div class="abc-r abc-h"><span></span>${['A', 'B', 'C'].map(k => `<div><i style="background:${COL[k]}"></i>${k}<small>${CORTO[k]}</small></div>`).join('')}</div>` +
+      T.A.map((I, j) => { const vals = ['A', 'B', 'C'].map(k => T[k][j].v), m = Math.max(...vals.map(Math.abs), 1e-9), best = I.menos ? Math.min(...vals) : Math.max(...vals), empate = vals.every(v => Math.abs(v - best) < 0.005 * m);
+        return `<div class="abc-r"><span class="n">${esc(I.n)}${I.menos ? '<small>menos es mejor</small>' : ''}</span>${['A', 'B', 'C'].map((k, q) => { const v = vals[q], b = !empate && Math.abs(v - best) < 0.005 * m;
+          return `<div class="c${b ? ' best' : ''}"><strong>${I.f(v)}</strong><i><b style="width:${Math.max(2, Math.abs(v) / m * 100).toFixed(1)}%;background:${COL[k]}"></b></i></div>`; }).join('')}</div>`; }).join('') + '</div>';
   }
   function resumen() {
-    const p = proK(), ti = Math.floor(t), sem = (arr) => arr.slice(Math.max(0, ti - 51), ti + 1).reduce((s, v) => s + v, 0);
-    let q = '', frase = '', filas = '', gtit = '';
-    if (sim === 'S1') { const A = S.S1.A, P = S.S1[p];
+    const p = proK(), A = IND('A'), P = IND(p), a2 = año10(), año = 2026 + a2;
+    let q = '', frase = '', gtit = '';
+    if (sim === 'S1') { const sA = S.S1.A, sP = S.S1[p];
       q = '¿Cuánto deja Kennedy de depender de Corabastos si las huertas del barrio abastecen tiendas y comedores?';
-      frase = `En ${año10()} ${año10() === 1 ? 'año' : 'años'}, con la propuesta, <b>${fmtK(P.pers[t])} personas</b> comen frutas y verduras de las huertas del barrio. Hoy serían <b>${fmtK(A.pers[t])}</b>.`;
-      filas = fila('Hogares con huerta', A.act[t], P.act[t], (v) => fmt(v)) + fila('Personas que comen de las huertas', A.pers[t], P.pers[t], fmtK) +
-        fila(`Dependencia de Corabastos (zona de ${fmtK(P1.zona)} hab.)`, A.dep[t] * 100, P.dep[t] * 100, (v) => fmt(v) + ' %', true) + fila('Comida producida por semana', A.prod[t], P.prod[t], (v) => fmtK(v) + ' kg');
-      gtit = 'Personas que comen de las huertas, año a año';
-    } else if (sim === 'S2') { const A = S.S2.A, P = S.S2[p];
+      frase = `En ${año}, con la propuesta, <b>${fmtK(sP.pers[t])} personas</b> comen frutas y verduras de las huertas del barrio y la dependencia de Corabastos baja a <b>${fmt(sP.dep[t] * 100)} %</b>. Si Kennedy sigue como hoy: <b>${fmtK(sA.pers[t])} personas</b> y <b>${fmt(sA.dep[t] * 100)} %</b>.`;
+      gtit = 'Personas que comen de las huertas';
+    } else if (sim === 'S2') {
       q = '¿Cuánta basura orgánica vuelve a la tierra como abono en vez de irse al relleno?';
-      frase = `Con la propuesta, <b>${fmt(sem(P.vuelve) / 1000)} toneladas</b> de residuos orgánicos al año vuelven a la tierra como abono. Hoy, <b>${fmt(sem(A.vuelve) / 1000)} toneladas</b>.`;
-      filas = fila('Abono que vuelve a la tierra (t/año)', sem(A.vuelve) / 1000, sem(P.vuelve) / 1000, (v) => fmt(v)) + fila('Residuos que se van al relleno (t/año)', sem(A.relleno) / 1000, sem(P.relleno) / 1000, (v) => fmt(v), true) +
-        fila('Hongos para comer (kg/año)', sem(A.hongos), sem(P.hongos), (v) => fmt(v)) + fila('Kilómetros que viajan los residuos (al año)', sem(A.km), sem(P.km), (v) => fmtK(v), true);
+      frase = `En ${año}, con la propuesta, <b>${P[0].f(P[0].v)}</b> de residuos orgánicos al año vuelven a la tierra como abono. Si Kennedy sigue como hoy: <b>${A[0].f(A[0].v)}</b>.`;
       gtit = '% de los orgánicos que vuelve a la tierra';
-    } else { const A = S.S3.A, P = S.S3[p];
+    } else { const sA = S.S3.A, sP = S.S3[p];
       q = '¿Las huertas ayudan a las aves y al humedal, o les ponen trampas?';
-      frase = `Con la propuesta hay <b>${fmt(P.aves[t])} aves</b> en el borde del humedal y <b>${fmt(P.riq[t])} especies</b>. Hoy, <b>${fmt(A.aves[t])}</b> aves y <b>${fmt(A.riq[t])}</b> especies.`;
-      filas = fila('Aves en el borde del humedal', A.aves[t], P.aves[t], (v) => fmt(v)) + fila('Especies de aves', A.riq[t], P.riq[t], (v) => fmt(v)) +
-        fila('Estado del humedal', A.hum[t], P.hum[t], (v) => fmt(v) + ' %') + fila('Aves que mueren por luz y vidrio (acumulado)', A.trampa[t], P.trampa[t], (v) => fmt(v), true);
-      gtit = 'Aves en el borde del humedal, año a año';
+      frase = `En ${año}, con la propuesta, hay <b>${fmt(sP.aves[t])} aves</b> y <b>${fmt(sP.riq[t])} especies</b> en el borde del humedal. Si Kennedy sigue como hoy: <b>${fmt(sA.aves[t])}</b> aves y <b>${fmt(sA.riq[t])}</b> especies.`;
+      gtit = 'Aves en el borde del humedal';
     }
+    const gana = A.reduce((s, I, j) => s + ((I.menos ? P[j].v < I.v : P[j].v > I.v) ? 1 : 0), 0);
     return `<div class="sim-res"><p class="sim-q">${q}</p><div class="sim-frase">${frase}</div>
-      <div class="sim-play"><button data-play>${play ? 'Pausa' : '▶ Correr 10 años'}</button><input type="range" min="0" max="${SEM - 1}" value="${t}" data-t aria-label="Tiempo de la simulación"><output>año ${año10()}</output></div>
-      <div class="sim-cmp">${filas}</div>
-      <div class="sim-g sim-gp"><h4>${esc(gtit)}</h4><canvas data-c="res"></canvas></div></div>`;
+      <div class="sim-play"><button data-play>${play ? 'Pausa' : '▶ Correr 10 años'}</button><input type="range" min="0" max="${SEM - 1}" value="${t}" data-t aria-label="Tiempo de la simulación"><output>${año}<br><small style="color:#8e979d">año ${a2} de 10</small></output></div>
+      <div class="sim-h">1 · Kennedy hoy vs. la propuesta</div>
+      <p class="sim-lead"><i style="background:${COL.A}"></i><b>Hoy</b>: Kennedy sigue igual 10 años. <i style="background:${COL[p]}"></i><b>Propuesta ${p}</b>: (${CORTO[p].toLowerCase()}) ${esc(ESCD[sim][p])} La propuesta mejora <b>${gana} de ${A.length}</b> indicadores.</p>
+      <div class="vss">${A.map((I, j) => filaVs(I, I.v, P[j].v, p)).join('')}</div>
+      <div class="sim-g sim-gp"><h4>${esc(gtit)}<span>la franja de color es lo que gana la propuesta</span></h4><canvas data-c="res"></canvas></div>
+      <div class="sim-h">2 · Los tres escenarios</div>
+      <p class="sim-lead">Toca B o C para escoger cuál se compara con hoy (también cambia el mapa).</p>
+      <div class="esd">${['A', 'B', 'C'].map(k => `<button type="button" data-e2="${k}" style="--c:${COL[k]}" class="${k === p ? 'on' : ''}" ${k === 'A' ? 'aria-disabled="true"' : `aria-pressed="${k === p}"`}><b>${k}</b><span>${CORTO[k]}${k === 'A' ? '<em>sin intervención</em>' : k === p ? '<em>comparando con hoy</em>' : ''}</span><small>${esc(ESCD[sim][k])}</small></button>`).join('')}</div>
+      ${tablaABC()}<p class="abc-nota"><b>▲</b> el mejor de los tres en ${año}.</p>
+      <div class="sim-g sim-gp"><h4>${esc(gtit)}<span>A · B · C</span></h4><canvas data-c="abc"></canvas></div></div>`;
   }
   function dibujarResumen() {
     const cv = cont.querySelector('canvas[data-c="res"]'); if (!cv) return; const p = proK();
-    const d = sim === 'S1' ? [S.S1.A.pers, S.S1[p].pers, fmtK] : sim === 'S2' ? [S.S2.A.pct, S.S2[p].pct, (v) => fmt(v, 1) + ' %'] : [S.S3.A.aves, S.S3[p].aves, (v) => fmt(v)];
-    grafica(cv, { series: [{ name: 'Hoy', color: COL.A, data: d[0], w: 2.4 }, { name: 'Con la propuesta', color: COL.C, data: d[1], w: 2.8 }], yfmt: d[2] });
-    // rótulos directos al final de cada línea
-    const G = cv._g, g = cv.getContext('2d'), i = Math.floor(t); g.font = '600 11px Inter,system-ui,sans-serif'; g.textAlign = 'right';
-    [[d[0], COL.A, 'Hoy'], [d[1], COL.C, 'Con la propuesta']].forEach(([arr, c, n]) => { const v = arr[i]; if (v == null) return; const x = G.X(i), y = G.Y(v); g.fillStyle = c; g.beginPath(); g.arc(x, y, 4, 0, 6.29); g.fill(); g.fillStyle = '#fff'; g.fillText(`${n}: ${d[2](v)}`, Math.max(120, x - 8), y - 9); });
-    hover(cv, (k) => `Año ${Math.floor(k / AÑO) + 1}`);
+    const key = sim === 'S1' ? ['S1', 'pers', fmtK] : sim === 'S2' ? ['S2', 'pct', (v) => fmt(v, 1) + ' %'] : ['S3', 'aves', (v) => fmt(v)];
+    grafica(cv, { series: [{ name: 'Hoy', corto: 'Hoy', color: COL.A, data: S[key[0]].A[key[1]], w: 2.4 }, { name: 'Propuesta ' + p, corto: 'Propuesta ' + p, color: COL[p], data: S[key[0]][p][key[1]], w: 3 }], yfmt: key[2], brecha: [0, 1], fin: true });
+    hover(cv, (k) => `${2027 + Math.floor(k / AÑO)}`);
+    const c2 = cont.querySelector('canvas[data-c="abc"]'); if (!c2) return;
+    grafica(c2, { series: ['A', 'B', 'C'].map(k => ({ name: NOMBRE[k], corto: k, color: COL[k], data: S[key[0]][k][key[1]], w: k === p || k === 'A' ? 2.6 : 2, dash: k === 'A' ? [5, 4] : null })), yfmt: key[2], fin: true });
+    hover(c2, (k) => `${2027 + Math.floor(k / AÑO)}`);
   }
   function dibujar() {
     dibujarResumen();
@@ -227,23 +312,23 @@ export function iniciarSimulaciones({ T3, tb, verPestana }) {
     const e = escAct(), c = (k) => cont.querySelector(`canvas[data-c="${k}"]`), kg = (v) => fmtK(v), pct = (v) => fmt(v, 1) + ' %';
     if (sim === 'S1') { const R = S.S1, r = R[e];
       grafica(c('g1'), { apilar: true, series: [{ name: 'Autoconsumo', color: '#e2a55b', data: r.auto }, { name: 'Excedente', color: '#a87a44', data: r.exc }, { name: 'Merma', color: '#5c636a', data: r.merma }], yfmt: kg });
-      grafica(c('g2'), { series: ['A', 'B', 'C'].map(k => ({ name: NOMBRE[k], color: COL[k], data: R[k].pers, w: k === e ? 2.6 : 1.5, alfa: k === e ? 1 : 0.55 })), yfmt: kg });
+      grafica(c('g2'), { series: ['A', 'B', 'C'].map(k => ({ name: NOMBRE[k], corto: k, color: COL[k], data: R[k].pers, w: k === e ? 2.6 : 1.5, alfa: k === e ? 1 : 0.55 })), fin: true, yfmt: kg });
       const zs = Array.from({ length: 61 }, (_, i) => 5000 + i * 5000), xz = (i) => 40 + i / 60 * ((c('g3').clientWidth || 400) - 48);
-      grafica(c('g3'), { x: xz, series: ['A', 'B', 'C'].map(k => ({ name: NOMBRE[k], color: COL[k], data: zs.map(z => Math.max(0, 1 - R[k].pers[SEM - 1] / z) * 100), w: k === e ? 2.6 : 1.5, alfa: k === e ? 1 : 0.55 })), y: { max: 100 }, yfmt: (v) => fmt(v) + ' %' });
-      grafica(c('g4'), { series: ['A', 'B', 'C'].map(k => ({ name: NOMBRE[k], color: COL[k], data: R[k].act, w: k === e ? 2.6 : 1.5, alfa: k === e ? 1 : 0.55 })), yfmt: (v) => fmt(v) });
+      grafica(c('g3'), { x: xz, series: ['A', 'B', 'C'].map(k => ({ name: NOMBRE[k], corto: k, color: COL[k], data: zs.map(z => Math.max(0, 1 - R[k].pers[SEM - 1] / z) * 100), w: k === e ? 2.6 : 1.5, alfa: k === e ? 1 : 0.55 })), fin: true, y: { max: 100 }, yfmt: (v) => fmt(v) + ' %' });
+      grafica(c('g4'), { series: ['A', 'B', 'C'].map(k => ({ name: NOMBRE[k], corto: k, color: COL[k], data: R[k].act, w: k === e ? 2.6 : 1.5, alfa: k === e ? 1 : 0.55 })), fin: true, yfmt: (v) => fmt(v) });
       const k5 = e === 'A' ? 'C' : e; grafica(c('g5'), { series: [{ name: 'm² por promotor', color: COL[k5], data: R[k5].m2p }, { name: 'Capacidad c', color: '#e2a55b', data: R[k5].m2p.map(() => P1.c), dash: [4, 3], w: 1.5 }], yfmt: (v) => fmt(v) + ' m²' });
       grafica(c('g6'), { series: [{ name: 'B central', color: COL.B, data: R.B.espera }, { name: 'C rotativa', color: COL.C, data: R.C.espera }], yfmt: (v) => fmt(v, 1) + ' sem' });
       for (const k of ['g1', 'g2', 'g4', 'g5', 'g6']) hover(c(k), semLabel); hover(c('g3'), (i) => `Zona de ${fmtK(zs[i])} habitantes`);
     } else if (sim === 'S2') { const R = S.S2, r = R[e];
       grafica(c('o1'), { apilar: true, series: [{ name: 'Relleno', color: '#5c636a', data: r.relleno }, { name: 'Compost', color: '#e2a55b', data: r.compost }, { name: 'Hongos', color: '#c9b08a', data: r.hongos }], yfmt: kg });
-      grafica(c('o2'), { series: ['A', 'B', 'C'].map(k => ({ name: NOMBRE[k], color: COL[k], data: R[k].pct, w: k === e ? 2.6 : 1.5, alfa: k === e ? 1 : 0.55 })), yfmt: pct });
-      grafica(c('o3'), { series: ['B', 'C'].map(k => ({ name: NOMBRE[k], color: COL[k], data: R[k].pila })), yfmt: kg });
-      grafica(c('o4'), { series: ['A', 'B', 'C'].map(k => ({ name: NOMBRE[k], color: COL[k], data: R[k].km, w: k === e ? 2.6 : 1.5, alfa: k === e ? 1 : 0.55 })), yfmt: (v) => fmt(v) + ' km' });
+      grafica(c('o2'), { series: ['A', 'B', 'C'].map(k => ({ name: NOMBRE[k], corto: k, color: COL[k], data: R[k].pct, w: k === e ? 2.6 : 1.5, alfa: k === e ? 1 : 0.55 })), fin: true, yfmt: pct });
+      grafica(c('o3'), { series: ['B', 'C'].map(k => ({ name: NOMBRE[k], corto: k, color: COL[k], data: R[k].pila })), yfmt: kg });
+      grafica(c('o4'), { series: ['A', 'B', 'C'].map(k => ({ name: NOMBRE[k], corto: k, color: COL[k], data: R[k].km, w: k === e ? 2.6 : 1.5, alfa: k === e ? 1 : 0.55 })), fin: true, yfmt: (v) => fmt(v) + ' km' });
       for (const k of ['o1', 'o2', 'o3', 'o4']) hover(c(k), semLabel);
     } else { const R = S.S3, k2 = e === 'A' ? 'C' : e;
-      grafica(c('f1'), { series: ['A', 'B', 'C'].map(k => ({ name: NOMBRE[k], color: COL[k], data: R[k].aves, w: k === e ? 2.6 : 1.5, alfa: k === e ? 1 : 0.55 })), yfmt: (v) => fmt(v) });
+      grafica(c('f1'), { series: ['A', 'B', 'C'].map(k => ({ name: NOMBRE[k], corto: k, color: COL[k], data: R[k].aves, w: k === e ? 2.6 : 1.5, alfa: k === e ? 1 : 0.55 })), fin: true, yfmt: (v) => fmt(v) });
       grafica(c('f2'), { series: [{ name: 'con antitrampa', color: COL[k2], data: sim03(k2, P3, true).aves }, { name: 'sin antitrampa', color: COL[k2], data: R[k2 + 'sin'].aves, dash: [4, 3] }], yfmt: (v) => fmt(v) });
-      grafica(c('f3'), { series: ['A', 'B', 'C'].map(k => ({ name: NOMBRE[k], color: COL[k], data: R[k].hum, w: k === e ? 2.6 : 1.5, alfa: k === e ? 1 : 0.55 })), y: { max: 100 }, yfmt: (v) => fmt(v) + ' %' });
+      grafica(c('f3'), { series: ['A', 'B', 'C'].map(k => ({ name: NOMBRE[k], corto: k, color: COL[k], data: R[k].hum, w: k === e ? 2.6 : 1.5, alfa: k === e ? 1 : 0.55 })), fin: true, y: { max: 100 }, yfmt: (v) => fmt(v) + ' %' });
       for (const k of ['f1', 'f2', 'f3']) hover(c(k), semLabel);
     }
   }
@@ -264,8 +349,9 @@ export function iniciarSimulaciones({ T3, tb, verPestana }) {
     const paso = (now) => { const dt = Math.min(0.1, (now - prev) / 1000); prev = now; tf = Math.min(SEM - 1, tf + dt * 66); t = Math.floor(tf); /* ~8 s los 10 años; t siempre entero */
       if (t >= SEM - 1) { t = SEM - 1; play = null; refrescar(); return; } play = requestAnimationFrame(paso); refrescar(); };
     play = requestAnimationFrame(paso); }
-  cont.addEventListener('click', (e) => { if (e.target.closest('[data-play]')) { if (play) { parar(); refrescar(); } else arrancar(t >= SEM - 1); } });
-  cont.addEventListener('input', (e) => { const ts = e.target.closest('[data-t]'); if (!ts) return; parar(); t = +ts.value; const o = ts.nextElementSibling; if (o) o.textContent = 'año ' + año10(); dibujar(); });
+  cont.addEventListener('click', (e) => { const e2 = e.target.closest('[data-e2]'); if (e2) { const k = e2.dataset.e2; if (k !== 'A' && k !== escP) { escP = SIMST.esc = k; avisar('tablero'); pintar(); } return; }
+    if (e.target.closest('[data-play]')) { if (play) { parar(); refrescar(); } else arrancar(t >= SEM - 1); } });
+  cont.addEventListener('input', (e) => { const ts = e.target.closest('[data-t]'); if (!ts) return; parar(); t = +ts.value; const o = ts.nextElementSibling; if (o) o.innerHTML = `${2026 + año10()}<br><small style="color:#8e979d">año ${año10()} de 10</small>`; dibujar(); });
   cont.addEventListener('change', (e) => { if (e.target.closest('[data-t]')) refrescar(); });
   // el panel de escenarios del mapa cambió algo: mismo escenario y mismos parámetros aquí
   addEventListener('sim-cambio', (ev) => { if (ev.detail && ev.detail.origen === 'tablero') return; escP = SIMST.esc; correr(); if (cont.classList.contains('vis')) pintar(); });

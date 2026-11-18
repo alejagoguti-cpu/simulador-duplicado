@@ -14,6 +14,8 @@ export function iniciarCapasEscenario({ T3, ES }) {
 #ci-ind{margin:4px 0 6px}#ci-ind .ci-ir{margin:0 0 0 4px;font-size:10px}#ci-ind .h{display:flex;justify-content:space-between;font:500 9.5px var(--ui-mono,monospace);letter-spacing:.14em;color:var(--ui-tx3,#949da3);text-transform:uppercase;margin:6px 0 4px}
 #ci-ind .r{display:grid;grid-template-columns:1fr auto auto;gap:0 8px;align-items:baseline;padding:4px 0;border-top:1px solid rgba(255,255,255,.06);font-size:11px}
 #ci-ind .r span{color:var(--ui-tx2,#c3cace)}#ci-ind .r b{font-weight:500;color:#9aa4aa;font-variant-numeric:tabular-nums;text-align:right}#ci-ind .r strong{font-weight:600;font-variant-numeric:tabular-nums;text-align:right;min-width:56px}
+#ci-ind .br{grid-column:1/-1;display:grid;gap:2px;margin:4px 0 2px}#ci-ind .br b{display:block;height:4px;border-radius:2px;min-width:2px}
+#ci-ind .lg{display:inline-block;width:8px;height:8px;border-radius:2px;margin:0 4px 0 2px;vertical-align:-1px}
 #ci-ind .r small{grid-column:1/-1;color:var(--ui-tx3,#949da3);font-size:10px;line-height:1.35;margin-top:1px}#ci-ind .bien{color:#8fd18a}#ci-ind .mal{color:#ff8a80}
 .ci-por{margin-top:6px;font-size:10.5px;line-height:1.4;color:var(--ui-tx2,#c3cace)}.ci-por b{color:#fff;font-weight:600}
 .ci-ir{all:unset;cursor:pointer;display:inline-block;margin-top:6px;font-size:10.5px;font-weight:600;color:#f2c995}.ci-ir:hover{text-decoration:underline}
@@ -72,14 +74,18 @@ export function iniciarCapasEscenario({ T3, ES }) {
     let x = document.getElementById('ci-ind'); if (!x) { x = document.createElement('div'); x.id = 'ci-ind'; der.prepend(x); const k = der.querySelector('[data-kpi]'); if (k) k.style.display = 'none'; }
     const R = S.R, e = pro() ? SIMST.esc : 'C', t = Math.max(0, Math.min(SEM - 1, Math.floor(SIMST.t))), A = R.S1.A, P = R.S1[e], A2 = R.S2.A, P2 = R.S2[e], A3 = R.S3.A, P3 = R.S3[e], ru = ruidoCali();
     let ii = 0; const IR = ['huertas', 'trafico', 'trafico', 'trafico', 'compost', 'humedal', null];
-    const fila = (n, hoy, prop, mejor, por) => { const ir = IR[ii++]; return `<div class="r"><span>${n}</span><b>${hoy}</b><strong class="${pro() ? (mejor ? 'bien' : 'mal') : ''}">${pro() ? prop : '–'}</strong><small>${por}${ir ? ` <button type="button" class="ci-ir" data-ir="${ir}">Ver en el mapa →</button>` : ''}</small></div>`; };
-    x.innerHTML = `<div class="h"><span>Indicadores · año ${Math.floor(t / AÑO) + 1}</span><span>hoy → propuesta</span></div>` +
-      fila('Hogares con huerta', fmt(A.act[t]), fmt(P.act[t]), true, 'Bavaria forma promotores que abren y acompañan huertas.') +
-      fila('Dependencia de Corabastos', fmt(A.dep[t] * 100) + ' %', fmt(P.dep[t] * 100) + ' %', true, 'Huertas y compras directas a la región abastecen tiendas y comedores.') +
-      fila('Vehículos en la Av. Ciudad de Cali', '100 %', ru ? fmt(100 - ru.veh) + ' %' : '–', true, 'Menos viajes de carga y de compra hacia Corabastos.') +
+    const CP = e === 'B' ? '#b07aa1' : '#e2a55b'; // color del escenario de la propuesta (el mismo del tablero)
+    // raw = [hoy, propuesta] en números: dos barritas en la misma escala para ver la diferencia de un vistazo
+    const fila = (n, hoy, prop, mejor, por, raw) => { const ir = IR[ii++]; let br = '';
+      if (raw && pro() && raw.every(v => isFinite(v) && v >= 0)) { const m = Math.max(raw[0], raw[1], 1e-9), w = (v) => Math.max(2, v / m * 100).toFixed(1); br = `<i class="br"><b style="width:${w(raw[0])}%;background:#8fb0c9"></b><b style="width:${w(raw[1])}%;background:${CP}"></b></i>`; }
+      return `<div class="r"><span>${n}</span><b>${hoy}</b><strong class="${pro() ? (mejor ? 'bien' : 'mal') : ''}">${pro() ? prop : '–'}</strong>${br}<small>${por}${ir ? ` <button type="button" class="ci-ir" data-ir="${ir}">Ver en el mapa →</button>` : ''}</small></div>`; };
+    x.innerHTML = `<div class="h"><span>Indicadores · ${2026 + Math.floor(t / AÑO) + 1}</span><span><i class="lg" style="background:#8fb0c9"></i>hoy → <i class="lg" style="background:${CP}"></i>propuesta ${pro() ? e : ''}</span></div>` +
+      fila('Hogares con huerta', fmt(A.act[t]), fmt(P.act[t]), true, 'Bavaria forma promotores que abren y acompañan huertas.', [A.act[t], P.act[t]]) +
+      fila('Dependencia de Corabastos', fmt(A.dep[t] * 100) + ' %', fmt(P.dep[t] * 100) + ' %', true, 'Huertas y compras directas a la región abastecen tiendas y comedores.', [A.dep[t], P.dep[t]]) +
+      fila('Vehículos en la Av. Ciudad de Cali', '100 %', ru ? fmt(100 - ru.veh) + ' %' : '–', true, 'Menos viajes de carga y de compra hacia Corabastos.', ru ? [100, 100 - ru.veh] : null) +
       fila('Ruido en la Av. Ciudad de Cali', '0 dB', ru ? fmt(ru.db, 1) + ' dB' : '–', true, 'Menos camiones: el ruido baja con el tráfico pesado.') +
-      fila('Orgánicos que vuelven a la tierra', fmt(A2.pct[t], 1) + ' %', fmt(P2.pct[t], 1) + ' %', true, 'Se compostan en el barrio o en Bavaria en vez de ir a Doña Juana.') +
-      fila('Aves en el humedal El Burro', fmt(A3.aves[t]), fmt(P3.aves[t]), P3.aves[t] >= A3.aves[t], 'Las huertas con corredores unen parches de hábitat.') +
+      fila('Orgánicos que vuelven a la tierra', fmt(A2.pct[t], 1) + ' %', fmt(P2.pct[t], 1) + ' %', true, 'Se compostan en el barrio o en Bavaria en vez de ir a Doña Juana.', [A2.pct[t], P2.pct[t]]) +
+      fila('Aves en el humedal El Burro', fmt(A3.aves[t]), fmt(P3.aves[t]), P3.aves[t] >= A3.aves[t], 'Las huertas con corredores unen parches de hábitat.', [A3.aves[t], P3.aves[t]]) +
       fila('Pasajes nuevos (sintaxis)', '0', String(sx().pas), true, 'Abrir Bavaria une barrios que hoy lo rodean.');
   }
   /* ---------- tarjeta al cambiar a la propuesta ---------- */

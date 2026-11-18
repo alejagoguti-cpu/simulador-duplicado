@@ -94,7 +94,8 @@ export async function iniciarEscenariosSim({ T3, cj }) {
 #esim .cab button:focus-visible,#esim .seg button:focus-visible,#esim .tl button:focus-visible{outline:2px solid #fff;outline-offset:1px}
 #esim .seg{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;margin:0 12px;padding:3px;border-radius:11px;background:rgba(0,0,0,.22)}
 #esim .seg button{all:unset;cursor:pointer;text-align:center;padding:6px 4px;border-radius:8px;color:#b3bbc0;font-size:11px;line-height:1.2}#esim .seg button b{display:block;font-size:12px;color:#e9ecee;font-weight:600}
-#esim .seg button[aria-pressed=true]{background:rgba(255,255,255,.14);color:#fff}
+#esim .seg button[aria-pressed=true]{background:color-mix(in srgb,var(--c) 22%,transparent);box-shadow:inset 0 0 0 1px var(--c);color:#fff}
+#esim .seg button b::before{content:"";display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;background:var(--c)}
 #esim .tl{display:flex;align-items:center;gap:8px;padding:10px 12px 6px}#esim .tl button{all:unset;cursor:pointer;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#e2a55b;color:#1a1208;font-size:12px;flex:none}
 #esim .tl input{flex:1;accent-color:#e2a55b;min-width:0}#esim .tl output{width:58px;text-align:right;font-variant-numeric:tabular-nums;color:#d5dadd;font-size:11px}
 #esim .cuerpo{overflow:auto;padding:2px 12px 12px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.15) transparent}
@@ -127,7 +128,7 @@ body.tb-abierto #esim{display:none}
   el.innerHTML = `<div class="cab"><b>Escenarios · 10 años de la propuesta</b><button type="button" data-guia aria-label="Cómo se usa" title="Cómo se usa">?</button><button type="button" data-min aria-label="Plegar" title="Plegar">–</button></div>
 <p class="exp">Escoge un escenario y dale ▶: corren 10 años y el mapa cambia. Mueve las variables de abajo y mira qué pasa en el territorio.</p>
 <p class="exp ley2"><i style="background:#8fd18a"></i>cada punto verde fijo en el mapa es una huerta que se abrió </p>
-<div class="seg" role="group" aria-label="Escenario"><button type="button" data-e="A"><b>A</b>Kennedy hoy</button><button type="button" data-e="B"><b>B</b>Nodo central</button><button type="button" data-e="C"><b>C</b>Clúster rotativo</button></div>
+<div class="seg" role="group" aria-label="Escenario"><button type="button" data-e="A" style="--c:#8fb0c9"><b>A</b>Kennedy hoy</button><button type="button" data-e="B" style="--c:#b07aa1"><b>B</b>Nodo central</button><button type="button" data-e="C" style="--c:#e2a55b"><b>C</b>Clúster rotativo</button></div>
 <div class="tl"><button type="button" data-play aria-label="Correr 10 años">▶</button><input type="range" min="0" max="${SEM - 1}" value="${SIMST.t}" data-t aria-label="Semana de la simulación"><output data-año></output></div>
 <div class="aviso" data-aviso hidden></div><div class="cuerpo"><ul data-kpi></ul>
 <details><summary>Comida · huertas y Corabastos (SIM-01)</summary>
@@ -256,6 +257,6 @@ ${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, FMT.luz)}${slider(
   requestAnimationFrame(cuadro);
   aplicar();
   setTimeout(() => import('./guia.js?v=2').then(m => m.abrirGuia(false)).catch(() => {}), 2500); // la primera vez: cómo se usa
-  import('./capas_escenario.js?v=2').then(m => m.iniciarCapasEscenario({ T3 })).catch(e => console.warn('capas:', e)); // sintaxis, ruido, usos e indicadores cambian con la propuesta
+  import('./capas_escenario.js?v=3').then(m => m.iniciarCapasEscenario({ T3 })).catch(e => console.warn('capas:', e)); // sintaxis, ruido, usos e indicadores cambian con la propuesta
   return { aplicar, arrancar, get R() { return R; }, get via() { return via; }, marcas, mO };
 }
