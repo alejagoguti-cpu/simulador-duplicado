@@ -88,7 +88,7 @@ const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;
 let RMQ = matchMedia('(prefers-reduced-motion: reduce)').matches; const MOV = innerWidth <= 760;
 const M = await fetch('data3d/puntos/bavaria_campo.json?v=9').then(r => r.json());
 const ESP = M.especies, porK = Object.fromEntries(ESP.map(e => [e.k, e]));
-{ const NOM = { cilantro: 'Lavanda', lechuga: 'Lechuga', tomate: 'Alcachofa', acelga: 'Kale', zanahoria: 'Acelga roja', eucalipto: 'Árboles existentes' }; for (const k in NOM) if (porK[k]) porK[k].n = NOM[k]; }
+{ const NOM = { cilantro: 'Lavanda', lechuga: 'Lechuga', tomate: 'Tomate', acelga: 'Brócoli', zanahoria: 'Remolacha', eucalipto: 'Árboles existentes' }; for (const k in NOM) if (porK[k]) porK[k].n = NOM[k]; }
 
 /* ---------- las interacciones que se encuadran con el scroll ---------- */
 const SEC = [
@@ -96,7 +96,7 @@ const SEC = [
   ['abeja', 'cilantro', 'Polinización', 'Abeja de miel', 'Viene del apiario del distrito y recorre las hileras de lavanda: poliniza la huerta y produce miel para el mercado.'],
   ['mariposa', 'cilantro', 'Polinización', 'Mariposa', 'Toma néctar de la lavanda. Que llegue es señal de una huerta sin venenos.'],
   ['mariquita', 'lechuga', 'Cuidado de los cultivos', 'Mariquita', 'Recorre las hojas de la lechuga y las mantiene sanas: con ella la huerta no necesita químicos.'],
-  ['abejorro', 'tomate', 'Polinización', 'Abejorro', 'El abejorro nativo visita las flores moradas de la alcachofa y las poliniza.'],
+  ['abejorro', 'tomate', 'Polinización', 'Abejorro', 'El abejorro nativo hace vibrar las flores del tomate para soltar su polen: así hay más tomates.'],
   ['copeton', 'acelga', 'Cuidado de los cultivos', 'Copetón', 'Salta por el sendero de madera entre las hileras, cuidando las plantas y dispersando semillas; anida en los árboles que se conservan.'],
   ['mirla', 'lombriz', 'Depredación', 'Mirla patiamarilla', 'Busca en la tierra húmeda junto a las hileras y saca lombrices e insectos.'],
   ['lombriz', 'zanahoria', 'Suelo vivo', 'Lombriz roja', 'Convierte el compost del distrito en tierra fértil para todos los bancales.'],
@@ -120,7 +120,7 @@ const OJO = 1.6, n = ESC.n, pos = ESC.pos, col = ESC.col, rnd = new Float32Array
 for (let j = 1; j < pos.length; j += 3) pos[j] -= OJO; // el ojo queda en el origen
 M.eye = [0, 0, 0]; M.look = [0, -0.1, 1]; M.fov = 56; M.W = 16; M.H = 9;
 // las especies, sobre sus plantas de esta escena
-const RENOMBRA = { cilantro: ['Lavanda', 'Lavandula angustifolia', 'flor'], lechuga: ['Lechuga', 'Lactuca sativa', 'cultivo'], tomate: ['Alcachofa', 'Cynara scolymus', 'cultivo'], acelga: ['Kale', 'Brassica oleracea var. sabellica', 'cultivo'], zanahoria: ['Acelga roja', 'Beta vulgaris var. cicla', 'cultivo'], eucalipto: ['Árboles existentes', 'bosque de Bavaria', 'arbol'] };
+const RENOMBRA = { cilantro: ['Lavanda', 'Lavandula angustifolia', 'flor'], lechuga: ['Lechuga', 'Lactuca sativa', 'cultivo'], tomate: ['Tomate', 'Solanum lycopersicum', 'cultivo'], acelga: ['Brócoli', 'Brassica oleracea var. italica', 'cultivo'], zanahoria: ['Remolacha', 'Beta vulgaris', 'cultivo'], eucalipto: ['Árboles existentes', 'bosque de Bavaria', 'arbol'] };
 for (const e of ESP) { const a = ESC.anc[e.k]; if (a) e.p = [a[0], a[1] - OJO, a[2]]; const r = RENOMBRA[e.k]; if (r) { e.n = r[0]; e.sci = r[1]; e.g = r[2]; } }
 const cv = $('c'), R = new THREE.WebGLRenderer({ canvas: cv, antialias: true, powerPreference: 'high-performance' });
 R.setPixelRatio(Math.min(2, devicePixelRatio || 1)); R.setClearColor(0x04070a, 1);
