@@ -114,7 +114,7 @@ $('prog').innerHTML = Array.from({ length: SEC.length + 2 }, (_, i) => `<a href=
 $('nav').innerHTML = [['s0', 'Inicio'], ['s1', 'Polinización'], [`s${SEC.findIndex(s => s[2] === 'Cuidado de los cultivos') + 1}`, 'Cuidado'], [`s${SEC.findIndex(s => s[2] === 'Depredación') + 1}`, 'Suelo y aves'], [`s${SEC.length + 1}`, 'La trama']].map(([h, n]) => `<a href="#${h}">${n}</a>`).join('');
 
 /* ---------- escena de huertas en puntos: se arma en el navegador (data3d/puntos/escena_huerta.js) ---------- */
-const { crearEscenaHuerta } = await import('./data3d/puntos/escena_huerta.js?v=10');
+const { crearEscenaHuerta } = await import('./data3d/puntos/escena_huerta.js?v=13');
 const ESC = await crearEscenaHuerta({ THREE, MOV, progreso: (f) => { $('cb').style.width = Math.round(f * 100) + '%'; } });
 const OJO = 1.6, n = ESC.n, pos = ESC.pos, col = ESC.col, rnd = new Float32Array(n).map(() => Math.random());
 for (let j = 1; j < pos.length; j += 3) pos[j] -= OJO; // el ojo queda en el origen
@@ -153,7 +153,7 @@ const mat = new THREE.ShaderMaterial({ uniforms: U, vertexColors: true, transpar
 const NUBEP = new THREE.Points(g, mat); S.add(NUBEP);
 /* ---------- la misma escena en MALLAS 3D para las otras visiones (data3d/puntos/escena_mallas.js) ---------- */
 R.shadowMap.enabled = !MOV; R.shadowMap.type = THREE.PCFSoftShadowMap; R.toneMapping = THREE.ACESFilmicToneMapping; R.toneMappingExposure = 1.05;
-const { crearEscenaMallas } = await import('./data3d/puntos/escena_mallas.js?v=3');
+const { crearEscenaMallas } = await import('./data3d/puntos/escena_mallas.js?v=7');
 const MAL = await crearEscenaMallas({ THREE, geo: ESC.geo, sombras: !MOV, movil: MOV }); MAL.grupo.position.y = -OJO; MAL.grupo.visible = false; S.add(MAL.grupo);
 
 /* ---------- especies en PUNTOS desde fotografías (tools/puntos/especies_puntos.py) ---------- */

@@ -6,6 +6,7 @@
    (MeshSurfaceSampler + uv), y la luz se hornea en el color (sol bajo de la tarde + cielo).
    Marco: el ojo está en (0, 1,6, 0) y mira hacia +z; y = 0 es el suelo. Devuelve los anclajes de cada especie (sobre su planta). */
 export async function crearEscenaHuerta({ THREE, MOV = false, progreso = () => {} }) {
+  const aFloat = (g) => { for (const k of Object.keys(g.attributes)) { const at = g.attributes[k]; if (at.array instanceof Float32Array && !at.normalized) continue; const A = new Float32Array(at.count * at.itemSize); for (let q = 0; q < at.count; q++) { A[q * at.itemSize] = at.getX(q); if (at.itemSize > 1) A[q * at.itemSize + 1] = at.getY(q); if (at.itemSize > 2) A[q * at.itemSize + 2] = at.getZ(q); if (at.itemSize > 3) A[q * at.itemSize + 3] = at.getW(q); } g.setAttribute(k, new THREE.BufferAttribute(A, at.itemSize)); } return g; }; // posiciones/uv cuantizadas (meshopt) -> Float32 ANTES de escalar
   const { GLTFLoader } = await import('three/addons/loaders/GLTFLoader.js');
   const { MeshoptDecoder } = await import('three/addons/libs/meshopt_decoder.module.js');
   const { MeshSurfaceSampler } = await import('three/addons/math/MeshSurfaceSampler.js');
@@ -32,7 +33,7 @@ export async function crearEscenaHuerta({ THREE, MOV = false, progreso = () => {
     const v = new THREE.Vector3(), nn = new THREE.Vector3(), uv = new THREE.Vector2(), col = new THREE.Color(), dummy = new THREE.Color();
     mallas.forEach((m, i) => {
       const cuantos = Math.round(n * area[i] / tot); if (!cuantos) return;
-      const geo = m.geometry.clone(); geo.applyMatrix4(m.matrixWorld); if (!geo.attributes.normal) geo.computeVertexNormals();
+      const geo = aFloat(m.geometry.clone()); geo.applyMatrix4(m.matrixWorld); if (!geo.attributes.normal) geo.computeVertexNormals();
       const sm = new MeshSurfaceSampler(new THREE.Mesh(geo)).build(), mat = [].concat(m.material)[0] || {}, tp = leerTex(mat.map), base = mat.color ? [mat.color.r, mat.color.g, mat.color.b] : [0.5, 0.5, 0.5];
       for (let k = 0, tries = 0; k < cuantos && tries < cuantos * 3; tries++) {
         sm.sample(v, nn, dummy, uv); let c = base;
@@ -71,28 +72,37 @@ export async function crearEscenaHuerta({ THREE, MOV = false, progreso = () => {
   progreso(0.45);
 
   /* ---------- hileras de cultivos a lado y lado (como el referente 4) ---------- */
-  const CULT = [
-    { k: 'lechuga', h: 0.24, r: 0.17, c: ['#7fbf4d', '#9ccf5d', '#6aa843'] }, { k: 'morada', h: 0.24, r: 0.17, c: ['#6d2f4b', '#8b3d5e', '#53304a'] },
-    { k: 'kale', h: 0.5, r: 0.24, c: ['#4f7a6b', '#5d8a78', '#3e6657'] }, { k: 'lavanda', h: 0.55, r: 0.28, c: ['#8b6fc4', '#a58ad8', '#6d5aa6'], tallo: '#6f8b5c' },
-    { k: 'acelga', h: 0.4, r: 0.2, c: ['#2f6b2a', '#3f7f30', '#c0392b'] }, { k: 'alcachofa', h: 0.9, r: 0.38, c: ['#7f9f9a', '#94b3ac', '#6b8b86'] },
-    { k: 'cebolla', h: 0.45, r: 0.08, c: ['#8fb46a', '#a3c37c', '#7aa55a'] }, { k: 'repollo', h: 0.3, r: 0.22, c: ['#7aa39a', '#93b8ad', '#5f8a80'] }];
+  const CULT = [ // lo que se cultiva: bloques de 4 hileras por cultivo (k = clave, n = nombre, h = alto, r = radio de la mata, c = hojas, f = fruto)
+    { k: 'lechuga', n: 'Lechuga', h: 0.26, r: 0.17, c: ['#7fbf4d', '#9ccf5d', '#6aa843'] },
+    { k: 'tomate', n: 'Tomate', h: 1.15, r: 0.28, c: ['#3f7a35', '#4f8a3f', '#356b2c'], f: '#d92b1f' },
+    { k: 'maiz', n: 'Maíz', h: 1.9, r: 0.22, c: ['#5f8f3a', '#73a346', '#4f7f30'], f: '#e8c23a' },
+    { k: 'repollo', n: 'Repollo', h: 0.32, r: 0.25, c: ['#7aa39a', '#93b8ad', '#a9c9a0'] },
+    { k: 'zanahoria', n: 'Zanahoria', h: 0.32, r: 0.1, c: ['#3f8a2f', '#55a03a', '#2f7a28'], f: '#e8742a' },
+    { k: 'lavanda', n: 'Lavanda', h: 0.55, r: 0.28, c: ['#8b6fc4', '#a58ad8', '#6d5aa6'], tallo: '#6f8b5c' },
+    { k: 'brocoli', n: 'Brócoli', h: 0.48, r: 0.24, c: ['#2f6b3a', '#3d7d48', '#24572e'] },
+    { k: 'ahuyama', n: 'Ahuyama', h: 0.35, r: 0.45, c: ['#4f8a3a', '#5f9a46', '#3f7a30'], f: '#e8862a' },
+    { k: 'remolacha', n: 'Remolacha', h: 0.32, r: 0.14, c: ['#3f7a35', '#9b2c4a', '#4f8a3f'] },
+    { k: 'girasol', n: 'Girasol', h: 1.7, r: 0.2, c: ['#4f8a3a', '#5f9a46', '#3f7a30'], f: '#f2c230' }];
   const FILAS = [];
-  for (const lado of [-1, 1]) for (let f = 0; f < 44; f++) { const x = lado * (2.6 + f * 0.9), ku = CULT[(f * 3 + (lado > 0 ? 5 : 0)) % CULT.length]; FILAS.push({ x, ku }); if (Math.abs(x) > 19 && Math.abs(x) < 25) continue;
+  for (const lado of [-1, 1]) for (let f = 0; f < 44; f++) { const x = lado * (2.6 + f * 0.9), ku = CULT[(Math.floor(f / 4) + (lado > 0 ? 5 : 0)) % CULT.length]; FILAS.push({ x, ku, bloque: f % 4 === 1 }); if (Math.abs(x) > 19 && Math.abs(x) < 25) continue;
     // camellón de tierra
     for (let z = 4; z < 62; z += (Math.abs(x) < 14 && z < 25 ? 0.03 : 0.07) / K) for (let w = -0.28; w <= 0.28; w += 0.09) pt(x + w + r2(-0.03, 0.03), 0.06 + (0.08 - Math.abs(w) * 0.25), z + r2(-0.03, 0.03), luz(TIERRA[(rnd() * 3) | 0], UP, 0.8));
-    // plantas: matas de hojas con la forma de su cultivo
+    const cerca = (z) => Math.abs(x) < 14 && z < 25;
     const paso = Math.max(0.22, ku.r * 1.5) / Math.sqrt(K);
-    for (let z = 4.2; z < 61.8; z += paso * r2(0.85, 1.15)) { const cx = x + r2(-0.05, 0.05), hh = ku.h * r2(0.8, 1.2), nP = Math.round((ku.k === 'cebolla' ? 30 : 60 + ku.r * 260) * K * (Math.abs(x) < 14 && z < 25 ? 4 : 1.2)) + 6;
-      for (let i = 0; i < nP; i++) {
-        if (ku.k === 'cebolla') { const t = rnd(), a = r2(0, 6.28); pt(cx + Math.cos(a) * 0.03 * (1 + t), t * hh, z + Math.sin(a) * 0.03 * (1 + t), luz(hex(ku.c[(rnd() * 3) | 0]), new THREE.Vector3(Math.cos(a), 0.3, Math.sin(a)).normalize(), 0.6 + t * 0.4)); continue; }
-        if (ku.k === 'lavanda') { const a = r2(0, 6.28), t = Math.sqrt(rnd()), rr = ku.r * t; const top = rnd() < 0.55; const y = top ? hh * r2(0.75, 1.05) : hh * r2(0.05, 0.7) * (1 - t * 0.4);
-          pt(cx + Math.cos(a) * rr, y, z + Math.sin(a) * rr, luz(hex(top ? ku.c[(rnd() * 3) | 0] : ku.tallo), new THREE.Vector3(Math.cos(a), 0.6, Math.sin(a)).normalize(), 0.65 + 0.35 * (y / hh))); continue; }
-        // hojas: puntos en una semiesfera con capas (la parte de afuera más clara)
-        const a = r2(0, 6.28), e = Math.acos(r2(0.05, 1)), rr = ku.r * r2(0.45, 1), n = new THREE.Vector3(Math.sin(e) * Math.cos(a), Math.cos(e), Math.sin(e) * Math.sin(a));
-        let c = hex(ku.c[(rnd() * 3) | 0]); if (ku.k === 'acelga' && rnd() < 0.25) c = hex('#c0392b'); if (ku.k === 'alcachofa' && rnd() < 0.05 && n.y > 0.7) c = hex('#6f8f5a');
-        pt(cx + n.x * rr, 0.12 + n.y * hh * r2(0.7, 1.05), z + n.z * rr, luz(c, n, 0.55 + 0.45 * n.y));
-      }
-      if (ku.k === 'alcachofa' && rnd() < 0.35) { const yb = hh * 1.15; for (let i = 0; i < 70 * K + 10; i++) { const a = r2(0, 6.28), e = r2(0, 1.4); pt(cx + Math.sin(e) * Math.cos(a) * 0.07, yb + Math.cos(e) * 0.09, z + Math.sin(e) * Math.sin(a) * 0.07, luz(hex(rnd() < 0.3 ? '#7a5aa0' : '#7f9f9a'), UP)); } }
+    for (let z = 4.2; z < 61.8; z += paso * r2(0.85, 1.15)) { const cx = x + r2(-0.05, 0.05), hh = ku.h * r2(0.85, 1.15), mult = K * (cerca(z) ? 4 : 1.2), C3 = () => hex(ku.c[(rnd() * 3) | 0]);
+      const hoja = (y0, y1, rr0) => { for (let i = 0; i < 60 * mult + 6; i++) { const a = r2(0, 6.28), e = Math.acos(r2(0.05, 1)), rr = rr0 * r2(0.45, 1), n = new THREE.Vector3(Math.sin(e) * Math.cos(a), Math.cos(e), Math.sin(e) * Math.sin(a)); pt(cx + n.x * rr, y0 + n.y * (y1 - y0) * r2(0.7, 1.05), z + n.z * rr, luz(C3(), n, 0.55 + 0.45 * n.y)); } };
+      const bola = (x0, y0, z0, r0, col, n) => { for (let i = 0; i < n; i++) { const a = r2(0, 6.28), e = Math.acos(r2(-1, 1)), nn = new THREE.Vector3(Math.sin(e) * Math.cos(a), Math.cos(e), Math.sin(e) * Math.sin(a)); pt(x0 + nn.x * r0, y0 + nn.y * r0, z0 + nn.z * r0, luz(hex(col), nn, 0.7 + 0.3 * nn.y)); } };
+      const tallo = (h, col) => { for (let i = 0; i < 30 * mult + 4; i++) { const t = rnd(); pt(cx + r2(-0.015, 0.015), t * h, z + r2(-0.015, 0.015), luz(hex(col), null, 0.8)); } };
+      if (ku.k === 'lavanda') { for (let i = 0; i < 90 * mult + 6; i++) { const a = r2(0, 6.28), t = Math.sqrt(rnd()), rr = ku.r * t, top = rnd() < 0.55, y = top ? hh * r2(0.75, 1.05) : hh * r2(0.05, 0.7) * (1 - t * 0.4); pt(cx + Math.cos(a) * rr, y, z + Math.sin(a) * rr, luz(hex(top ? ku.c[(rnd() * 3) | 0] : ku.tallo), new THREE.Vector3(Math.cos(a), 0.6, Math.sin(a)).normalize(), 0.65 + 0.35 * (y / hh))); } continue; }
+      if (ku.k === 'maiz') { tallo(hh, '#7a9a3a'); for (let i = 0; i < 70 * mult + 6; i++) { const a = r2(0, 6.28), t = rnd(), y = hh * r2(0.2, 0.95), L2 = 0.45 * (1 - (y / hh) * 0.5); pt(cx + Math.cos(a) * t * L2, y - t * t * 0.25, z + Math.sin(a) * t * L2, luz(C3(), UP, 0.7 + 0.3 * (y / hh))); }
+        for (let i = 0; i < 25 * mult; i++) { const t = rnd(); pt(cx + 0.06 + r2(-0.025, 0.025), hh * (0.48 + t * 0.14), z + r2(-0.025, 0.025), luz(hex(rnd() < 0.8 ? ku.f : '#9aa45a'), UP)); } continue; }
+      if (ku.k === 'girasol') { tallo(hh, '#4f7a2a'); hoja(hh * 0.3, hh * 0.55, 0.18); for (let i = 0; i < 70 * mult + 10; i++) { const a = r2(0, 6.28), rr = 0.16 * Math.sqrt(rnd()); pt(cx + Math.cos(a) * rr, hh + Math.sin(a) * rr * 0.9, z - 0.05, luz(hex(rr < 0.075 ? '#4a2e17' : ku.f), new THREE.Vector3(0, 0.3, -1).normalize())); } continue; }
+      if (ku.k === 'tomate') { for (let i = 0; i < 25 * mult; i++) pt(cx, rnd() * hh * 1.1, z, luz(hex('#a07a55'), null)); hoja(0.15, hh, ku.r); if (rnd() < 0.9) for (let q = 0; q < 5; q++) bola(cx + r2(-0.2, 0.2), r2(0.3, hh * 0.85), z + r2(-0.2, 0.2), 0.035, rnd() < 0.75 ? ku.f : '#e8862a', Math.round(14 * mult)); continue; }
+      if (ku.k === 'ahuyama') { hoja(0.05, hh, ku.r); if (rnd() < 0.35) bola(cx + r2(-0.25, 0.25), 0.14, z + r2(-0.25, 0.25), 0.13, ku.f, Math.round(80 * mult)); continue; }
+      if (ku.k === 'zanahoria' || ku.k === 'remolacha') { for (let i = 0; i < 45 * mult + 6; i++) { const t = rnd(), a = r2(0, 6.28); pt(cx + Math.cos(a) * 0.05 * (0.3 + t) * (ku.k === 'zanahoria' ? 1.4 : 1), 0.1 + t * hh, z + Math.sin(a) * 0.05 * (0.3 + t), luz(C3(), new THREE.Vector3(Math.cos(a), 0.4, Math.sin(a)).normalize(), 0.6 + 0.4 * t)); }
+        bola(cx, 0.1, z, ku.k === 'zanahoria' ? 0.025 : 0.05, ku.k === 'zanahoria' ? ku.f : '#7a1f3a', Math.round(10 * mult)); continue; }
+      if (ku.k === 'brocoli') { hoja(0.1, hh * 0.75, ku.r); bola(cx, hh * 0.85, z, 0.09, '#2e5a32', Math.round(50 * mult)); continue; }
+      hoja(0.12, hh, ku.r); // lechuga, repollo
     }
   }
   progreso(0.6);
@@ -104,7 +114,7 @@ export async function crearEscenaHuerta({ THREE, MOV = false, progreso = () => {
   const ARB = [];
   const arbol = (x, z, alto) => { const N = AR[(rnd() * AR.length) | 0]; poner(N, x, z, alto, r2(0, 6.28)); ARB.push([x, z, alto]); };
   arbol(-7, 66.5, 7.5); arbol(8, 67.5, 8); // dos árboles junto a la entrada del pabellón
-  for (let z = 8; z < 66; z += r2(9, 12)) for (const s of [-1, 1]) arbol(s * r2(3.2, 3.8), z, r2(5.5, 7.5));       // alameda junto al sendero
+  // (sin alameda pegada al sendero: tapaba la vista de los cultivos)
 
   /* ---------- BAVARIA REAL (los mismos datos del simulador): predio, edificios con su altura, las 3.250 copas del censo,
      pasajes nuevos y huertas en los claros. La huerta de esta vista queda en su lugar real (huerta docente de hortalizas),
@@ -194,12 +204,12 @@ export async function crearEscenaHuerta({ THREE, MOV = false, progreso = () => {
   const fila = (k, lado) => FILAS.filter(f => f.ku.k === k && Math.sign(f.x) === lado).sort((a, b) => Math.abs(a.x) - Math.abs(b.x))[0];
   const A = (k, lado, z, dy) => { const f = fila(k, lado) || FILAS[0]; return [f.x, (f.ku.h || 0.3) + dy, z]; };
   const ANC = {
-    cilantro: A('lavanda', 1, 9, 0.05), lechuga: A('lechuga', -1, 7, 0), tomate: A('alcachofa', 1, 13, 0.1), acelga: A('kale', -1, 11, 0), zanahoria: A('acelga', 1, 6, 0),
+    cilantro: A('lavanda', -1, 9, 0.05), lechuga: A('lechuga', -1, 7, 0), tomate: A('tomate', -1, 13, 0.3), acelga: A('brocoli', 1, 11, 0), zanahoria: A('remolacha', 1, 6, 0),
     eucalipto: ARB.length ? [ARB[0][0], ARB[0][2] * 0.75, ARB[0][1]] : [-50, 9, 10]
   };
   ANC.copeton = [0.6, 0.13, 6.5]; ANC.mirla = [-0.5, 0.13, 9]; ANC.lombriz = [ANC.zanahoria[0] - 0.1, 0.1, 5.4];
   ANC.abeja = ANC.cilantro; ANC.mariposa = ANC.cilantro; ANC.colibri = ANC.cilantro; ANC.abejorro = ANC.tomate; ANC.mariquita = ANC.lechuga; ANC.murcielago = [ANC.eucalipto[0] + 2, ANC.eucalipto[1], ANC.eucalipto[2]];
   progreso(1);
-  GEO.ARB.push(...ARB); GEO.FILAS = FILAS.map(f => ({ x: f.x, k: f.ku.k, h: f.ku.h, r: f.ku.r, c: f.ku.c })); GEO.pab = { X0, X1, Z0, Z1 }; GEO.inv = { GX0, GX1, GZ0, GZ1, GH };
+  GEO.ARB.push(...ARB); GEO.FILAS = FILAS.map(f => ({ x: f.x, k: f.ku.k, n: f.ku.n, h: f.ku.h, r: f.ku.r, c: f.ku.c, bloque: f.bloque })); GEO.CULT = CULT; GEO.pab = { X0, X1, Z0, Z1 }; GEO.inv = { GX0, GX1, GZ0, GZ1, GH };
   return { pos: new Float32Array(P), col: new Float32Array(C), anc: ANC, n: P.length / 3, ctx: CTX, geo: GEO };
 }

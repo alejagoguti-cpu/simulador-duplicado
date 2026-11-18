@@ -5,6 +5,7 @@
    Cada malla tiene una categoría (suelo, edificio, vegetación, hojas, cultivo, vidrio, estructura) y cada visión le pone
    su propio material: no es solo un cambio de color, cambia cómo se dibuja (luz y sombras, maqueta, transparencia, líneas). */
 export async function crearEscenaMallas({ THREE, geo, sombras = true, movil = false }) {
+  const aFloat = (g) => { for (const k of Object.keys(g.attributes)) { const at = g.attributes[k]; if (at.array instanceof Float32Array && !at.normalized) continue; const A = new Float32Array(at.count * at.itemSize); for (let q = 0; q < at.count; q++) { A[q * at.itemSize] = at.getX(q); if (at.itemSize > 1) A[q * at.itemSize + 1] = at.getY(q); if (at.itemSize > 2) A[q * at.itemSize + 2] = at.getZ(q); if (at.itemSize > 3) A[q * at.itemSize + 3] = at.getW(q); } g.setAttribute(k, new THREE.BufferAttribute(A, at.itemSize)); } return g; }; // posiciones/uv cuantizadas (meshopt) -> Float32 ANTES de escalar
   const { GLTFLoader } = await import('three/addons/loaders/GLTFLoader.js');
   const { MeshoptDecoder } = await import('three/addons/libs/meshopt_decoder.module.js');
   const { mergeGeometries } = await import('three/addons/utils/BufferGeometryUtils.js');
@@ -31,31 +32,65 @@ export async function crearEscenaMallas({ THREE, geo, sombras = true, movil = fa
     if (gs.length) add(new THREE.Mesh(mergeGeometries(gs), std('#e6dfd1')), 'estructura');
     add(new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.14, 69).translate(0, 0.07, 35.6), std('#a07a55', { roughness: 0.75 })), 'estructura'); }
 
-  /* ---------- hileras de cultivo: camellón + matas instanciadas ---------- */
+  /* ---------- hileras de cultivo: camellón + cultivos 3D reales (Quaternius, jeremy, Poly by Google, Kenney: Poly Pizza, CC0 / CC BY)
+     y un letrero con el nombre en cada bloque de 4 hileras ---------- */
   { const cam = []; for (const f of geo.FILAS) cam.push(new THREE.BoxGeometry(0.6, 0.12, 58).translate(f.x, 0.06, 33));
     add(new THREE.Mesh(mergeGeometries(cam), std('#5a4030', { roughness: 1 })), 'suelo');
+    const carg = new GLTFLoader();
+    // modelo -> una sola geometría con color por vértice (del color de cada material), base en y = 0, alto = 1
+    const unaGeo = async (k) => { const g = await carg.loadAsync(`data3d/puntos/cultivos/${k}.glb`).catch(() => null); if (!g) return null; g.scene.updateMatrixWorld(true);
+      const gs = []; g.scene.traverse(m => { if (!m.isMesh) return; let q = aFloat(m.geometry.clone()).applyMatrix4(m.matrixWorld); if (q.index) q = q.toNonIndexed(); const n = q.attributes.position.count, mt = [].concat(m.material)[0] || {}, c = mt.color || new THREE.Color(0.5, 0.6, 0.4);
+        const P = new Float32Array(n * 3), C = new Float32Array(n * 3); for (let i = 0; i < n; i++) { P[i * 3] = q.attributes.position.getX(i); P[i * 3 + 1] = q.attributes.position.getY(i); P[i * 3 + 2] = q.attributes.position.getZ(i); C[i * 3] = c.r; C[i * 3 + 1] = c.g; C[i * 3 + 2] = c.b; }
+        const r = new THREE.BufferGeometry(); r.setAttribute('position', new THREE.BufferAttribute(P, 3)); r.setAttribute('color', new THREE.BufferAttribute(C, 3)); r.computeVertexNormals(); gs.push(r); });
+      if (!gs.length) return null; const G2 = mergeGeometries(gs); G2.computeBoundingBox(); const b = G2.boundingBox, h = (b.max.y - b.min.y) || 1; G2.translate(-(b.min.x + b.max.x) / 2, -b.min.y, -(b.min.z + b.max.z) / 2); G2.scale(1 / h, 1 / h, 1 / h); return G2; };
+    const ALTO = { lechuga: 0.3, repollo: 0.38, brocoli: 0.5, maiz: 2.0, zanahoria: 0.55, ahuyama: 0.42, remolacha: 0.45, girasol: 1.8 }, HUNDE = { zanahoria: 0.32, remolacha: 0.12 };
+    const MOD = {}; await Promise.all(Object.keys(ALTO).map(async k => { MOD[k] = await unaGeo(k); }));
+    // tomate: tutor de caña + mata + tomates del modelo
+    const tomFruto = await unaGeo('tomate');
+    { const gs = [new THREE.CylinderGeometry(0.015, 0.02, 1.4, 5).translate(0, 0.7, 0)]; const hojas = new THREE.IcosahedronGeometry(0.28, 1).scale(0.9, 1.9, 0.9).translate(0, 0.62, 0); gs.push(hojas);
+      const pinta = (g, col) => { g = g.index ? g.toNonIndexed() : g; const n = g.attributes.position.count, C = new Float32Array(n * 3), c = new THREE.Color(col); for (let i = 0; i < n; i++) C.set([c.r, c.g, c.b], i * 3); g.setAttribute('color', new THREE.BufferAttribute(C, 3)); for (const k2 of Object.keys(g.attributes)) if (!['position', 'normal', 'color'].includes(k2)) g.deleteAttribute(k2); return g; };
+      const partes = [pinta(gs[0], '#a07a55'), pinta(hojas, '#3f7a35')];
+      if (tomFruto) for (const [x, y, z] of [[0.18, 0.45, 0.1], [-0.15, 0.7, 0.12], [0.12, 0.9, -0.16], [-0.1, 0.38, -0.18], [0.2, 0.65, -0.05]]) partes.push(tomFruto.clone().scale(0.11, 0.11, 0.11).translate(x, y, z));
+      MOD.tomate = mergeGeometries(partes); ALTO.tomate = 1; }
+    MOD.lavanda = (() => { const g = new THREE.ConeGeometry(0.28, 0.6, 8).translate(0, 0.3, 0).toNonIndexed(); const n = g.attributes.position.count, C = new Float32Array(n * 3); for (let i = 0; i < n; i++) { const y = g.attributes.position.getY(i), c = new THREE.Color(y > 0.25 ? '#8b6fc4' : '#6f8b5c'); C.set([c.r, c.g, c.b], i * 3); } g.setAttribute('color', new THREE.BufferAttribute(C, 3)); g.deleteAttribute('uv'); return g; })(); ALTO.lavanda = 1;
     const porK = {}; for (const f of geo.FILAS) (porK[f.k] = porK[f.k] || []).push(f);
-    const FORMA = { lavanda: () => new THREE.ConeGeometry(0.28, 0.6, 7).translate(0, 0.3, 0), cebolla: () => new THREE.CylinderGeometry(0.05, 0.07, 0.45, 6).translate(0, 0.22, 0), alcachofa: () => new THREE.IcosahedronGeometry(0.38, 1).scale(1, 0.9, 1).translate(0, 0.38, 0) };
-    for (const k in porK) { const L = porK[k], f0 = L[0], paso = Math.max(0.3, f0.r * 1.6) * (movil ? 1.8 : 1), n = L.length * Math.ceil(57 / paso);
-      const geom = (FORMA[k] || (() => new THREE.IcosahedronGeometry(f0.r, 1).scale(1, f0.h / f0.r * 0.6, 1).translate(0, f0.h * 0.45 + 0.08, 0)))();
-      const im = new THREE.InstancedMesh(geom, std('#ffffff', { roughness: 0.8 }), n); let i = 0; const cc = new THREE.Color();
-      for (const f of L) for (let z = 4.3; z < 61.7 && i < n; z += paso) { o.position.set(f.x + (rnd() - 0.5) * 0.06, 0.06, z); o.rotation.set(0, rnd() * 6.28, 0); const e = 0.8 + rnd() * 0.4; o.scale.set(e, e, e); o.updateMatrix(); im.setMatrixAt(i, o.matrix); im.setColorAt(i, cc.set(f.c[(i % 3)])); i++; }
-      im.count = i; add(im, 'cultivo'); } }
+    // huertas de los claros cercanos: los mismos cultivos, 4 hileras por claro (las lejanas quedan como camas de color)
+    const KEYS = ['lechuga', 'repollo', 'brocoli', 'tomate', 'zanahoria', 'ahuyama', 'remolacha', 'maiz', 'girasol', 'lavanda'], CEXTRA = {}; geo.CERCA = new Set();
+    geo.CEL.forEach(([cx, cz, S, ci], j) => { if (Math.hypot(cx - 0, cz - 35) > (movil ? 160 : 260)) return; geo.CERCA.add(j); const k = KEYS[(ci + j) % KEYS.length];
+      for (let r = 0; r < 4; r++) (CEXTRA[k] = CEXTRA[k] || []).push({ x: cx + 1 + r * 1.8, z0: cz + 0.6, z1: cz + S - 0.6 }); });
+    { const cam2 = []; geo.CEL.forEach(([cx, cz, S], j) => { if (!geo.CERCA.has(j)) return; for (let r = 0; r < 4; r++) cam2.push(new THREE.BoxGeometry(0.6, 0.12, S - 1).translate(cx + 1 + r * 1.8, 0.06, cz + S / 2)); });
+      if (cam2.length) add(new THREE.Mesh(mergeGeometries(cam2), std('#5a4030', { roughness: 1 })), 'suelo'); }
+    for (const k of KEYS) if (!porK[k] && CEXTRA[k]) porK[k] = [];
+    for (const k in porK) { const L = porK[k], geom = MOD[k]; if (!geom) continue; const f0 = L[0] || (geo.CULT || []).find(c => c.k === k) || { r: 0.25 }, paso = Math.max(0.3, f0.r * 1.7) * (movil ? 1.8 : 1), EX = CEXTRA[k] || [], n = L.length * Math.ceil(57 / paso) + EX.reduce((s2, e) => s2 + Math.ceil((e.z1 - e.z0) / paso) + 1, 0) + 4;
+      const im = new THREE.InstancedMesh(geom, std('#ffffff', { vertexColors: true, roughness: 0.75 }), n); let i = 0, a = ALTO[k];
+      for (const f of L) { if (Math.abs(f.x) > 19 && Math.abs(f.x) < 25) continue; for (let z = 4.3; z < 61.7 && i < n; z += paso * (0.9 + rnd() * 0.2)) { const e = a * (0.85 + rnd() * 0.3); o.position.set(f.x + (rnd() - 0.5) * 0.06, 0.1 - (HUNDE[k] || 0) * e, z); o.rotation.set(0, rnd() * 6.28, 0); o.scale.set(e, e, e); o.updateMatrix(); im.setMatrixAt(i, o.matrix); i++; } }
+      for (const e of EX) for (let z = e.z0; z < e.z1 && i < n; z += paso * (0.9 + rnd() * 0.2)) { const sc = a * (0.85 + rnd() * 0.3); o.position.set(e.x + (rnd() - 0.5) * 0.06, 0.1 - (HUNDE[k] || 0) * sc, z); o.rotation.set(0, rnd() * 6.28, 0); o.scale.set(sc, sc, sc); o.updateMatrix(); im.setMatrixAt(i, o.matrix); i++; }
+      im.count = i; add(im, 'cultivo'); }
+    // letreros: tabla con el nombre del cultivo al comienzo de cada bloque
+    const NOM = {}; for (const c of geo.CULT || []) NOM[c.k] = c.n;
+    const tabla = new THREE.BoxGeometry(1.5, 0.5, 0.05).translate(0, 0.95, 0), poste = new THREE.CylinderGeometry(0.03, 0.03, 0.9, 6).translate(0, 0.45, 0);
+    const bloques = geo.FILAS.filter(f => f.bloque && !(Math.abs(f.x) > 19 && Math.abs(f.x) < 25));
+    { const im = new THREE.InstancedMesh(poste, std('#6b4f36'), bloques.length); bloques.forEach((f, i) => { o.position.set(f.x + Math.sign(f.x) * 0.45, 0, 3.2); o.rotation.set(0, 0, 0); o.scale.set(1, 1, 1); o.updateMatrix(); im.setMatrixAt(i, o.matrix); }); add(im, 'madera'); }
+    const porN = {}; for (const f of bloques) (porN[f.k] = porN[f.k] || []).push(f);
+    for (const k in porN) { const cv = document.createElement('canvas'); cv.width = 512; cv.height = 170; const g = cv.getContext('2d'); g.fillStyle = '#f3ede0'; g.fillRect(0, 0, 512, 170); g.fillStyle = '#2b3a2a'; g.font = '600 74px Inter, Arial, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText((NOM[k] || k).toUpperCase(), 256, 90); g.strokeStyle = '#6b4f36'; g.lineWidth = 10; g.strokeRect(5, 5, 502, 160);
+      const tx = new THREE.CanvasTexture(cv); tx.colorSpace = THREE.SRGBColorSpace; tx.anisotropy = 8;
+      const im = new THREE.InstancedMesh(tabla, [std('#8a6a48'), std('#8a6a48'), std('#8a6a48'), std('#8a6a48'), std('#ffffff', { map: tx }), std('#ffffff', { map: tx })], porN[k].length);
+      porN[k].forEach((f, i) => { o.position.set(f.x + Math.sign(f.x) * 0.45, 0, 3.2); o.rotation.set(0, Math.PI, 0); o.scale.set(1, 1, 1); o.updateMatrix(); im.setMatrixAt(i, o.matrix); }); add(im, 'letrero'); } }
 
   /* ---------- huertas en los claros del predio ---------- */
   if (geo.CEL.length) { const COLS = ['#7fbf4d', '#6d2f4b', '#4f7a6b', '#8b6fc4', '#2f6b2a', '#8fb46a', '#7aa39a'];
     const im = new THREE.InstancedMesh(new THREE.BoxGeometry(1.2, 0.35, 1).translate(0, 0.17, 0), std('#ffffff'), geo.CEL.length * 4); const cc = new THREE.Color(); let i = 0;
-    for (const [cx, cz, S, ci] of geo.CEL) for (let r = 0; r < 4; r++) { o.position.set(cx + 1 + r * 1.8, 0, cz + S / 2); o.rotation.set(0, 0, 0); o.scale.set(1, 1, S - 1); o.updateMatrix(); im.setMatrixAt(i, o.matrix); im.setColorAt(i, cc.set(COLS[ci])); i++; }
+    for (const [cx, cz, S, ci] of geo.CEL.filter((_, j) => !(geo.CERCA && geo.CERCA.has(j)))) for (let r = 0; r < 4; r++) { o.position.set(cx + 1 + r * 1.8, 0, cz + S / 2); o.rotation.set(0, 0, 0); o.scale.set(1, 1, S - 1); o.updateMatrix(); im.setMatrixAt(i, o.matrix); im.setColorAt(i, cc.set(COLS[ci])); i++; }
     add(im, 'cultivo'); }
 
   /* ---------- árboles 3D reales instanciados ---------- */
   { const carg = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder), SP = ['jacaranda', 'island_tree_01', 'island_tree_02', 'arbolpeq'];
-    const mod = await Promise.all(SP.map(b => Promise.all(['madera', 'hojas'].map(p => carg.loadAsync(`data3d/models/${b}_L1_${p}.glb`).catch(() => null)))));
+    const mod = await Promise.all(SP.map(b => Promise.all(['madera', 'hojas'].map(p => carg.loadAsync(`data3d/models/${b}_L0_${p}.glb`).catch(() => null)))));
     const porSp = SP.map(() => []); geo.ARB.forEach((a, i) => porSp[(Math.abs(Math.floor(a[0] * 7 + a[1] * 3))) % SP.length].push(a));
     mod.forEach((partes, si) => { const L = porSp[si]; if (!L.length) return;
       const caja = new THREE.Box3(); partes.forEach(p => p && (p.scene.updateMatrixWorld(true), caja.expandByObject(p.scene))); const alto = (caja.max.y - caja.min.y) || 1, cx = (caja.min.x + caja.max.x) / 2, cz = (caja.min.z + caja.max.z) / 2;
-      partes.forEach((p, pi) => { if (!p) return; const gs = [], mats = []; p.scene.traverse(m => { if (m.isMesh) { const g = m.geometry.clone().applyMatrix4(m.matrixWorld); g.translate(-cx, -caja.min.y, -cz); g.scale(1 / alto, 1 / alto, 1 / alto); for (const k of Object.keys(g.attributes)) { if (!['position', 'normal', 'uv'].includes(k)) { g.deleteAttribute(k); continue; } const at = g.attributes[k], A = new Float32Array(at.count * at.itemSize); for (let q = 0; q < at.count; q++) for (let c = 0; c < at.itemSize; c++) A[q * at.itemSize + c] = c === 0 ? at.getX(q) : c === 1 ? at.getY(q) : at.getZ(q); g.setAttribute(k, new THREE.BufferAttribute(A, at.itemSize)); } if (!g.attributes.uv) g.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count * 2), 2)); if (!g.attributes.normal) g.computeVertexNormals(); gs.push(g); mats.push([].concat(m.material)[0]); } });
-        if (!gs.length) return; let g = null; try { g = mergeGeometries(gs.map(x => x.index ? x.toNonIndexed() : x)); } catch (er) {} if (!g) g = gs[0]; const mt = mats[0].clone(); if (pi === 1) { mt.alphaTest = 0.45; mt.transparent = false; mt.side = THREE.DoubleSide; }
+      partes.forEach((p, pi) => { if (!p) return; const gs = [], mats = []; p.scene.traverse(m => { if (m.isMesh) { const g = aFloat(m.geometry.clone()).applyMatrix4(m.matrixWorld); g.translate(-cx, -caja.min.y, -cz); g.scale(1 / alto, 1 / alto, 1 / alto); for (const k of Object.keys(g.attributes)) { if (!['position', 'normal', 'uv'].includes(k)) { g.deleteAttribute(k); continue; } const at = g.attributes[k], A = new Float32Array(at.count * at.itemSize); for (let q = 0; q < at.count; q++) for (let c = 0; c < at.itemSize; c++) A[q * at.itemSize + c] = c === 0 ? at.getX(q) : c === 1 ? at.getY(q) : at.getZ(q); g.setAttribute(k, new THREE.BufferAttribute(A, at.itemSize)); } if (!g.attributes.uv) g.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count * 2), 2)); if (!g.attributes.normal) g.computeVertexNormals(); gs.push(g); mats.push([].concat(m.material)[0]); } });
+        if (!gs.length) return; let g = null; try { g = mergeGeometries(gs.map(x => x.index ? x.toNonIndexed() : x)); } catch (er) {} if (!g) g = gs[0]; const mt = mats[0].clone(); if (pi === 1) { mt.alphaTest = 0.45; mt.transparent = false; mt.side = THREE.DoubleSide; if (mt.map) { mt.emissive = new THREE.Color(1, 1, 1); mt.emissiveMap = mt.map; mt.emissiveIntensity = 0.32; } if (mt.color) mt.color.multiplyScalar(1.15); } else if (mt.color) mt.color.multiplyScalar(1.1);
         const im = new THREE.InstancedMesh(g, mt, L.length); L.forEach((a, i) => { o.position.set(a[0], 0, a[1]); o.rotation.set(0, (a[0] * 13.7 + a[1]) % 6.28, 0); o.scale.setScalar(a[2]); o.updateMatrix(); im.setMatrixAt(i, o.matrix); });
         add(im, pi === 1 ? 'hojas' : 'madera'); }); }); }
 
@@ -110,7 +145,7 @@ export async function crearEscenaMallas({ THREE, geo, sombras = true, movil = fa
     alambre: (m) => { const c = m.userData.cat; return new THREE.MeshBasicMaterial({ wireframe: true, color: c === 'hojas' || c === 'madera' || c === 'cultivo' ? '#5fd3a0' : c === 'suelo' ? '#1d4a6e' : '#9ad4ff', transparent: true, opacity: c === 'suelo' ? 0.35 : c === 'hojas' ? 0.35 : 0.85 }); }
   };
   const cache = {};
-  function vision(v) { if (!MATS[v]) return; for (const it of MESH) { const k = v + it.uuid; let mt = cache[k]; if (!mt) mt = cache[k] = MATS[v](it); it.material = mt; it.castShadow = sombras && v !== 'rayos' && v !== 'alambre' && it.userData.cat !== 'suelo' && it.userData.cat !== 'vidrio'; }
+  function vision(v) { if (!MATS[v]) return; for (const it of MESH) { const k = v + it.uuid; let mt = cache[k]; if (!mt) mt = cache[k] = (it.userData.cat === 'letrero' && v !== 'rayos' && v !== 'alambre') ? it.userData.orig : MATS[v](it); it.material = mt; it.castShadow = sombras && v !== 'rayos' && v !== 'alambre' && it.userData.cat !== 'suelo' && it.userData.cat !== 'vidrio'; }
     sol.intensity = v === 'maqueta' ? 2.0 : 2.4; hemi.intensity = v === 'maqueta' ? 1.5 : 1.1; }
   return { grupo: G, vision, sol };
 }
