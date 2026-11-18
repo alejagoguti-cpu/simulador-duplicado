@@ -316,8 +316,9 @@ function geometriaReal() {
     const dl = new DRACOLoader(); dl.setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/gltf/');
     const gl = new GLTFLoader(); gl.setDRACOLoader(dl);
     // 1,5 MB: baja cuando el panel del simulador ya está armado (con conexión lenta le quitaba ancho de banda a los árboles y las vías); mientras, el carro procedural
-    await new Promise(r => { const m = () => document.getElementById('gs-izq') ? setTimeout(r, 4000) : setTimeout(m, 1000); m(); });
-    const g = await gl.loadAsync('data3d/modelos/ferrari.glb'); g.scene.updateMatrixWorld(true);
+    await new Promise(r => { const m = () => document.getElementById('gs-izq') ? r() : setTimeout(m, 500); m(); });
+    const g = await gl.loadAsync('data3d/modelos/ferrari.glb').catch(e => { window.KEN_CARRO_REAL = true; throw e; }); g.scene.updateMatrixWorld(true);
+    window.KEN_CARRO_REAL = true; // la portada espera a que esté (index.html, listo)
     const partes = [], caja = new THREE.Box3(), cola = new THREE.Vector3(), v = new THREE.Vector3(); let nCola = 0;
     g.scene.traverse(o => {
       if (!o.isMesh || !SOLO.test(o.name)) return;
