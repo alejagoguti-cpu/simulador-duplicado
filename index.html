@@ -1441,7 +1441,7 @@ async function initTodoReal() {
           : !(T3.tintal && T3.conjuntos && T3.bavaria) ? 'Cargando Bavaria, El Tintal y conjuntos…'
           : !trafOk ? 'Cargando tráfico · ' + Math.min(100, Math.round(100 * trafN / (TR ? 2 * TR.chunk : 1))) + ' %'
           : !(window.KEN_CARRO_REAL || MOVIL) ? 'Cargando carros…' /* en celular no hay carro real */
-          : (tResto = tResto || performance.now(), performance.now() - tilesT < 2500 && performance.now() - tResto < 25000) ? 'Afinando la foto 3D…' : '';
+          : (tResto = tResto || performance.now(), performance.now() - tilesT < 2500 && performance.now() - tResto < 15000) ? 'Afinando la foto 3D…' : '';
         if (!falta || performance.now() - t0 > 150000) { $('lmsg').textContent = 'Listo'; setTimeout(abrirPortada, 600); } else { $('lmsg').textContent = falta; setTimeout(listo, 400); } };
       listo(); } /* Kennedy: se entra con TODO cargado (edificios, vías, árboles, tráfico, foto real, cubiertas y panel; máx. 60 s) */ /* Kennedy: la portada con fotos se queda hasta que el modelo y el panel están listos (máx. 30 s), sin mostrar el suelo vacío */
     else abrirPortada(); // se abre en cuanto están los edificios y las capas; lo demás termina de bajar con la píldora de arriba
