@@ -1211,7 +1211,7 @@ function actualizarMallaIn(T, tl, dt) {
   }
   /* mientras está la portada, la foto 3D baja gruesa y con pocas descargas a la vez: antes pedía 470 teselas (13 MB) en el primer minuto y dejaba
      sin conexión a los árboles, las vías y el tráfico. Con la maqueta abierta se afina hasta su nitidez normal (T.errMeta) */
-  const abierta = KEN ? $('loader').classList.contains('hidden') : true, meta = abierta ? T.errMeta : Math.max(T.errMeta, 24);
+  const abierta = KEN ? $('loader').classList.contains('hidden') && !!document.getElementById('gs-izq') : true, /* y con el panel ya armado (árboles y vías bajaron) */ meta = abierta ? T.errMeta : Math.max(T.errMeta, 24);
   if (tl.downloadQueue) tl.downloadQueue.maxJobs = abierta ? 12 : 4;
   if (tl.errorTarget > meta && tl.stats.downloading === 0 && tl.stats.parsing === 0 && tl.stats.visible > 3) tl.errorTarget = Math.max(meta, Math.round(tl.errorTarget * 0.62));
   if (T.debug) {
@@ -1310,6 +1310,11 @@ async function initTodoReal() {
     T3 = { THREE, renderer, scene, camera, orbit, hemi, sun, skyU, liviano: LIVIANO, movil: MOVIL, night: false, anim: null, last: 0, counts: {},
       waterU: { value: 0 }, sunOff: new THREE.Vector3(0.42, 0.62, 0.35).normalize().multiplyScalar(2600), suelo };
     { let ok; T3.pArboles = new Promise(r => ok = r); T3.arbolesOk = ok; }
+    if (KEN) { /* TOPE DE ESPERA: a los 20 s la portada se abre si ya están los edificios, aunque falten árboles, vías o el panel (siguen bajando con la
+         píldora de arriba). Con conexión lenta (~100 KB/s) esperar lo esencial completo tomaba ~1 minuto */
+      const tope = () => { if ($('loader').classList.contains('hidden')) return; const edif = document.querySelector('.cv-steps li[data-k="edif"].ok') || (T3.tiles && T3.mallaMostrada && T3.tiles.stats && T3.tiles.stats.visible > 8); /* o la foto 3D de Google ya muestra la ciudad */
+        if (edif && performance.now() > 20000) { $('lmsg').textContent = 'Listo'; abrirPortada(); } else setTimeout(tope, 500); };
+      setTimeout(tope, 5000); }
     T3.esperaArboles = () => Promise.race([T3.pArboles, new Promise(r => setTimeout(r, KEN ? 1500 : 15000))]); // Kennedy: los edificios y el tráfico no esperan a los árboles
     { // suelo base neutro desde el primer cuadro (debajo de todo; la foto de Google lo cubre cuando llega)
       const gb = new THREE.Mesh(new THREE.PlaneGeometry(16000, 12000), new THREE.MeshBasicMaterial({ color: 0x77746a, depthWrite: false })); // sin profundidad: la foto de Google (corrida hacia atrás) siempre lo cubre
