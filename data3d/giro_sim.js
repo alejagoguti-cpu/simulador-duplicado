@@ -598,8 +598,49 @@ export async function iniciarSimulacion(cfg = {}) {
       izq.querySelector('#gs-flujo').insertAdjacentHTML('afterend', `<div class="gs-sub">FLUJO DE CARROS <span>simulación SUMO · carros/km</span></div>
         <div class="gs-fila" style="grid-template-columns:1fr 1fr" id="gs-fc"><button data-v="1">Ver</button><button data-v="" class="on">Apagar</button></div>
         <div class="gs-ley"><span>pocos</span><i style="background:linear-gradient(90deg,${grad})"></i><span>muchos</span></div>`);
-      izq.querySelectorAll('#gs-fc button').forEach(b => b.onclick = () => { FC.visible = !!b.dataset.v; izq.querySelectorAll('#gs-fc button').forEach(x => x.classList.toggle('on', x === b)); });
+      izq.querySelectorAll('#gs-fc button').forEach(b => b.onclick = () => { FC.visible = !!b.dataset.v; izq.querySelectorAll('#gs-fc button').forEach(x => x.classList.toggle('on', x === b)); pintarCora(); });
       FC.visible = false; /* vista limpia al abrir: se prende con Ver */
+      /* ---- DESCENTRALIZAR CORABASTOS: sliders que cambian el tráfico en el mapa (data3d/alivio_cali.js: T3.alivio.manual) ----
+         Cada palanca evita una parte de los viajes a Corabastos; se combinan: evitados = 1 − (1 − a)(1 − b)(1 − c). [SUP] supuestos para discutir:
+         · Corabastos reducido: cada 10 % de naves retiradas evita 5 % de los carros y 12 % de los camiones (la carga grande se queda en el patio de transferencia)
+         · Mercados de barrio: cada mercado evita 1,2 % de los carros y 0,8 % de los camiones
+         · Hogares con huerta: cada 10 % de hogares evita 8 % de los carros y 3 % de los camiones */
+      const CS = { cora: 19, merc: 20, huer: 10 };
+      const calcCora = () => { const a = CS.cora / 100, b = CS.merc, c = CS.huer / 100;
+        const car = 1 - (1 - a * 0.5) * (1 - Math.min(0.6, b * 0.012)) * (1 - c * 0.8), cam = 1 - (1 - Math.min(0.85, a * 1.2)) * (1 - Math.min(0.4, b * 0.008)) * (1 - c * 0.3);
+        return { car, cam }; };
+      izq.querySelector('#gs-fc').nextElementSibling.insertAdjacentHTML('afterend', `<div id="gs-cora" hidden>
+        <div class="gs-sub">CORABASTOS <span>descentralizar el abastecimiento</span></div>
+        <div class="gs-fila" style="grid-template-columns:1fr 1fr" id="gs-cesc"><button data-e="hoy">Kennedy hoy</button><button data-e="proyecto">Con la propuesta</button></div>
+        <div id="gs-cmsg" style="font-size:10.5px;line-height:1.45;color:#94a3b8;margin:6px 0 2px"></div>
+        <div id="gs-csl">
+          <label class="gs-cl"><span>Corabastos reducido <b data-o="cora"></b></span><input type="range" min="0" max="60" step="1" data-k="cora" aria-label="Porcentaje de naves de Corabastos retiradas"></label>
+          <label class="gs-cl"><span>Mercados de barrio <b data-o="merc"></b></span><input type="range" min="0" max="40" step="1" data-k="merc" aria-label="Número de mercados de barrio"></label>
+          <label class="gs-cl"><span>Hogares con huerta <b data-o="huer"></b></span><input type="range" min="0" max="30" step="1" data-k="huer" aria-label="Porcentaje de hogares con huerta"></label>
+          <div class="gs-cres"><div><small>Carros y motos</small><b data-r="car"></b></div><div><small>Camiones</small><b data-r="cam"></b></div></div>
+          <div style="font-size:10px;color:#64748b;margin-top:4px">Menos viajes hacia Corabastos. Las vías cercanas (hasta 2,6 km) pasan de rojo a verde mientras corre la simulación.</div>
+        </div></div>`);
+      { const css = document.createElement('style'); css.textContent = `#gs-cora .gs-cl{display:block;margin:8px 0 0;font-size:11px;color:#cbd5e1}#gs-cora .gs-cl span{display:flex;justify-content:space-between}
+#gs-cora .gs-cl b{font-weight:600;color:#f1f5f9;font-variant-numeric:tabular-nums}#gs-cora input[type=range]{margin:4px 0 0;accent-color:#34d399}#gs-cora input:disabled{opacity:.35}
+#gs-cora .gs-cres{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}#gs-cora .gs-cres div{background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.25);border-radius:6px;padding:6px 8px}
+#gs-cora .gs-cres small{display:block;font-size:9.5px;color:#94a3b8;letter-spacing:.04em}#gs-cora .gs-cres b{font-size:18px;font-weight:600;color:#6ee7b7;font-variant-numeric:tabular-nums}
+#gs-cora.hoy .gs-cres div{background:rgba(225,87,89,.08);border-color:rgba(225,87,89,.3)}#gs-cora.hoy .gs-cres b{color:#fca5a5}`; document.head.appendChild(css); }
+      const caja = izq.querySelector('#gs-cora');
+      caja.querySelectorAll('input[data-k]').forEach(i => { i.value = CS[i.dataset.k]; i.oninput = () => { CS[i.dataset.k] = +i.value; pintarCora(); }; });
+      caja.querySelectorAll('#gs-cesc button').forEach(b => b.onclick = () => { const K = window.KEN_ESC; if (K && K.poner) K.poner(b.dataset.e); setTimeout(pintarCora, 80); });
+      function pintarCora() {
+        const pro = T3.escenario === 'proyecto', r = calcCora(), AL = T3.alivio;
+        if (AL) AL.manual = { keep: 1 - r.car, keepCam: 1 - r.cam };
+        caja.hidden = !FC.visible; caja.classList.toggle('hoy', !pro);
+        caja.querySelectorAll('#gs-cesc button').forEach(b => b.classList.toggle('on', (b.dataset.e === 'proyecto') === pro));
+        caja.querySelectorAll('input[data-k]').forEach(i => { i.disabled = !pro; });
+        caja.querySelector('[data-o="cora"]').textContent = CS.cora + ' % de naves'; caja.querySelector('[data-o="merc"]').textContent = CS.merc + ' mercados'; caja.querySelector('[data-o="huer"]').textContent = CS.huer + ' % de hogares';
+        caja.querySelector('[data-r="car"]').textContent = pro ? '−' + Math.round(r.car * 100) + ' %' : '0 %'; caja.querySelector('[data-r="cam"]').textContent = pro ? '−' + Math.round(r.cam * 100) + ' %' : '0 %';
+        caja.querySelector('#gs-cmsg').innerHTML = pro ? '<b style="color:#6ee7b7">Con la propuesta:</b> Corabastos se reduce y el barrio compra en mercados y huertas cercanas. Mueve los sliders y mira cómo cambian las vías.'
+          : '<b style="color:#fca5a5">Kennedy hoy:</b> todo el abastecimiento pasa por Corabastos y sus vías se ven en rojo. Pasa a <b>Con la propuesta</b> para usar los sliders.';
+      }
+      addEventListener('escenario', () => setTimeout(pintarCora, 80)); setInterval(() => { if (T3.alivio && !T3.alivio.manual) pintarCora(); }, 1000);
+      pintarCora();
       { /* cuántos carros hay en la calle a esta hora (demanda según el reloj: index.html, demandaHora) */
         izq.querySelector('#gs-fc').insertAdjacentHTML('beforebegin', '<div id="gs-dem" style="font-size:10.5px;color:#94a3b8;margin:2px 0 6px"></div>');
         const dem = izq.querySelector('#gs-dem');

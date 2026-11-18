@@ -34,7 +34,8 @@ export function crearAlivioCali({ T3, D }) {
     const cam = ((id * 2654435761) >>> 0) / 4294967296 >= 0.92; // mismo sorteo de camiones que index.html
     cH++; if (cam) kH++;
     // los escenarios (data3d/escenarios_sim.js) cambian KEEP según la dependencia de Corabastos; lejos de Corabastos se quitan menos (w)
-    const quita = (1 - (cam ? alivio.KEEP_CAM : alivio.KEEP)) * Math.max(w, pesoCora(x, z));
+    const M = alivio.manual; // sliders del panel de flujo de carros (data3d/giro_sim.js): mandan sobre el valor del escenario
+    const quita = (1 - (M ? (cam ? M.keepCam : M.keep) : (cam ? alivio.KEEP_CAM : alivio.KEEP))) * Math.max(w, pesoCora(x, z));
     const queda = (Math.imul(id ^ 0x27d4eb2d, 0x165667b1) >>> 0) / 4294967296 >= quita * alivio.rampa;
     if ((Math.imul(id ^ 0x27d4eb2d, 0x165667b1) >>> 0) / 4294967296 >= quita) { cP++; if (cam) kP++; }
     return T3.escenario === 'proyecto' && !queda ? 2 : 1;
