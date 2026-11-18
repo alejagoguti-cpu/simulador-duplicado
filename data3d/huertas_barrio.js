@@ -166,7 +166,7 @@ export async function crearHuertasBarrio({ THREE, T3, D, movil = false }) {
         cols.push(tramo(pie, nudo, 0.13, 0.1)); for (let q = 0; q < 4; q++) { const a = q / 4 * Math.PI * 2 + L.rot + 0.4, d = 1.6 + (q % 2) * 0.7; cols.push(tramo(nudo, new THREE.Vector3(bx + Math.cos(a) * d, YG + L.H + 0.9, bz + Math.sin(a) * d), 0.07, 0.04)); } }
     }
     if (memb.length) { const gm = mergeGeometries(memb);
-      const m1 = new THREE.Mesh(gm, new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.14, side: THREE.DoubleSide, roughness: 0.3, depthWrite: false }));
+      const m1 = new THREE.Mesh(gm, new THREE.MeshStandardMaterial({ color: 0xf2f5f2, emissive: 0x9aa39c, emissiveIntensity: 0.25, transparent: true, opacity: 0.34, side: THREE.DoubleSide, roughness: 0.35, metalness: 0, depthWrite: false }) /* membrana lechosa: a 14% desaparecía sobre la tierra oscura y desde arriba solo se veían las costillas (parecía una malla de alambre) */);
       const m2 = new THREE.Mesh(gm, new THREE.MeshStandardMaterial({ color: 0xf6f6f2, map: texCost, alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.4 })); m2.castShadow = !movil; m1.renderOrder = 6; gH.add(m1, m2);
       const mCol = mStd('#f1f1ee', { roughness: 0.35, metalness: 0.2 });
       const t = new THREE.Mesh(mergeGeometries(tubos), mCol), c = new THREE.Mesh(mergeGeometries(cols), mCol); t.castShadow = c.castShadow = !movil; gH.add(t, c); }

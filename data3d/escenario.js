@@ -148,12 +148,12 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
   let CALI = null, HBAR = null, pHBar = null;
   /* huertas de barrio (lotes baldíos y parques vecinales): bancales reales, solo con la propuesta (data3d/huertas_barrio.js) */
   const huertasBarrio = (on) => { if (HBAR) { HBAR.ver(on); return; } if (!on || pHBar) return;
-    pHBar = Promise.all([import('./huertas_barrio.js?v=5'), cj('data3d/huertas_barrio.json?v=3')]).then(([m, D]) => m.crearHuertasBarrio({ THREE: T3.THREE, T3, D, movil: matchMedia('(pointer:coarse)').matches }))
+    pHBar = Promise.all([import('./huertas_barrio.js?v=6'), cj('data3d/huertas_barrio.json?v=3')]).then(([m, D]) => m.crearHuertasBarrio({ THREE: T3.THREE, T3, D, movil: matchMedia('(pointer:coarse)').matches }))
       .then(h => { HBAR = h; window.KEN_HBAR = h; HBAR.ver(T3.escenario === 'proyecto' && solo !== 'col'); }).catch(e => console.warn('huertas de barrio:', e)); };
   /* parches de árboles nativos en parques y junto a las huertas de parque (data3d/parches_arboles.js): solo con la propuesta */
   let PARCH = null, pParch = null;
   const parchesArboles = (on) => { if (PARCH) { PARCH.ver(on); return; } if (!on || pParch) return;
-    pParch = Promise.all([import('./parches_arboles.js?v=4'), cj('data3d/huertas_barrio.json?v=3'), cj('data3d/parques.json')]).then(([m, HB, PQ]) => m.crearParches3D({ T3, P: m.calcularParches(HB, PQ, lw, matchMedia('(pointer:coarse)').matches) }))
+    pParch = Promise.all([import('./parches_arboles.js?v=5'), cj('data3d/huertas_barrio.json?v=3'), cj('data3d/parques.json')]).then(([m, HB, PQ]) => m.crearParches3D({ T3, P: m.calcularParches(HB, PQ, lw, matchMedia('(pointer:coarse)').matches) }))
       .then(p => { PARCH = p; window.KEN_PARCHES = p; PARCH.ver(T3.escenario === 'proyecto' && solo !== 'col'); }).catch(e => console.warn('parches de árboles:', e)); };
   import('./escenarios_sim.js?v=21').then(m => m.iniciarEscenariosSim({ T3, cj })).then(S => { window.KEN_ESIM = S; }).catch(e => console.warn('escenarios:', e)); // SIM-01/02/03 con sliders, en el territorio
   Promise.all([import('./alivio_cali.js?v=2'), cj('data3d/alivio_cali.json?v=1')]).then(([m, D]) => { CALI = m.crearAlivioCali({ T3, D }); window.KEN_CALI = CALI; CALI.ver(T3.escenario === 'proyecto' && !solo); }).catch(e => console.warn('Av. Ciudad de Cali:', e));

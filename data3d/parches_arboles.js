@@ -75,16 +75,19 @@ export async function crearParches3D({ T3, P }) {
   const todos = P.flatMap(p => p.arboles), O = new THREE.Object3D(), FL = [];
   for (const [sp, E] of Object.entries(ESPECIES)) {
     const lista = todos.filter(t => t.sp === sp); if (!lista.length || !NORM[E.modelo]) continue; const N = NORM[E.modelo];
-    for (const pt of N.partes) { const mat = pt.mat.clone(); mat.side = THREE.DoubleSide; if (mat.transparent) { mat.transparent = false; mat.alphaTest = 0.45; } if (pt.hoja) mat.color = new THREE.Color(E.hoja).multiplyScalar(1.9); /* verde claro y propio de cada especie: se distinguen de los árboles que ya hay */
+    for (const pt of N.partes) { const mat = pt.mat.clone(); mat.side = THREE.DoubleSide; if (mat.transparent) { mat.transparent = false; mat.alphaTest = 0.45; } mat.metalness = 0; mat.roughness = 1; mat.envMapIntensity = 0;
+        if (pt.hoja) { /* la textura escaneada manda; solo un tinte suave hacia el verde de cada especie (antes el color multiplicaba la textura y las copas salían negras) */
+          const c = new THREE.Color(E.hoja), mx = Math.max(c.r, c.g, c.b) || 1; mat.color = new THREE.Color(1, 1, 1).lerp(new THREE.Color(c.r / mx, c.g / mx, c.b / mx), 0.3).multiplyScalar(1.12); }
+        if (mat.map) { mat.emissiveMap = mat.map; mat.emissive = new THREE.Color(1, 1, 1); mat.emissiveIntensity = pt.hoja ? 0.22 : 0.18; } /* las caras a la sombra no se ven negras */
       const im = new THREE.InstancedMesh(pt.geo, mat, lista.length); im.castShadow = !MOV; im.receiveShadow = false;
       lista.forEach((t, i) => { O.position.set(t.x, Y, t.z); O.rotation.set(0, t.rot, 0); O.scale.setScalar(t.h); O.updateMatrix(); im.setMatrixAt(i, O.matrix); }); grupo.add(im); }
-    if (E.flor) lista.forEach(t => { const r = t.h * N.ancho * 0.3; for (let k = 0; k < (MOV ? 7 : 14); k++) { const a = k * 2.399 + t.rot, rr = r * (0.4 + 0.6 * ((k * 37) % 10) / 10); FL.push([t.x + Math.cos(a) * rr, Y + t.h * (0.55 + 0.4 * ((k * 53) % 10) / 10), t.z + Math.sin(a) * rr, E.flor]); } });
+    if (E.flor) lista.forEach(t => { const r = t.h * N.ancho * 0.3; for (let k = 0; k < (MOV ? 10 : 22); k++) { const a = k * 2.399 + t.rot, rr = r * (0.4 + 0.6 * ((k * 37) % 10) / 10); FL.push([t.x + Math.cos(a) * rr, Y + t.h * (0.55 + 0.4 * ((k * 53) % 10) / 10), t.z + Math.sin(a) * rr, E.flor]); } });
   }
   // flores: racimos de color sobre la copa (amarillo del chicalá, crema del sauco y del chilco, rojo del tíbar, rosa del raque)
-  if (FL.length) { const im = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(0.55, 0), new THREE.MeshStandardMaterial({ roughness: 0.6, emissive: '#3a3a3a', toneMapped: true }), FL.length), C = new THREE.Color();
+  if (FL.length) { const im = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(0.3, 0), new THREE.MeshStandardMaterial({ roughness: 0.6, emissive: '#3a3a3a', toneMapped: true }), FL.length), C = new THREE.Color();
     FL.forEach((f, i) => { O.position.set(f[0], f[1], f[2]); O.rotation.set(0, 0, 0); O.scale.setScalar(1); O.updateMatrix(); im.setMatrixAt(i, O.matrix); im.setColorAt(i, C.set(f[3])); }); grupo.add(im); }
   // pradera del parche: una mancha verde clara bajo cada árbol; juntas dibujan la forma del parche sobre el suelo (se lee desde arriba)
-  { const im = new THREE.InstancedMesh(new THREE.CircleGeometry(1, 20).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: '#7cc35a', transparent: true, opacity: 0.36, depthWrite: false, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -2 }), todos.length);
+  { const im = new THREE.InstancedMesh(new THREE.CircleGeometry(1, 20).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: '#7cc35a', transparent: true, opacity: 0.16, depthWrite: false, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -2 }), todos.length);
     todos.forEach((t, i) => { const r = ESPECIES[t.sp].estrato === 0 ? 6.5 : ESPECIES[t.sp].estrato === 1 ? 5 : 3.6; O.position.set(t.x, Y + 0.18, t.z); O.rotation.set(0, 0, 0); O.scale.set(r, 1, r); O.updateMatrix(); im.setMatrixAt(i, O.matrix); });
     im.renderOrder = 2; grupo.add(im); }
   // marca que se ve de lejos: un punto verde oscuro con borde claro en cada parche (los árboles miden metros y desde 2 km no se distinguen)
