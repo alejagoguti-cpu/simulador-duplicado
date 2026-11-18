@@ -1202,7 +1202,13 @@ function actualizarMalla(T, dt) {
 function actualizarMallaIn(T, tl, dt) {
   tl.setResolutionFromRenderer(T.camera, T.renderer);
   T.camera.updateMatrixWorld();
-  if (!(T.anim && T.mallaMostrada && (T._tilesN = (T._tilesN || 0) + 1) % 6)) tl.update(); /* en el vuelo de llegada la foto 3D se refina cada 6 cuadros: vuelo fluido */
+  /* CARGA: mientras se arma el panel (árboles, vías, edificios, estrategias) la foto 3D se PAUSA en cuanto tiene su primera capa gruesa: sus teselas
+     son pequeñas y muchas (12 MB en el primer minuto) y le quitaban la conexión a todo lo demás. Con el panel listo se baja con nitidez media
+     antes de abrir la portada y, ya abierta, se afina hasta la nitidez de siempre */
+  const panelOk = !KEN || !!document.getElementById('gs-izq'), st0 = tl.stats;
+  if (!panelOk && !T.tilesPausa && st0.visible > 8 && st0.downloading === 0 && st0.parsing === 0) T.tilesPausa = true;
+  const pausada = !panelOk && T.tilesPausa;
+  if (!pausada && !(T.anim && T.mallaMostrada && (T._tilesN = (T._tilesN || 0) + 1) % 6)) tl.update(); /* en el vuelo de llegada la foto 3D se refina cada 6 cuadros: vuelo fluido */
   actualizarOrto(T);
   if (!T.mallaMostrada) {
     const st = tl.stats, listo = st.downloading === 0 && st.parsing === 0 && st.visible > 8;
@@ -1211,8 +1217,8 @@ function actualizarMallaIn(T, tl, dt) {
   }
   /* mientras está la portada, la foto 3D baja gruesa y con pocas descargas a la vez: antes pedía 470 teselas (13 MB) en el primer minuto y dejaba
      sin conexión a los árboles, las vías y el tráfico. Con la maqueta abierta se afina hasta su nitidez normal (T.errMeta) */
-  const abierta = KEN ? !!document.getElementById('gs-izq') : true, /* el panel ya está armado (árboles, vías y edificios bajaron): la foto se afina antes de abrir */ meta = abierta ? T.errMeta : Math.max(T.errMeta, 40);
-  if (tl.downloadQueue) tl.downloadQueue.maxJobs = abierta ? 12 : 2;
+  const abierta = KEN ? $('loader').classList.contains('hidden') : true, meta = abierta ? T.errMeta : Math.max(T.errMeta, 14); /* antes de abrir: nitidez media */
+  if (tl.downloadQueue) tl.downloadQueue.maxJobs = panelOk ? 12 : 2;
   if (tl.errorTarget > meta && tl.stats.downloading === 0 && tl.stats.parsing === 0 && tl.stats.visible > 3) tl.errorTarget = Math.max(meta, Math.round(tl.errorTarget * 0.62));
   if (T.debug) {
     const s = tl.stats; let mallas = 0; tl.group.traverse(x => { if (x.isMesh) mallas++; });
@@ -1425,7 +1431,7 @@ async function initTodoReal() {
           : !(T3.tintal && T3.conjuntos && T3.bavaria) ? 'Cargando Bavaria, El Tintal y conjuntos…'
           : !trafOk ? 'Cargando tráfico · ' + Math.min(100, Math.round(100 * trafN / (TR ? 2 * TR.chunk : 1))) + ' %'
           : !(window.KEN_CARRO_REAL || MOVIL) ? 'Cargando carros…' /* en celular no hay carro real */
-          : (tResto = tResto || performance.now(), performance.now() - tilesT < 2500 && performance.now() - tResto < 10000) ? 'Afinando la foto 3D…' : '';
+          : (tResto = tResto || performance.now(), performance.now() - tilesT < 2500 && performance.now() - tResto < 25000) ? 'Afinando la foto 3D…' : '';
         if (!falta || performance.now() - t0 > 150000) { $('lmsg').textContent = 'Listo'; setTimeout(abrirPortada, 600); } else { $('lmsg').textContent = falta; setTimeout(listo, 400); } };
       listo(); } /* Kennedy: se entra con TODO cargado (edificios, vías, árboles, tráfico, foto real, cubiertas y panel; máx. 60 s) */ /* Kennedy: la portada con fotos se queda hasta que el modelo y el panel están listos (máx. 30 s), sin mostrar el suelo vacío */
     else abrirPortada(); // se abre en cuanto están los edificios y las capas; lo demás termina de bajar con la píldora de arriba
