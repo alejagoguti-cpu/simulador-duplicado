@@ -145,6 +145,16 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
   const EXTRA = []; if (BV && BV.sitio) EXTRA.push(habitat('Bosque de la antigua fábrica de Bavaria', BV.sitio, POR_BOSQUE));
   // con la propuesta: las ~6 ha de huertas del distrito Bavaria Común con sus módulos de fauna (apiario, nidos, perchas, refugios): solo existen en «proyecto»
   if (BV && BV.sitio) { const h = habitat('Huertas del distrito Bavaria Común', BV.sitio, { abeja: 40, colibri: 8, copeton: 8, mirla: 6, cucarachero: 6, torcaza: 4, lombriz: 14 } /* solo fauna buena para las huertas: polinizadores, insectívoras y suelo (sin rapaces ni búhos) */); h.tipo = 'huerta'; EXTRA.push(h); } if (CO && CO.poly) EXTRA.push(habitat('Corabastos', CO.poly, POR_CORA));
+  /* KENNEDY HOY: más ratas donde se acumulan basura y residuos de alimentos (Corabastos, bordes de humedales y canales). Con la propuesta no existen:
+     el centro de aprovechamiento de orgánicos y la recolección por barrio les quitan la comida (soloHoy: el bucle las esconde en «proyecto") [SUP] */
+  if (CO && CO.poly) { const h = habitat('Basuras y residuos de Corabastos', CO.poly, { rata: 34 }); h.soloHoy = true; EXTRA.push(h); }
+  for (const hu of HUM) EXTRA.push({ ...hu, n: hu.n + ' · basuras del borde', ag: {}, cnt: { rata: 8 }, soloHoy: true });
+  /* CON LA PROPUESTA: parque humedal de Corabastos (data3d/corabastos_parque.js) donde se desmontan las bodegas junto al humedal La Vaca */
+  if (CO && CO.naves) { const Q = CO.naves.filter(n => n.dh < 120), pts = [];
+    for (const n of Q) { const ca = Math.cos(n.a), sa = Math.sin(n.a); for (const [u, v] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) { const du = u * (n.L / 2 + 8), dv = v * (n.W / 2 + 8); pts.push([n.c[0] + du * ca - dv * sa, n.c[1] + du * sa + dv * ca]); } }
+    if (pts.length >= 3) { const P = pts.sort((a, b) => a[0] - b[0] || a[1] - b[1]), cr = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]), lo = [], hi = [];
+      for (const p of P) { while (lo.length >= 2 && cr(lo[lo.length - 2], lo[lo.length - 1], p) <= 0) lo.pop(); lo.push(p); } for (const p of P.slice().reverse()) { while (hi.length >= 2 && cr(hi[hi.length - 2], hi[hi.length - 1], p) <= 0) hi.pop(); hi.push(p); }
+      const h = habitat('Parque humedal de Corabastos', lo.slice(0, -1).concat(hi.slice(0, -1)), { garza: 3, tingua: 4, pato: 4, monjita: 3, copeton: 6, mirla: 4, colibri: 4, torcaza: 3, cucarachero: 3, abeja: 8, rana: 8, lagartija: 3, caracol: 4 }); h.pro = true; EXTRA.push(h); } }
   // con la propuesta: PARCHES DE ÁRBOLES NATIVOS en parques y alrededor de las huertas de parque (data3d/parches_arboles.js):
   // caucho sabanero, aliso, sauco, chicalá, arrayán y arbustos de flor; cada parche es un hábitat nuevo con su fauna, solo en «proyecto»
   let PAT = [], FAUNA_PARCHE = {}, ESP_PARCHE = {};
@@ -830,6 +840,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
     const ahora = performance.now(), dt = Math.min(0.1, (ahora - ult) / 1000); ult = ahora;
     if ((tAC -= dt) <= 0) { tAC = 1; actualizarAC(); } VER_PRO = ESTADO.escenario !== 'hoy';
     for (const a of AG) { // escenario "hoy" (ESTADO.escenario, lo cambia el tablero): las huertas del proyecto no existen y su fauna tampoco
+      if (a.h.soloHoy) { if (ESTADO.escenario !== 'hoy') { if (!a._fuera) { a._fuera = true; a.vis = false; a.duerme = true; } continue; } if (a._fuera) { a._fuera = false; a.vis = true; a.duerme = false; } } // ratas de las basuras: solo hoy
       if (a.h.pro) { if (ESTADO.escenario === 'hoy') { if (!a._fuera) { a._fuera = true; a.vis = false; a.duerme = true; } continue; } if (a._fuera) { a._fuera = false; a.vis = a.e !== 'abeja'; a.duerme = false; } }
       // escenarios (data3d/escenarios_sim.js · SIM-03): ESTADO.fauna = fracción de las aves que hay; las que «no están» se esconden
       if (ESTADO.fauna != null && ESP[a.e].ave && !a.h.pro) { const r = a._r ?? (a._r = Math.random()), fuera = r > ESTADO.fauna;

@@ -2504,7 +2504,7 @@ async function buildTraffic(THREE) {
   // arranca a las 16:40 (ya hay unos 2.000 carros en la calle) y en marcha; la barra de abajo permite pausar y mover el tiempo
   TRAF = { steps, NS, NV, dur, maxi, t: tIni, playing: true, vel: 1, pedirTrozo, chunk: I.chunk, bodies, cabins, wheels, dummy: new THREE.Object3D(), head: new Float32Array(maxi * 3),
     vis: { n: 0, x: new Float32Array(maxi * 3), z: new Float32Array(maxi * 3), dx: new Float32Array(maxi * 3), dz: new Float32Array(maxi * 3), v: new Float32Array(maxi * 3), id: new Int32Array(maxi * 3), cam: new Uint8Array(maxi * 3) } }; // vis: posición y velocidad de cada carro en este cuadro (detección y seguimiento del simulador)
-  T3.counts.cars = NV; T3.TRAF = TRAF; /* ruido y cierre de vía (data3d/ruido_cierre.js) leen la simulación */
+  T3.counts.cars = NV; T3.TRAF = TRAF; T3.LC = LC; /* data3d/origenes.js pasa las posiciones SUMO al mundo */ /* ruido y cierre de vía (data3d/ruido_cierre.js) leen la simulación */
   if (window.trafficPaint) window.trafficPaint();
   updateTraffic(0);
 }
@@ -2588,11 +2588,14 @@ function updateTraffic(dt) {
     /* camión (8 % por id, mismo reparto de tools/escenarios_build.js). Con la propuesta [SUP]: Corabastos reducido recibe los camiones grandes
        en un patio de transferencia y la carga sigue en vehículos pequeños: el 18,7 % de los camiones (el área de naves retirada,
        data3d/escenarios.json) pasa a ser una furgoneta blanca de reparto. V.cam alimenta el mapa de ruido (un camión pesa más). */
-    const esCam = ((idc * 2654435761) >>> 0) / 4294967296 >= 0.92, aVan = esCam && T3.escenario === 'proyecto' && T3.PROP && T3.PROP.camiones && ((idc * 40503 + 977) % 1000) / 1000 < (T3.retiroCamiones || 0.187);
+    /* HORARIO DE CORABASTOS: la carga llega de noche (los camiones entran de 6 p. m. a 11 p. m. y la venta mayorista abre a las 2 a. m.; boletín
+       SIPSA-DANE y reglamento de la central): cerca de Corabastos, de 18:00 a 03:00, uno de cada cinco vehículos es camión (de día, 8 %) [SUP] */
+    const hR = T3.reloj ? (T3.reloj.t / 60) % 24 : 12, uCam = (hR >= 18 || hR < 3) && Math.hypot(x0 - 1132.1, y0 - 948.6) < 2600 ? 0.80 : 0.92;
+    const esCam = ((idc * 2654435761) >>> 0) / 4294967296 >= uCam, aVan = esCam && T3.escenario === 'proyecto' && T3.PROP && T3.PROP.camiones && ((idc * 40503 + 977) % 1000) / 1000 < (T3.retiroCamiones || 0.187);
     V.cam[n] = esCam && !aVan ? 1 : 0;
     if (VS) { // vehículo realista: tipo y color fijos por id (70 % carros, 22 % motos, 8 % camiones), apoyado en el asfalto
       const id = idc; TRAF.headF[id] = rumboCarro(id, px, pz, dx, dy, TRAF.headF[id], dt); /* recto sobre su vía (no en diagonal), girando suave en las curvas */
-      if (TRAF.tipo[id] < 0) { const r = ((id * 2654435761) >>> 0) / 4294967296; TRAF.tipo[id] = r < 0.70 ? 0 : r < 0.92 ? 1 : 2; TRAF.obj[id] = {}; }
+      if (TRAF.tipo[id] < 0) { const r = ((id * 2654435761) >>> 0) / 4294967296; TRAF.tipo[id] = esCam ? 2 : r < 0.70 ? 0 : r < 0.92 ? 1 : 2; TRAF.obj[id] = {}; } /* de noche cerca de Corabastos hay más camiones (uCam) */
       const yV = (T3.viaY != null ? T3.viaY : 0.62) + 0.02 + (T3.alzaVia ? T3.alzaVia(px, pz) : 0);
       if (aVan) { if (!TRAF.van) TRAF.van = new Map(); let o = TRAF.van.get(id); if (!o) TRAF.van.set(id, o = { _vv: 'van', _vc: 0xeeeeec }); VS.poner(o, 'carro', px, yV, pz, TRAF.headF[id]); n++; continue; }
       VS.poner(TRAF.obj[id], ['carro', 'moto', 'camion'][TRAF.tipo[id]], px, yV, pz, TRAF.headF[id]); n++; continue;
@@ -3630,7 +3633,7 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
   listoK().then(() => import('./data3d/canchas.js?v=2')).then(m => m.iniciarCanchas({ THREE: T3.THREE, T3, OX: 2095.67, OZ: -109.06, Y0: 0, movil: MOVIL })).catch(e => console.warn('canchas:', e));
   const FAUNA_RED = ['tingua', 'garza', 'pato', 'monjita', 'copeton', 'mirla', 'colibri']; // las mueve la red biótica
   let EST = null; // estrategias de la propuesta (data3d/estrategias.js): reemplazan las convenciones P1-P4
-  Promise.all([import('./data3d/giro_sim.js?v=44'), import('./data3d/estrategias.js?v=18'), listoK()])
+  Promise.all([import('./data3d/giro_sim.js?v=45'), import('./data3d/estrategias.js?v=18'), listoK()])
     .then(async ([m, me]) => {
       /* rendimiento: estrategias, plan de Bavaria y plan de Corabastos se arman a la vez (antes uno tras otro) */
       let PLAN = null, CPLAN = null; // E1 Bavaria Común (data3d/bavaria_plan.js) · E3 Corabastos reducido (data3d/corabastos_plan.js)
@@ -3641,7 +3644,7 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
       T3.planBavaria = PLAN; T3.planCorabastos = CPLAN; T3.EST = EST;
       // selector KENNEDY HOY / CON LA PROPUESTA (data3d/escenario.js): arranca en hoy; la propuesta prende huertas, Bavaria Común,
       // Corabastos reducido, sintaxis con los pasajes, camiones -> furgonetas (ruido) y la fauna de las huertas
-      import('./data3d/escenario.js?v=59').then(me2 => me2.iniciarEscenario({ T3, say })).catch(e => console.warn('escenario:', e));
+      import('./data3d/escenario.js?v=60').then(me2 => me2.iniciarEscenario({ T3, say })).catch(e => console.warn('escenario:', e));
       const lista = EST ? EST.lista.slice() : []; if (PLAN) lista.unshift(PLAN.entrada);
       return m.iniciarSimulacion({ T3, say, sinFauna: FAUNA_RED, sinMalla: ['abeja'], estrategias: lista.length ? lista : null, verEstrategia: (id, on, sola) => { /* la red de gobernanza (data3d/red_gobernanza.js) ya no se muestra al elegir estrategia */ if (on && sola && id !== 'E8' && EST && EST.lugar) volarEstrategia(EST.lugar(id)); if (id === 'E1') { if (EST) EST.marcar('E1', on); if (!window.__colB) window.__colB = import('./data3d/colectivo_bavaria.js?v=4').then(m => m.crearColectivo({ THREE: T3.THREE, T3, lw })); window.__colB.then(cb => cb.ver(on)).catch(e => console.warn('colectivo Bavaria:', e)); return PLAN && PLAN.ver(on); } if (id === 'E3' && CPLAN) { if (EST) EST.marcar('E3', on); return CPLAN.ver(on); } return EST && EST.ver(id, on); } }); // todas muestran su lugar; las conexiones entre estrategias se ven cuando las dos están prendidas
     })
@@ -3700,7 +3703,7 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
       }
       return import('./data3d/cielo.js?v=8');
     }).then(m => { T3.cielo = m.iniciarCielo({ THREE: T3.THREE, T3, luzMalla }); }) // cielo y luz de 24 horas con el reloj de la simulación
-    .then(() => Promise.all([import('./data3d/biotica.js?v=30'), import('./data3d/huertas_barrio.js?v=6'), (window.cargarJSON || ((u) => fetch(u).then(r => r.json())))('data3d/huertas_barrio.json?v=3').catch(() => null)])).then(([m, HBm, HB]) => m.iniciarBiotica({ THREE: T3.THREE, T3, lw, OX: 2095.67, OZ: -109.06, Y0: 2.0, movil: MOVIL, huertas: EST ? EST.sitios().concat(HBm.sitiosHuertasBarrio(HB)) : null }))
+    .then(() => Promise.all([import('./data3d/biotica.js?v=31'), import('./data3d/huertas_barrio.js?v=6'), (window.cargarJSON || ((u) => fetch(u).then(r => r.json())))('data3d/huertas_barrio.json?v=3').catch(() => null)])).then(([m, HBm, HB]) => m.iniciarBiotica({ THREE: T3.THREE, T3, lw, OX: 2095.67, OZ: -109.06, Y0: 2.0, movil: MOVIL, huertas: EST ? EST.sitios().concat(HBm.sitiosHuertasBarrio(HB)) : null }))
     .then(bio => { T3.bio = bio; import('./data3d/tablero.js?v=26').then(m => { T3.tablero = m.iniciarTablero({ T3, bio }); }).catch(e => console.warn('tablero:', e)); import('./data3d/seguir.js?v=3').then(m => m.iniciarSeguir({ THREE: T3.THREE, T3, say })).catch(e => console.warn('seguir:', e)); }) // tablero en vivo de las relaciones bióticas
     .then(() => import('./data3d/actores.js?v=7')).then(m => m.iniciarActores({ THREE: T3.THREE, T3, lw, OX: 2095.67, OZ: -109.06, Y0: 2.0 })).then(a => { T3.actores = a; }) // capa de redes de actores (9 estrategias del Excel)
     .catch(e => console.warn('simulación Kennedy:', e));

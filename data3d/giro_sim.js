@@ -680,6 +680,7 @@ export async function iniciarSimulacion(cfg = {}) {
       }
       addEventListener('escenario', () => setTimeout(pintarCora, 80)); setInterval(() => { if (T3.alivio && !T3.alivio.manual) pintarCora(); }, 1000);
       pintarCora();
+      import('./origenes.js?v=1').then(m => { T3.origenes = m.crearOrigenes({ T3, izq, despues: caja }); }).catch(e => console.warn('orígenes:', e)); // ¿de dónde vienen los carros? (puntos de origen y horario de Corabastos)
       { /* cuántos carros hay en la calle a esta hora (demanda según el reloj: index.html, demandaHora) */
         izq.querySelector('#gs-fc').insertAdjacentHTML('beforebegin', '<div id="gs-dem" style="font-size:10.5px;color:#94a3b8;margin:2px 0 6px"></div>');
         const dem = izq.querySelector('#gs-dem');
