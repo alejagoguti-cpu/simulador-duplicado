@@ -169,7 +169,7 @@
 
 <div id="loader">
   <div class="cv-fotos" id="cvFotos">
-    <img class="on" src="presentacion/img/portada_render.jpg?v=5" alt="Kennedy en 3D: humedal El Burro, torres y barrios" />
+    <img class="on" src="presentacion/img/portada_render.webp?v=1" fetchpriority="high" alt="Kennedy en 3D: humedal El Burro, torres y barrios" />
   </div>
   <div class="cv-velo"></div>
   <div class="cv-city" id="cvCity"></div>
@@ -908,8 +908,9 @@ const enZona = (x, y, margen = 0) => !ZON || (x - ZONA.x) ** 2 + (y - ZONA.y) **
 const MOVIL = QUEST || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (matchMedia('(pointer:coarse)').matches && Math.min(screen.width, screen.height) < 900);
 // ?modo=kennedy (giro.html): simulación de agentes de Kennedy sobre la maqueta (calles pintadas con sintaxis espacial, árboles semitransparentes, sin el tráfico ni el HUD de God's Eye)
 const KEN = true; // repositorio "simulador": siempre el simulador de Kennedy
-/* carga más rápida: lo pesado que se usa al final (modelo INEM, plantas del Tintal) empieza a bajar desde el inicio, solo descarga (sin procesar), así ya está en caché cuando se arma */
-setTimeout(() => ['data3d/inem/inem.glb', 'data3d/models/fern_02.glb', 'data3d/models/calathea_orbifolia_01.glb', 'data3d/models/nettle_plant.glb', 'data3d/models/periwinkle_plant.glb', 'data3d/models/celandine_01.glb', 'data3d/residuos.json?v=1'].forEach(u => fetch(u, { priority: 'low' }).then(r => r.arrayBuffer()).catch(() => {})), 2500);
+/* plantas del Tintal: bajan en segundo plano cuando ya se abrió la maqueta. El modelo INEM (24 MB) NO se pre-descarga: con conexiones lentas
+   le quitaba ancho de banda a lo esencial (árboles, vías, tráfico) y la portada tardaba más de un minuto */
+setTimeout(() => ['data3d/models/fern_02.glb', 'data3d/models/calathea_orbifolia_01.glb', 'data3d/models/nettle_plant.glb', 'data3d/models/periwinkle_plant.glb', 'data3d/models/celandine_01.glb', 'data3d/residuos.json?v=1'].forEach(u => fetch(u, { priority: 'low' }).then(r => r.arrayBuffer()).catch(() => {})), 25000);
 if (KEN) ZONA.r = MOVIL ? 1500 : 2600; // modo Kennedy: edificios y árboles propios en un radio mayor alrededor de El Burro
 if (MOVIL) { LIVIANO = true; MEDIO = true; } // celular: sin sombras ni tráfico pesado, árboles más livianos y sin los modelos pesados, pero CON los edificios del entorno del humedal (archivo recortado de ~3 MB) desde que abre
 const DIA = { // ambiente de día soleado (se usa al crear la escena y al volver de la noche)
@@ -1409,17 +1410,16 @@ async function initTodoReal() {
       if (!$('b-aves').classList.contains('on')) api.grp.visible = false;
     }).catch(e => { console.warn('aves 3D:', e); buildAves(THREE); });
     if (KEN) { const t0 = performance.now(); let tilesN = -1, tilesT = performance.now(), tResto = 0;
-      const listo = () => { /* Kennedy: se entra con TODO cargado (máx. 120 s) */
-        const TR = T3.TRAF, trafN = TR ? TR.steps.filter(Boolean).length : 0, trafOk = TR && trafN >= Math.min(TR.NS, 3 * TR.chunk); /* los primeros 5 min de tráfico; el resto sigue bajando sin que se note */
+      const listo = () => { /* Kennedy: se entra con lo ESENCIAL (panel, edificios, vías, árboles, primer tramo de tráfico y la foto 3D a medias; máx. 25 s).
+           Bavaria, El Tintal, conjuntos, INEM, cubiertas y el resto del tráfico siguen bajando con la maqueta abierta (píldora de arriba).
+           Antes se esperaba TODO (hasta 120 s): con conexión lenta la portada tardaba más de un minuto. */
+        const TR = T3.TRAF, trafN = TR ? TR.steps.filter(Boolean).length : 0, trafOk = TR && trafN >= Math.min(TR.NS, TR.chunk); /* el primer trozo de tráfico; el resto sigue bajando sin que se note */
         if (T3.tilesCargadas !== tilesN) { tilesN = T3.tilesCargadas; tilesT = performance.now(); }
         const falta = !(window.KEN3D && document.getElementById('gs-izq')) ? 'Preparando la simulación…'
-          : document.querySelectorAll('.cv-steps li.ok').length < PASOS.length ? 'Cargando capas…'
-          : !(T3.roofU && T3.roofU.uTechoOn.value > 0) ? 'Cargando cubiertas…'
-          : !(T3.tintal && T3.conjuntos && T3.bavaria) ? 'Cargando Bavaria, El Tintal y conjuntos…'
-          : !T3.inem ? 'Cargando el sector INEM…'
-          : !trafOk ? 'Cargando tráfico · ' + Math.min(100, Math.round(100 * trafN / (TR ? 3 * TR.chunk : 1))) + ' %'
-          : (tResto = tResto || performance.now(), performance.now() - tilesT < 2500 && performance.now() - tResto < 6000) ? 'Afinando la foto 3D…' : ''; /* la foto 3D nunca termina de afinarse del todo: máx. 12 s */
-        if (!falta || performance.now() - t0 > 120000) { $('lmsg').textContent = 'Listo'; setTimeout(abrirPortada, 1500); } else { $('lmsg').textContent = falta; setTimeout(listo, 500); } };
+          : document.querySelectorAll('.cv-steps li.ok').length < PASOS.length - 1 ? 'Cargando capas…' /* la foto 3D puede seguir afinándose */
+          : !trafOk ? 'Cargando tráfico · ' + Math.min(100, Math.round(100 * trafN / (TR ? TR.chunk : 1))) + ' %'
+          : (tResto = tResto || performance.now(), performance.now() - tilesT < 1500 && performance.now() - tResto < 3000) ? 'Afinando la foto 3D…' : '';
+        if (!falta || performance.now() - t0 > 25000) { $('lmsg').textContent = 'Listo'; setTimeout(abrirPortada, 400); } else { $('lmsg').textContent = falta; setTimeout(listo, 400); } };
       listo(); } /* Kennedy: se entra con TODO cargado (edificios, vías, árboles, tráfico, foto real, cubiertas y panel; máx. 60 s) */ /* Kennedy: la portada con fotos se queda hasta que el modelo y el panel están listos (máx. 30 s), sin mostrar el suelo vacío */
     else abrirPortada(); // se abre en cuanto están los edificios y las capas; lo demás termina de bajar con la píldora de arriba
     say(REALISTA ? 'Kennedy fotorrealista · cargando la malla 3D de Google y el tráfico…' : '🧱 TODO 3D listo · ' + B.length.toLocaleString('es-CO') + ' edificios · cargando árboles 3D y tráfico…', 5000);
@@ -3602,7 +3602,7 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
   const listoK = () => T3 && T3.ready && T3.net ? Promise.resolve() : new Promise(r => setTimeout(() => r(listoK()), 400));
   // Biblioteca El Tintal (modelo propio) y canchas reales de OpenStreetMap: no dependen de la simulación, se cargan en paralelo
   listoK().then(() => import('./data3d/tintal.js?v=17')).then(m => m.iniciarTintal({ THREE: T3.THREE, T3, OX: 2095.67, OZ: -109.06, Y0: 0.85, movil: MOVIL })).catch(e => console.warn('Biblioteca El Tintal:', e));
-  listoK().then(() => new Promise(r => { /* rendimiento: el modelo del INEM (25 MB) baja solo cuando el panel ya está listo y la vista se acerca al sector */ const t0 = performance.now(); const mira = () => { const o = T3.orbit && T3.orbit.target, ok = !!document.getElementById('gs-izq'); /* baja apenas está el panel (antes compite con la preparación) */ if (ok) r(); else setTimeout(mira, 1000); }; mira(); })).then(() => import('./data3d/inem.js?v=3')).then(m => m.iniciarInem({ THREE: T3.THREE, T3, OX: 2095.67, OZ: -109.06, Y0: 0.3 })).catch(e => console.warn('INEM Kennedy:', e)); // modelo oficial del sector INEM (IDECA)
+  listoK().then(() => new Promise(r => { /* rendimiento: el modelo del INEM (25 MB) baja solo cuando el panel ya está listo y la vista se acerca al sector */ const t0 = performance.now(); let tAb = 0; const mira = () => { const ok = !!document.getElementById('gs-izq') && $('loader').classList.contains('hidden'); if (ok && !tAb) tAb = performance.now(); /* baja 20 s después de abrir la maqueta: no le quita ancho de banda a lo esencial */ if (ok && performance.now() - tAb > 20000) r(); else setTimeout(mira, 1000); }; mira(); })).then(() => import('./data3d/inem.js?v=3')).then(m => m.iniciarInem({ THREE: T3.THREE, T3, OX: 2095.67, OZ: -109.06, Y0: 0.3 })).catch(e => console.warn('INEM Kennedy:', e)); // modelo oficial del sector INEM (IDECA)
   listoK().then(() => import('./data3d/conjuntos.js?v=5')).then(m => m.iniciarConjuntos({ THREE: T3.THREE, T3, lw, Y0: 0.3, movil: MOVIL })).catch(e => console.warn('conjuntos:', e));
   listoK().then(() => import('./data3d/canchas.js?v=2')).then(m => m.iniciarCanchas({ THREE: T3.THREE, T3, OX: 2095.67, OZ: -109.06, Y0: 0, movil: MOVIL })).catch(e => console.warn('canchas:', e));
   const FAUNA_RED = ['tingua', 'garza', 'pato', 'monjita', 'copeton', 'mirla', 'colibri']; // las mueve la red biótica
