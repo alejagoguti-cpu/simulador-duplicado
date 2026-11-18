@@ -626,7 +626,7 @@ export async function iniciarSimulacion(cfg = {}) {
 #gs-cora .gs-cres small{display:block;font-size:9.5px;color:#94a3b8;letter-spacing:.04em}#gs-cora .gs-cres b{font-size:18px;font-weight:600;color:#6ee7b7;font-variant-numeric:tabular-nums}
 #gs-cora.hoy .gs-cres div{background:rgba(225,87,89,.08);border-color:rgba(225,87,89,.3)}#gs-cora.hoy .gs-cres b{color:#fca5a5}`; document.head.appendChild(css); }
       const caja = izq.querySelector('#gs-cora');
-      caja.querySelectorAll('input[data-k]').forEach(i => { i.value = CS[i.dataset.k]; i.oninput = () => { CS[i.dataset.k] = +i.value; pintarCora(); }; });
+      caja.querySelectorAll('input[data-k]').forEach(i => { i.value = CS[i.dataset.k]; i.oninput = () => { CS[i.dataset.k] = +i.value; pintarCora(); dispatchEvent(new Event('cora-cambio')); }; /* los indicadores en 3D (data3d/indicadores.js) se recalculan */ });
       caja.querySelectorAll('#gs-cesc button').forEach(b => b.onclick = () => { const K = window.KEN_ESC; if (K && K.poner) K.poner(b.dataset.e); setTimeout(pintarCora, 80); });
       function pintarCora() {
         const pro = T3.escenario === 'proyecto', r = calcCora(), AL = T3.alivio;

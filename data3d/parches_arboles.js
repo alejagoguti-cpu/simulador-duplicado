@@ -26,6 +26,7 @@ export const FAUNA_PARCHE = { copeton: 2, mirla: 2, colibri: 2, torcaza: 1, cuca
 const azar = (s) => () => { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
 const dentro = (x, z, P) => { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) if ((P[i][1] > z) !== (P[j][1] > z) && x < (P[j][0] - P[i][0]) * (z - P[i][1]) / (P[j][1] - P[i][1]) + P[i][0]) c = !c; return c; };
 let CACHE = null;
+export const parchesCalculados = () => CACHE; // los usa data3d/indicadores.js (sin recalcular)
 export function calcularParches(HB, PQ, lw, movil = false) {
   if (CACHE) return CACHE;
   const R = azar(20261118), parques = (PQ || []).map(p => { const poly = p.pts.map(q => lw(q[0], q[1])); let a = 0, cx = 0, cz = 0; for (let i = 0; i < poly.length; i++) { const q = poly[i], r = poly[(i + 1) % poly.length]; a += q[0] * r[1] - r[0] * q[1]; cx += q[0]; cz += q[1]; }

@@ -3607,7 +3607,7 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
   listoK().then(() => import('./data3d/canchas.js?v=2')).then(m => m.iniciarCanchas({ THREE: T3.THREE, T3, OX: 2095.67, OZ: -109.06, Y0: 0, movil: MOVIL })).catch(e => console.warn('canchas:', e));
   const FAUNA_RED = ['tingua', 'garza', 'pato', 'monjita', 'copeton', 'mirla', 'colibri']; // las mueve la red biótica
   let EST = null; // estrategias de la propuesta (data3d/estrategias.js): reemplazan las convenciones P1-P4
-  Promise.all([import('./data3d/giro_sim.js?v=42'), import('./data3d/estrategias.js?v=18'), listoK()])
+  Promise.all([import('./data3d/giro_sim.js?v=43'), import('./data3d/estrategias.js?v=18'), listoK()])
     .then(async ([m, me]) => {
       /* rendimiento: estrategias, plan de Bavaria y plan de Corabastos se arman a la vez (antes uno tras otro) */
       let PLAN = null, CPLAN = null; // E1 Bavaria Común (data3d/bavaria_plan.js) · E3 Corabastos reducido (data3d/corabastos_plan.js)
@@ -3666,7 +3666,7 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
         b4.insertAdjacentElement('afterend', b5);
         /* indicadores en 3D (picos de las láminas: anasoficasca-code.github.io/picos); empieza apagado */
         const b6 = document.createElement('button'); b6.id = 'in-btn'; b6.textContent = 'Indicadores'; b6.title = 'Indicadores del diagnóstico como picos 3D sobre Kennedy'; b6.style.cssText = 'width:100%;margin-top:6px';
-        let pIn = null; b6.onclick = async () => { const on = !b6.classList.contains('on'); b6.classList.toggle('on', on); try { const m = await import('./data3d/indicadores.js?v=2'); if (!pIn) pIn = m.crearIndicadores({ THREE: T3.THREE, T3 }); const a = await pIn; a.ver(on); if (on && !a.sel) a.mostrar('SE'); m.panelIndicadores(a, on); } catch (e) { console.warn('indicadores:', e); } };
+        let pIn = null; b6.onclick = async () => { const on = !b6.classList.contains('on'); b6.classList.toggle('on', on); try { const m = await import('./data3d/indicadores.js?v=3'); if (!pIn) pIn = m.crearIndicadores({ THREE: T3.THREE, T3 }); const a = await pIn; a.ver(on); if (on && !a.sel) a.mostrar('SE'); m.panelIndicadores(a, on); } catch (e) { console.warn('indicadores:', e); } };
         b5.insertAdjacentElement('afterend', b6);
       }
       if (!document.getElementById('vi-btn')) { // Visión: la propuesta encendida sobre el territorio oscuro (data3d/vision.js)
