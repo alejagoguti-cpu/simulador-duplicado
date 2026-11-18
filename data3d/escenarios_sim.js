@@ -206,7 +206,7 @@ ${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, FMT.luz)}${slider(
   const capaFlujo = (on) => { const b = document.querySelector(`#gs-fc button[data-v="${on ? '1' : ''}"]`); if (b && !b.classList.contains('on')) b.click(); };
   const LUGAR = {
     huertas: { n: 'las huertas que se abren desde Bavaria', ir: () => { capaFlujo(false); volar([3500, 300], 1500, 0.7); } },
-    trafico: { n: 'el tráfico de la Av. Ciudad de Cali y Corabastos (capa de flujo de carros)', ir: () => { capaFlujo(true); const m = T3.alivio && T3.alivio.mid; volar(m || CORA, 900, 0.6); } },
+    trafico: { n: 'el tráfico de la Av. Ciudad de Cali y Corabastos (capa de flujo de carros)', ir: () => { capaFlujo(true); volar(CORA, 1500, 0.6); } },
     compost: { n: 'el camino de los residuos orgánicos', ir: () => { capaFlujo(false); const e = esc(); volar(e === 'C' ? BAVC() : (EST[0] || BAV), e === 'C' ? 500 : 700, 0.6); } },
     parches: { n: 'los parches de árboles nativos', ir: () => { capaFlujo(false); const P = (T3.bio && T3.bio.PARCHES) || []; const c = P.length ? [P.reduce((s, p) => s + p.cx, 0) / P.length, P.reduce((s, p) => s + p.cz, 0) / P.length] : [3000, 300]; volar(c, 1300, 0.6); } },
     humedal: { n: 'las aves y el estado del Humedal El Burro', ir: () => { capaFlujo(false); volar(BURRO, 750, 0.6); } }
@@ -309,10 +309,10 @@ ${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, FMT.luz)}${slider(
       const rutas = RUTAS[p.r], cv = rutas[p.k % rutas.length]; const v = p.r === 'rell' ? 0.05 : 0.11; cv.getPoint((p.f + tt * v) % 1, V); PP[i * 3] = V.x; PP[i * 3 + 1] = V.y; PP[i * 3 + 2] = V.z; }
     gp.attributes.position.needsUpdate = true;
     { const y = T3.camera.position.y, lejos = Math.max(0, Math.min(1, (y - 120) / 260)), solo = T3.escSolo && T3.escSolo(); UM.uA.value = solo === 'bav' || solo === 'col' ? 0 : lejos; const lejos2 = Math.max(0, Math.min(1, (y - 70) / 200)), libre = !solo || solo === 'red';
-      if (banda) { UB.uA.value = libre ? 0.25 + 0.75 * lejos2 : 0; UB.uW.value = Math.max(6, Math.min(60, y * 0.009)) * (0.2 + 1.1 * kTr); banda.visible = UB.uA.value > 0.01 && y > 45; }
+      if (banda) { UB.uA.value = libre ? 0.25 + 0.75 * lejos2 : 0; UB.uW.value = Math.max(6, Math.min(60, y * 0.009)) * (0.2 + 1.1 * kTr); banda.visible = false; } /* sin franja sobre una sola vía: el cambio del tráfico se ve en toda la red con la capa «flujo de carros» (data3d/alivio_cali.js) */
       UC.uA.value = libre ? Math.max(0.4, lejos2) : 0; UC.uR.value = Math.min(2, devicePixelRatio || 1);
       { const ae = document.getElementById('alivio-et'); if (ae) ae.style.display = 'none'; const KC = window.KEN_CALI; if (KC && KC.cinta) KC.cinta.visible = false; } /* la franja y la etiqueta de aqui reemplazan las de alivio_cali.js */ UM.uPx.value = innerHeight * Math.min(2, devicePixelRatio || 1);
-      if (via) { via.visible = !solo && lejos > 0.05; via.material.opacity = 0.9 * lejos; } }
+      if (via) via.visible = false; }
     const cam = T3.camera, W = innerWidth, H = innerHeight;
     for (const k in ET) { const d = ET[k]; if (!d.innerHTML || (k === 'comp' && e === 'A') || document.body.classList.contains('tb-abierto') || (T3.escSolo && T3.escSolo()) || cam.position.y < 140) { d.style.display = 'none'; continue; }
       const p = POS[k](); V.set(p[0], p[1], p[2]).project(cam); const ok = V.z < 1 && Math.abs(V.x) < 0.92 && Math.abs(V.y) < 0.9; d.style.display = ok ? 'block' : 'none';
@@ -321,7 +321,7 @@ ${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, FMT.luz)}${slider(
   requestAnimationFrame(cuadro);
   aplicar();
   setTimeout(() => import('./guia.js?v=2').then(m => m.abrirGuia(false)).catch(() => {}), 2500); // la primera vez: cómo se usa
-  import('./mejora_tour.js?v=4').then(m => { T3.mejora = m.iniciarMejoraTour({ T3 }); }).catch(e => console.warn('recorrido:', e)); // «¿Cómo mejora Kennedy?»: antes y después en cada lugar
+  import('./mejora_tour.js?v=5').then(m => { T3.mejora = m.iniciarMejoraTour({ T3 }); }).catch(e => console.warn('recorrido:', e)); // «¿Cómo mejora Kennedy?»: antes y después en cada lugar
   import('./capas_escenario.js?v=3').then(m => m.iniciarCapasEscenario({ T3 })).catch(e => console.warn('capas:', e)); // sintaxis, ruido, usos e indicadores cambian con la propuesta
   return { aplicar, arrancar, get R() { return R; }, get via() { return via; }, marcas, mO };
 }

@@ -21,9 +21,9 @@ export function iniciarMejoraTour({ T3 }) {
 
   /* ---------- las paradas ---------- */
   const PASOS = [
-    { tag: 'Tráfico', t: 'Menos carros y camiones hacia Corabastos', lugar: MID, alto: 700,
-      hoy: (n) => ['100 %', 'de los vehículos de hoy en la Av. Ciudad de Cali'], pro: (n) => [n.tr + ' %', `de los vehículos de hoy (−${100 - n.tr} %)`],
-      mira: 'La franja sobre la avenida pasa de <b style="color:#ff8f8f">roja y gruesa</b> (mucho tráfico) a <b style="color:#9be38f">verde y delgada</b>, y en la vía pasan menos carros y camiones.',
+    { tag: 'Tráfico', t: 'Menos carros y camiones hacia Corabastos', lugar: () => CORA, alto: 1500, flujo: true,
+      hoy: (n) => ['100 %', 'de los vehículos de hoy en las vías de Corabastos'], pro: (n) => [n.tr + ' %', `de los vehículos de hoy (−${100 - n.tr} %)`],
+      mira: 'Con la capa de flujo de carros, las vías alrededor de Corabastos pasan poco a poco de <b style="color:#ff8f8f">rojo</b> (congestión) a <b style="color:#9be38f">verde</b> mientras corre la simulación.',
       por: 'Las huertas del barrio y los mercados de barrio abastecen tiendas y comedores, así que menos gente y menos camiones viajan a Corabastos.' },
     { tag: 'Bavaria', t: 'El predio cerrado de Bavaria se abre al barrio', lugar: () => BAV, alto: 760, solo: 'bav',
       hoy: () => ['Cerrado', '40 ha de industria que obligan a rodearlas'], pro: () => ['20 pasajes', 'escuela de huertas, laboratorios y planta de compost'],
@@ -125,6 +125,7 @@ body.mt-on #mt{display:block}
     // en Bavaria el distrito (edificios, pasajes, huertas de enseñanza) solo se arma con su estrategia escogida: se prende con la propuesta
     const P = PASOS[paso]; if (P.solo && v === 'pro') despues(500, () => { const s = T3.escSolo && T3.escSolo(); if (s !== P.solo) document.querySelector(`#esc-ley [data-s="${P.solo}"]`)?.click(); });
     if (v === 'hoy') quitarSolo();
+    if (P.flujo) { const b = document.querySelector('#gs-fc button[data-v="1"]'); if (b && !b.classList.contains('on')) b.click(); } // el tráfico se lee en la capa de flujo de carros
     pintar();
   }
   function pintar() {
