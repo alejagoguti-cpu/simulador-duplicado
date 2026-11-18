@@ -2482,7 +2482,7 @@ async function buildTraffic(THREE) {
   T3.scene.add(bodies, cabins, wheels);
   if (KEN) { // Kennedy: la simulación SUMO se dibuja con los vehículos realistas (data3d/vehiculos.js): carros, taxis, camionetas, motos y camiones
     try {
-      const mv = await import('./data3d/vehiculos.js?v=5');
+      const mv = await import('./data3d/vehiculos.js?v=6');
       T3.vehSUMO = mv.crearVehiculos({ T3, movil: LIVIANO, maxDist: LIVIANO ? 1200 : 3200, cuantos: { carro: maxi * 3, moto: Math.ceil(maxi * 3 * 0.32), camion: Math.ceil(maxi * 3 * 0.14) } /* hasta 3 copias de la grabación en hora pico */ });
       T3.sumoActivo = true; // la simulación del giro deja de dibujar sus carros, motos y camiones (sigue contando para los indicadores)
     } catch (e) { console.warn('vehículos SUMO:', e); T3.vehSUMO = null; }
