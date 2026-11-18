@@ -75,6 +75,7 @@ export async function iniciarHidroponia({ THREE, T3, techos, movil = false }) {
   const INST = { rack: [], torre: [], tunel: [], tanque: [], jard: [], caseta: [] }; // [x, y, z, rotY, celda]
   const FLORES = []; // puntos que visitan los polinizadores: [x, y, z, tipo(0 techo, 1 balcón), techo]
   const CELDA = 150, celdas = new Map(), clave = (x, z) => Math.floor(x / CELDA) + ',' + Math.floor(z / CELDA);
+  const VERDES = []; // [W, y, ti]: cubiertas con huerta que se pintan enteras de verde (techo vegetal)
   let tiAct = 0; const TCEN = new Map(); // techo -> [x, y, z] (orden de apertura y resalte)
   const meter = (k, x, y, z, r) => { const c = clave(x, z); INST[k].push([x, y, z, r, c, tiAct]); };
   techos.forEach((t, ti) => {
@@ -98,7 +99,7 @@ export async function iniciarHidroponia({ THREE, T3, techos, movil = false }) {
       else { meter('rack', x, y, z, rot); const sd = rnd() < 0.5 ? 1 : -1; FLORES.push([x + ux * (rnd() * 3 - 1.5) + vx * sd * 0.95, y + 1.0, z + uz * (rnd() * 3 - 1.5) + vz * sd * 0.95, 0, ti, vx * sd, vz * sd]); } // frente a las lechugas del nivel medio, por fuera del rack
       puestos++;
     }
-    if (puestos) { const x = cx - (ux + vx) * 1.2, z = cz - (uz + vz) * 1.2; if (enPoli(W, x, z)) meter('tanque', x, y, z, 0); }
+    if (puestos) { const x = cx - (ux + vx) * 1.2, z = cz - (uz + vz) * 1.2; if (enPoli(W, x, z)) meter('tanque', x, y, z, 0); VERDES.push([W, y, ti]); } // cubierta verde completa bajo la huerta
     // balcones: edificios de 4 pisos o más, en los lados largos, una jardinera cada ~5 m en pisos alternos
     if (t.h >= 16.5) { // balcones de las torres (las que se modelan también en Foto real)
       const ccw = A > 0;
@@ -120,6 +121,28 @@ export async function iniciarHidroponia({ THREE, T3, techos, movil = false }) {
   const ORD = new Map(); { const BAV = [4136, 96], L = [...new Set(Object.values(INST).flat().map(p => p[5]))].map(ti => { const c = TCEN.get(ti) || [0, 0, 0]; return [ti, Math.hypot(c[0] - BAV[0], c[2] - BAV[1]) * (0.75 + rnd() * 0.5)]; }).sort((a, b) => a[1] - b[1]);
     L.forEach(([ti], i) => ORD.set(ti, L.length > 1 ? i / (L.length - 1) : 0)); }
   let frac = 1;
+  /* CUBIERTA VERDE: cada techo con huerta queda entero de verde (techo vegetal de pasto y sedum entre los racks). Una sola malla para todos los
+     techos; cada vértice lleva el orden de apertura de su techo (aOrd) y el sombreador descarta los techos que aún no se abren (uFrac) */
+  const uFrac = { value: 1 };
+  if (VERDES.length) {
+    const geos = [];
+    for (const [W, y, ti] of VERDES) { try {
+      const g = new THREE.ShapeGeometry(new THREE.Shape(W.map(p => new THREE.Vector2(p[0], -p[1])))); g.rotateX(-Math.PI / 2); g.translate(0, y + 0.06, 0);
+      const pos = g.attributes.position, uv = new Float32Array(pos.count * 2), o = new Float32Array(pos.count).fill(ORD.get(ti) ?? 0);
+      for (let i = 0; i < pos.count; i++) { uv[i * 2] = pos.getX(i) / 4; uv[i * 2 + 1] = pos.getZ(i) / 4; }
+      g.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); g.setAttribute('aOrd', new THREE.BufferAttribute(o, 1)); if (g.index) geos.push(g.toNonIndexed()); else geos.push(g);
+    } catch (e) { /* techo con forma inválida */ } }
+    if (geos.length) {
+      const gV = mergeGeometries(geos.map(g => { for (const k of Object.keys(g.attributes)) if (!['position', 'normal', 'uv', 'aOrd'].includes(k)) g.deleteAttribute(k); return g; })); gV.computeVertexNormals();
+      const tex = new THREE.TextureLoader().load('data3d/textures/pasto_color.jpg'); tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = ANIS;
+      const mV = new THREE.MeshStandardMaterial({ map: tex, color: 0xe4f7b0, emissive: 0x4f7a22, emissiveMap: tex, emissiveIntensity: 0.9, roughness: 0.95, metalness: 0, /* verde vivo que se lee desde lejos y a la sombra */ polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+      mV.onBeforeCompile = (sh) => { sh.uniforms.uFrac = uFrac;
+        sh.vertexShader = 'attribute float aOrd;\nvarying float vOrd;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvOrd = aOrd;');
+        sh.fragmentShader = 'uniform float uFrac;\nvarying float vOrd;\n' + sh.fragmentShader.replace('#include <clipping_planes_fragment>', '#include <clipping_planes_fragment>\nif (vOrd > uFrac) discard;'); };
+      mV.customProgramCacheKey = () => 'cubiertaVerde';
+      const techoV = new THREE.Mesh(gV, mV); techoV.receiveShadow = true; techoV.name = 'cubiertas-verdes'; grupo.add(techoV);
+    }
+  }
   const FC = new Map(); FLORES.forEach((f, i) => { const c = clave(f[0], f[2]); if (!FC.has(c)) FC.set(c, []); FC.get(c).push(i); });
 
   // ---------- instancias: solo las cercanas a lo que mira la cámara ----------
@@ -323,10 +346,11 @@ export async function iniciarHidroponia({ THREE, T3, techos, movil = false }) {
   return {
     grupo, total, flores: FLORES.length, techos: ORD.size,
     // f en [0, 1]: fracción de cubiertas con huerta; las que se abren en este paso disparan un pulso de luz (data3d/resaltes.js)
-    fraccion(f) { f = Math.max(0, Math.min(1, f)); if (Math.abs(f - frac) < 0.002) return; const antes = frac; frac = f;
+    fraccion(f) { f = Math.max(0, Math.min(1, f)); if (Math.abs(f - frac) < 0.002) return; const antes = frac; frac = f; uFrac.value = f;
       if (f > antes && grupo.visible) import('./resaltes.js?v=1').then(m => { const R2 = m.resaltes(T3); let k = 0; for (const [ti, o] of ORD) if (o > antes && o <= f && k++ < 60) { const c = TCEN.get(ti); if (c) R2.pulso(c[0], c[1], c[2], 25); } }).catch(() => {});
       ultimo = null; if (grupo.visible) recalcular(); },
     get frac() { return frac; },
+    centros: () => [...ORD].map(([ti, o]) => [TCEN.get(ti), o]), // [centro, orden] de cada cubierta con huerta
     ver: (on) => { grupo.visible = on; panel.style.display = on ? 'flex' : 'none'; const v = on ? '1' : '0'; if (panel.dataset.on !== v) { panel.dataset.on = v; dispatchEvent(new Event('dock-cambio')); } if (on) { ultimo = null; recalcular(); } }
   };
 }

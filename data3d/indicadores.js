@@ -41,9 +41,9 @@ export async function crearIndicadores({ THREE, T3 }) {
   const caida = (d, r0, r1) => d <= r0 ? 1 : d >= r1 ? 0 : 1 - (d - r0) / (r1 - r0);
   let VERDE = [], HUERTA = [];
   fetch('data3d/huertas_barrio.json?v=3').then(r => r.json()).then(D => { HUERTA = (D.huertas || []).map(h => h.c).filter(Boolean); }).catch(() => {});
-  const leerParches = () => import('./parches_arboles.js?v=5').then(m => { const P = m.parchesCalculados(); if (P) VERDE = P.map(p => p.c); return !!P; }).catch(() => false);
+  const leerParches = () => import('./parches_arboles.js?v=6').then(m => { const P = m.parchesCalculados(); if (P) VERDE = P.map(p => p.c); return !!P; }).catch(() => false);
   const cerca = (L, x, z, r0, r1) => { let w = 0; for (const c of L) { const dx = c[0] - x, dz = c[1] - z; if (Math.abs(dx) > r1 || Math.abs(dz) > r1) continue; const v = caida(Math.hypot(dx, dz), r0, r1); if (v > w) w = v; } return w; };
-  const reduccion = () => { const A = T3.alivio, M = A && A.manual; return { car: M ? 1 - M.keep : A ? 1 - A.KEEP : 0.4, cam: M ? 1 - M.keepCam : A ? 1 - A.KEEP_CAM : 0.7 }; };
+  const reduccion = () => { const A = T3.alivio, M = A && A.manual; if (!A) return { car: 0.4, cam: 0.7 }; return { car: 1 - (M ? M.keep : 1) * A.KEEP, cam: 1 - (M ? M.keepCam : 1) * A.KEEP_CAM }; }; // sliders de Corabastos × dependencia del escenario
   function calcularPropuesta(M) {
     const n = M.z0.length, Z = M.zP, r = reduccion(), c = M.code;
     for (let k = 0; k < n; k++) {

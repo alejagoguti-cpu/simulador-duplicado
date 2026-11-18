@@ -258,7 +258,7 @@ export async function iniciarSimulacion(cfg = {}) {
       if (V) for (let i = 0; i < V.n; i++) { const r = ((V.id[i] * 2654435761) >>> 0) / 4294967296; if (r < 0.70) n.carro++; else if (r < 0.92) n.moto++; else if (V.cam && !V.cam[i] && pro) n.van++; else n.camion++; }
       for (const k in n) q(`[data-n="${k}"]`).textContent = V ? fmt(n[k]) : '–';
       q('tr[data-vh="van"]').classList.toggle('off', !pro);
-      const AL = T3.alivio, M = AL && AL.manual, rc = M ? 1 - M.keep : AL ? 1 - AL.KEEP : 0, rk = M ? 1 - M.keepCam : AL ? 1 - AL.KEEP_CAM : 0;
+      const AL = T3.alivio, M = AL && AL.manual, rc = AL ? 1 - (M ? M.keep : 1) * AL.KEEP : 0, rk = AL ? 1 - (M ? M.keepCam : 1) * AL.KEEP_CAM : 0;
       q('#gs-ag-vn').innerHTML = pro ? `Cerca de Corabastos: <b style="color:#6ee7b7">−${Math.round(rc * 100)} %</b> carros y motos · <b style="color:#6ee7b7">−${Math.round(rk * 100)} %</b> camiones (sliders en Flujo de carros).` : 'Hoy todo el abastecimiento pasa por Corabastos.';
       // fauna y árboles: de la red biótica (carga después)
       const B = T3.bio; if (!B || !B.AG) return;
@@ -674,7 +674,7 @@ export async function iniciarSimulacion(cfg = {}) {
         caja.querySelectorAll('#gs-cesc button').forEach(b => b.classList.toggle('on', (b.dataset.e === 'proyecto') === pro));
         caja.querySelectorAll('input[data-k]').forEach(i => { i.disabled = !pro; });
         caja.querySelector('[data-o="cora"]').textContent = CS.cora + ' % de naves'; caja.querySelector('[data-o="merc"]').textContent = CS.merc + ' mercados'; caja.querySelector('[data-o="huer"]').textContent = CS.huer + ' % de hogares';
-        caja.querySelector('[data-r="car"]').textContent = pro ? '−' + Math.round(r.car * 100) + ' %' : '0 %'; caja.querySelector('[data-r="cam"]').textContent = pro ? '−' + Math.round(r.cam * 100) + ' %' : '0 %';
+        const kC = AL ? AL.KEEP : 1, kK = AL ? AL.KEEP_CAM : 1, tC = 1 - (1 - r.car) * kC, tK = 1 - (1 - r.cam) * kK; /* + la dependencia del escenario (sliders de SIM-01) */ caja.querySelector('[data-r="car"]').textContent = pro ? '−' + Math.round(tC * 100) + ' %' : '0 %'; caja.querySelector('[data-r="cam"]').textContent = pro ? '−' + Math.round(tK * 100) + ' %' : '0 %';
         caja.querySelector('#gs-cmsg').innerHTML = pro ? '<b style="color:#6ee7b7">Con la propuesta:</b> Corabastos se reduce y el barrio compra en mercados y huertas cercanas. Mueve los sliders y mira cómo cambian las vías.'
           : '<b style="color:#fca5a5">Kennedy hoy:</b> todo el abastecimiento pasa por Corabastos y sus vías se ven en rojo. Pasa a <b>Con la propuesta</b> para usar los sliders.';
       }

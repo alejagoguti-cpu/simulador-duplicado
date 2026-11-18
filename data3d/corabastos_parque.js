@@ -25,7 +25,7 @@ export async function crearParqueCorabastos({ T3, lw, cj }) {
   { const t0 = performance.now(); const mover = () => { requestAnimationFrame(mover); if (!grupo.visible) return; const s = (performance.now() - t0) / 1000; nrm.offset.set(s * 0.012, s * 0.007); }; requestAnimationFrame(mover); }
   const mJunco = new THREE.MeshStandardMaterial({ color: 0x6f8a3c, roughness: 0.9, side: THREE.DoubleSide });
   const PARQUES = [], ARB = [];
-  let PM = null; try { PM = await import('./parches_arboles.js?v=5'); } catch (e) { console.warn('parque Corabastos (especies):', e); }
+  let PM = null; try { PM = await import('./parches_arboles.js?v=6'); } catch (e) { console.warn('parque Corabastos (especies):', e); }
   let sem = 2026; const rnd = () => ((sem = Math.imul(sem ^ (sem >>> 15), 2246822519) + 0x9e3779b9 | 0) >>> 0) / 4294967296;
   for (const G of grupos) {
   const poly = env(G.flatMap(n => rect(n, 12)));

@@ -14,6 +14,10 @@ export async function iniciarEscenariosSim({ T3, cj }) {
   const HB = await cj('data3d/huertas_barrio.json?v=3').catch(() => ({ huertas: [] }));
   const { P1, P2, P3 } = PAR;
   let R = correrTodo();
+  // referencia FIJA (valores por defecto): huertas del escenario al año 10. Las cubiertas verdes y la fauna se miden contra ella, así los
+  // sliders que suben o bajan los hogares con huerta cambian cuántas cubiertas y cuánta fauna se ven (antes siempre llegaba al 100 %)
+  const ALC0 = P1.alcance || 0.5; // alcance por defecto
+  const REF = {}; for (const k of ['B', 'C']) { const s = R.S1[k]; REF[k] = s ? Math.max(0.01, s.act[s.act.length - 1] / R.S1.C.N) : 1; }
   const fmt = (v, d = 0) => (v == null || !isFinite(v)) ? '–' : v.toLocaleString('es-CO', { maximumFractionDigits: d, minimumFractionDigits: d });
   const fmtK = (v) => v >= 1e6 ? fmt(v / 1e6, 1) + ' M' : v >= 1e4 ? fmt(v / 1e3, 0) + ' mil' : fmt(v);
   const Y = T3.sueloY != null ? T3.sueloY : 0.35;
@@ -228,7 +232,7 @@ ${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, FMT.luz)}${slider(
     const HBAR = window.KEN_HBAR; if (HBAR && HBAR.fraccion && Math.abs(f - ultHB) > 0.004) { ab = HBAR.fraccion(f); ultHB = f; } if (ab) ultAb = ab; else ab = ultAb;
     /* la red crece año a año: las huertas en cubiertas se abren y la fauna de las huertas llega en la misma proporción (al año 10, todas):
        las relaciones bióticas suben de a poco hasta llegar a muchas */
-    { const fin = s1.act[SEM - 1] / R.S1.C.N, g = e === 'A' ? 0 : Math.max(0.03, Math.min(1, f / Math.max(0.01, fin)));
+    { const g = e === 'A' ? 0 : Math.max(0.03, Math.min(1, f / (REF[e] || 1) * (P1.alcance / ALC0))); // «Alcance sobre lotes y techos»: cuántas cubiertas tienen huerta
       const HI = window.KEN_HIDRO; if (HI && HI.fraccion) HI.fraccion(g);
       const BIo = T3.bio && T3.bio.ESTADO; if (BIo) BIo.proFrac = g; }
     { const vis = e === 'A' ? 0 : f; if (Math.abs(vis - fMarcas) > 0.002 || e === 'A') { fMarcas = vis; MK.forEach((m, i) => { mO[i] = e === 'A' ? 0 : (m[3] === 'par' ? (m[4] < vis ? 1 : 0) : m[3] === 'lote' ? (vis > 0.06 ? 1 : 0) : 1); }); gm.attributes.on.needsUpdate = true; } }
@@ -300,7 +304,12 @@ ${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, FMT.luz)}${slider(
   });
   el.addEventListener('input', (ev) => { const i = ev.target;
     if (i.dataset.t !== undefined) { parar(); SIMST.t = +i.value; aplicar(); return; }
-    if (i.dataset.k) { const P = i.dataset.g === '1' ? P1 : i.dataset.g === '2' ? P2 : P3; P[i.dataset.k] = +i.value; const o = el.querySelector(`output[data-o="${i.dataset.k}"]`); if (o) o.textContent = (FMT[i.dataset.k] || fmt)(+i.value); R = correrTodo(); aplicar(); avisar('mapa');
+    if (i.dataset.k) { const P = i.dataset.g === '1' ? P1 : i.dataset.g === '2' ? P2 : P3; P[i.dataset.k] = +i.value;
+      if (esc() === 'A') { SIMST.esc = SIMST.esc && SIMST.esc !== 'A' ? SIMST.esc : 'C'; document.querySelector('.sw button[data-e="proyecto"]')?.click(); } // en «Kennedy hoy» los sliders no cambian nada: se pasa a la propuesta
+      if (play) parar(); SIMST.t = SEM - 1; // el efecto se ve de una vez, al año 10 (si la línea de tiempo seguía corriendo, se mezclaba con el paso de los años)
+      setTimeout(() => dispatchEvent(new Event('cora-cambio')), 30); // los indicadores en 3D se recalculan con la nueva dependencia de Corabastos
+      if (i.dataset.k === 'arboles' && window.KEN_PARCHES && window.KEN_PARCHES.densidad) window.KEN_PARCHES.densidad(Math.max(0.15, +i.value)); /* densidad de árboles: más o menos árboles en los parches */
+      const o = el.querySelector(`output[data-o="${i.dataset.k}"]`); if (o) o.textContent = (FMT[i.dataset.k] || fmt)(+i.value); R = correrTodo(); aplicar(); avisar('mapa');
       const lab = i.closest('label').firstChild.textContent.trim(); GRUPO[i.dataset.g].forEach((l, j) => { if (!j) avisar2(`Cambiaste «${lab}»`, i.dataset.g === '1' && /zona|regional|reac|precio/.test(i.dataset.k) ? 'trafico' : l); }); }
   });
   el.addEventListener('change', (ev) => { const i = ev.target;
