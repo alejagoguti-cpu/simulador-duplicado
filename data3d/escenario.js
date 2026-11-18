@@ -150,7 +150,12 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
   const huertasBarrio = (on) => { if (HBAR) { HBAR.ver(on); return; } if (!on || pHBar) return;
     pHBar = Promise.all([import('./huertas_barrio.js?v=5'), cj('data3d/huertas_barrio.json?v=3')]).then(([m, D]) => m.crearHuertasBarrio({ THREE: T3.THREE, T3, D, movil: matchMedia('(pointer:coarse)').matches }))
       .then(h => { HBAR = h; window.KEN_HBAR = h; HBAR.ver(T3.escenario === 'proyecto' && solo !== 'col'); }).catch(e => console.warn('huertas de barrio:', e)); };
-  import('./escenarios_sim.js?v=19').then(m => m.iniciarEscenariosSim({ T3, cj })).then(S => { window.KEN_ESIM = S; }).catch(e => console.warn('escenarios:', e)); // SIM-01/02/03 con sliders, en el territorio
+  /* parches de árboles nativos en parques y junto a las huertas de parque (data3d/parches_arboles.js): solo con la propuesta */
+  let PARCH = null, pParch = null;
+  const parchesArboles = (on) => { if (PARCH) { PARCH.ver(on); return; } if (!on || pParch) return;
+    pParch = Promise.all([import('./parches_arboles.js?v=4'), cj('data3d/huertas_barrio.json?v=3'), cj('data3d/parques.json')]).then(([m, HB, PQ]) => m.crearParches3D({ T3, P: m.calcularParches(HB, PQ, lw, matchMedia('(pointer:coarse)').matches) }))
+      .then(p => { PARCH = p; window.KEN_PARCHES = p; PARCH.ver(T3.escenario === 'proyecto' && solo !== 'col'); }).catch(e => console.warn('parches de árboles:', e)); };
+  import('./escenarios_sim.js?v=21').then(m => m.iniciarEscenariosSim({ T3, cj })).then(S => { window.KEN_ESIM = S; }).catch(e => console.warn('escenarios:', e)); // SIM-01/02/03 con sliders, en el territorio
   Promise.all([import('./alivio_cali.js?v=2'), cj('data3d/alivio_cali.json?v=1')]).then(([m, D]) => { CALI = m.crearAlivioCali({ T3, D }); window.KEN_CALI = CALI; CALI.ver(T3.escenario === 'proyecto' && !solo); }).catch(e => console.warn('Av. Ciudad de Cali:', e));
   /* red de producción alimentaria: huertas de parques, lotes y techos en clústeres de barrio, conectadas a Bavaria (data3d/red_produccion.js) */
   let RPROD = null, pRProd = null;
@@ -218,7 +223,7 @@ body .gs-fila:has(> #gs-cv-b){grid-template-columns:1fr!important}
     if (T3.bio && T3.bio.ESTADO) T3.bio.ESTADO.escenario = pro && T3.PROP.fauna ? 'proyecto' : 'hoy'; // fauna e interacciones de las huertas
     if (T3.sintaxisEscenario) T3.sintaxisEscenario();
     if (CALI) CALI.ver(pro && !solo);
-    huertasBarrio(hu); redProduccion(pro && solo === 'red'); distritoBavaria(); // Av. Ciudad de Cali con menos tráfico (se oculta al mirar una sola estrategia)
+    huertasBarrio(hu); parchesArboles(hu); redProduccion(pro && solo === 'red'); distritoBavaria(); // Av. Ciudad de Cali con menos tráfico (se oculta al mirar una sola estrategia)
   }
   function aplicar(e) {
     T3.escenario = e; el.dataset.e = e; { const nm = el.querySelector('#esc-nom'); if (nm && e !== 'proyecto') nm.classList.remove('on'); } const st = el.querySelector('#esc-st'); if (st) st.textContent = e === 'proyecto' ? 'Con la propuesta' : 'Kennedy hoy';

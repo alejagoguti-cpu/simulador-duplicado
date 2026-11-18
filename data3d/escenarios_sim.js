@@ -208,6 +208,7 @@ ${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, FMT.luz)}${slider(
     huertas: { n: 'las huertas que se abren desde Bavaria', ir: () => { capaFlujo(false); volar([3500, 300], 1500, 0.7); } },
     trafico: { n: 'el tráfico de la Av. Ciudad de Cali y Corabastos (capa de flujo de carros)', ir: () => { capaFlujo(true); const m = T3.alivio && T3.alivio.mid; volar(m || CORA, 900, 0.6); } },
     compost: { n: 'el camino de los residuos orgánicos', ir: () => { capaFlujo(false); const e = esc(); volar(e === 'C' ? BAVC() : (EST[0] || BAV), e === 'C' ? 500 : 700, 0.6); } },
+    parches: { n: 'los parches de árboles nativos', ir: () => { capaFlujo(false); const P = (T3.bio && T3.bio.PARCHES) || []; const c = P.length ? [P.reduce((s, p) => s + p.cx, 0) / P.length, P.reduce((s, p) => s + p.cz, 0) / P.length] : [3000, 300]; volar(c, 1300, 0.6); } },
     humedal: { n: 'las aves y el estado del Humedal El Burro', ir: () => { capaFlujo(false); volar(BURRO, 750, 0.6); } }
   };
   const GRUPO = { 1: ['huertas', 'trafico'], 2: ['compost'], 3: ['humedal'] };
@@ -253,6 +254,7 @@ ${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, FMT.luz)}${slider(
       $('[data-mapa]').innerHTML = `<h5 style="--c:${COLE[e]}">Lo que ves en el mapa<span>${e} · ${NE[e]}</span></h5>
       <button type="button" data-ir="trafico"><i class="sw b" style="height:${(4 + 6 * kTr).toFixed(0)}px;background:${cTr}"></i><span>Franja sobre la <b>Av. Ciudad de Cali</b>: tráfico <b>${nivelTr(kTr)}</b> · ${e === 'A' ? '100 % (hoy)' : `${pctTr} % del de hoy`}</span></button>
       <button type="button" data-ir="huertas"><i class="sw p" style="background:#6fcf6a"></i><span>${e === 'A' ? '<b>Sin huertas nuevas</b>: solo las que ya hay en casas' : `Puntos verdes: <b>${nH != null ? fmt(nH) : '…'} huertas abiertas</b> · ${fmt(s1.act[t])} hogares`}</span></button>
+      ${e === 'A' ? '' : (() => { const KP = window.KEN_PARCHES; return `<button type="button" data-ir="parches"><i class="sw p" style="background:#1f6b38"></i><span>Puntos verde oscuro: <b>${KP ? KP.parches + ' parches de árboles nativos' : 'parches de árboles nativos'}</b>${KP ? ` · ${fmt(KP.n)} árboles (caucho sabanero, aliso, sauco, chicalá…)` : ''}</span></button>`; })()}
       <button type="button" data-ir="compost"><i class="sw p" style="background:${e === 'A' ? '#9aa1a6' : '#b8875a'}"></i><span>${e === 'A' ? `<b>Sin compostaje</b>: ${fmt(s2.relleno[t] / 1000, 1)} t/semana van en camión a Doña Juana` : e === 'B' ? `Círculos café: <b>${EST.length} estaciones de compost</b> de barrio · ${fmt(s2.pct[t], 0)} % vuelve a la tierra` : `Círculo café: <b>1 planta de compost</b> en Bavaria · ${fmt(s2.pct[t], 0)} % vuelve a la tierra`}</span></button>
       <button type="button" data-ir="humedal"><i class="sw p" style="background:#7fb3d5"></i><span>Pájaros en el humedal El Burro: <b>${fmt(s3.aves[t])} aves</b>${e === 'A' ? '' : ` (${s3.aves[t] >= s3A.aves[t] ? '+' : '−'}${fmt(Math.abs(s3.aves[t] - s3A.aves[t]))} frente a hoy)`}</span></button>`; }
     // panel
@@ -319,7 +321,7 @@ ${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, FMT.luz)}${slider(
   requestAnimationFrame(cuadro);
   aplicar();
   setTimeout(() => import('./guia.js?v=2').then(m => m.abrirGuia(false)).catch(() => {}), 2500); // la primera vez: cómo se usa
-  import('./mejora_tour.js?v=3').then(m => { T3.mejora = m.iniciarMejoraTour({ T3 }); }).catch(e => console.warn('recorrido:', e)); // «¿Cómo mejora Kennedy?»: antes y después en cada lugar
+  import('./mejora_tour.js?v=4').then(m => { T3.mejora = m.iniciarMejoraTour({ T3 }); }).catch(e => console.warn('recorrido:', e)); // «¿Cómo mejora Kennedy?»: antes y después en cada lugar
   import('./capas_escenario.js?v=3').then(m => m.iniciarCapasEscenario({ T3 })).catch(e => console.warn('capas:', e)); // sintaxis, ruido, usos e indicadores cambian con la propuesta
   return { aplicar, arrancar, get R() { return R; }, get via() { return via; }, marcas, mO };
 }

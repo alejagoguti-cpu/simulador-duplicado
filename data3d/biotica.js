@@ -145,7 +145,14 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
   const EXTRA = []; if (BV && BV.sitio) EXTRA.push(habitat('Bosque de la antigua fábrica de Bavaria', BV.sitio, POR_BOSQUE));
   // con la propuesta: las ~6 ha de huertas del distrito Bavaria Común con sus módulos de fauna (apiario, nidos, perchas, refugios): solo existen en «proyecto»
   if (BV && BV.sitio) { const h = habitat('Huertas del distrito Bavaria Común', BV.sitio, { abeja: 40, colibri: 8, copeton: 8, mirla: 6, cucarachero: 6, torcaza: 4, lombriz: 14 } /* solo fauna buena para las huertas: polinizadores, insectívoras y suelo (sin rapaces ni búhos) */); h.tipo = 'huerta'; EXTRA.push(h); } if (CO && CO.poly) EXTRA.push(habitat('Corabastos', CO.poly, POR_CORA));
-  const HAB = HUM.concat(PAR, HUE, EXTRA);
+  // con la propuesta: PARCHES DE ÁRBOLES NATIVOS en parques y alrededor de las huertas de parque (data3d/parches_arboles.js):
+  // caucho sabanero, aliso, sauco, chicalá, arrayán y arbustos de flor; cada parche es un hábitat nuevo con su fauna, solo en «proyecto»
+  let PAT = [], FAUNA_PARCHE = {}, ESP_PARCHE = {};
+  try { const [PM, HBj] = await Promise.all([import('./parches_arboles.js?v=4'), (window.cargarJSON || ((u) => fetch(u).then(r => r.json())))('data3d/huertas_barrio.json?v=3')]);
+    PAT = PM.calcularParches(HBj, PQ, lw, movil); FAUNA_PARCHE = PM.FAUNA_PARCHE; ESP_PARCHE = PM.ESPECIES; } catch (e) { console.warn('parches de árboles:', e); }
+  const PCH = PAT.map(p => ({ n: p.n, tipo: 'parche', pro: true, poly: p.poly, borde: p.poly.concat([p.poly[0]]), x0: p.x0, x1: p.x1, z0: p.z0, z1: p.z1, cx: p.c[0], cz: p.c[1], ag: {}, k: 1, cnt: FAUNA_PARCHE }));
+  for (const h of HUE) h.pro = true; for (const h of EXTRA) if (h.tipo === 'huerta') h.pro = true;
+  const HAB = HUM.concat(PAR, HUE, EXTRA, PCH);
   // árboles reales (censo SIGAU) en toda la zona, en un índice espacial único
   const CEL = 20, GRID = new Map(), gk = (i, j) => i * 100003 + j;
   for (const t of TR.t) {
@@ -162,7 +169,11 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
       const g = gk(Math.floor(x / CEL), Math.floor(z / CEL)); if (!GRID.has(g)) GRID.set(g, []); GRID.get(g).push(a);
     });
   }
-  const arbolesCerca = (h, x, z, r) => { const L = [], c0 = Math.floor((x - r) / CEL), c1 = Math.floor((x + r) / CEL), r0 = Math.floor((z - r) / CEL), r1 = Math.floor((z + r) / CEL); for (let i = c0; i <= c1; i++) for (let j = r0; j <= r1; j++) { const g = GRID.get(gk(i, j)); if (g) for (const a of g) if (Math.hypot(a.x - x, a.z - z) < r) L.push(a); } return L; };
+  // árboles de los parches (solo existen con la propuesta: VER_PRO lo pone el bucle según el escenario)
+  for (const p of PAT) for (const t of p.arboles) { const E = ESP_PARCHE[t.sp], a = { x: t.x, z: t.z, h: t.h, y: GY + t.h * 0.82, sp: -1, fl: E.fl, n: E.n, pro: true };
+    const g = gk(Math.floor(t.x / CEL), Math.floor(t.z / CEL)); if (!GRID.has(g)) GRID.set(g, []); GRID.get(g).push(a); }
+  let VER_PRO = true;
+  const arbolesCerca = (h, x, z, r) => { const L = [], c0 = Math.floor((x - r) / CEL), c1 = Math.floor((x + r) / CEL), r0 = Math.floor((z - r) / CEL), r1 = Math.floor((z + r) / CEL); for (let i = c0; i <= c1; i++) for (let j = r0; j <= r1; j++) { const g = GRID.get(gk(i, j)); if (g) for (const a of g) if ((VER_PRO || !a.pro) && Math.hypot(a.x - x, a.z - z) < r) L.push(a); } return L; };
   const puntoEn = (h) => { for (let k = 0; k < 200; k++) { const x = h.x0 + rnd() * (h.x1 - h.x0), z = h.z0 + rnd() * (h.z1 - h.z0); if (dentro(x, z, h.poly)) return [x, z]; } return [h.cx, h.cz]; };
   const puntoBorde = (h, off = 0) => { const b = h.borde, i = Math.floor(rnd() * (b.length - 1)), f = rnd(), p = [b[i][0] + (b[i + 1][0] - b[i][0]) * f, b[i][1] + (b[i + 1][1] - b[i][1]) * f]; return off ? [p[0] + gauss() * off, p[1] + gauss() * off] : p; };
   const bordeCercano = (h, x, z) => { let best = null, bd = 1e18; const b = h.borde; for (let i = 0; i < b.length - 1; i++) { const ax = b[i][0], az = b[i][1], dx = b[i + 1][0] - ax, dz = b[i + 1][1] - az, l = dx * dx + dz * dz || 1, f = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / l)), px = ax + dx * f, pz = az + dz * f, d = (px - x) ** 2 + (pz - z) ** 2; if (d < bd) { bd = d; best = [px, pz]; } } return [best, Math.sqrt(bd)]; };
@@ -637,7 +648,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
   /* la red biótica cambia con el escenario: con la propuesta llegan la fauna de las huertas (techos, lotes, parques-huerta y Bavaria) */
   { const st = document.createElement('style'); st.textContent = `#bt-pan .bt-pro{display:none;margin:2px 0 8px;padding:9px 10px;border-radius:10px;background:rgba(226,165,91,.1);border:1px solid rgba(226,165,91,.3);font:400 11px/1.45 var(--ui-sans,Inter,sans-serif);color:#e9ebec}
 #bt-pan .bt-pro.on{display:block}#bt-pan .bt-pro b{color:#f2c995;font-weight:600}#bt-pan .bt-e small em{font-style:normal;color:#f2c995;margin-left:3px}#bt-pan .bt-e.nuevo{border-color:rgba(226,165,91,.45)}`; document.head.appendChild(st); }
-  const deHuerta = (a) => a.h && a.h.tipo === 'huerta';
+  const deHuerta = (a) => a.h && a.h.pro; // huertas y parches de árboles: solo con la propuesta
   const NHUE = HAB.filter(h => h.tipo === 'huerta').length;
   let ultEsc = null;
   function pintarEscenario() {
@@ -645,10 +656,10 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
     let tot = 0, extra = 0; const suma = {};
     for (const k of Object.keys(MAL)) { const L = POR[k] || [], n = L.filter(a => pro || !deHuerta(a)).length, x = L.filter(deHuerta).length; tot += n; if (pro && x) { extra += x; suma[k] = x; }
       const s = pan.querySelector(`small[data-n="${k}"]`); if (s) s.innerHTML = pro && x ? `${n}<em>+${x}</em>` : String(n); const b = s && s.closest('.bt-e'); if (b) b.classList.toggle('nuevo', pro && x > 0); }
-    const tt = pan.querySelector('#bt-tot'); if (tt) tt.textContent = `${tot.toLocaleString('es-CO')} individuos · ${HUM.length} humedales, ${PAR.length} zonas verdes${pro ? ` y ${NHUE} huertas` : ''}`;
+    const tt = pan.querySelector('#bt-tot'); if (tt) tt.textContent = `${tot.toLocaleString('es-CO')} individuos · ${HUM.length} humedales, ${PAR.length} zonas verdes${pro ? `, ${NHUE} huertas y ${PCH.length} parches de árboles nativos` : ''}`;
     const bp = pan.querySelector('#bt-pro'); if (bp) { bp.classList.toggle('on', pro);
       const top = Object.entries(suma).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([k, x]) => `${ESP[k].n.toLowerCase()} +${x}`).join(', ');
-      bp.innerHTML = pro ? `<b>Con la propuesta llegan +${extra.toLocaleString('es-CO')} animales</b> a ${NHUE} huertas (lotes baldíos, parques de barrio y el distrito Bavaria Común): ${top}. Son polinizadores, aves que comen plagas y lombrices del suelo; las relaciones nuevas se ven arriba en «conexiones ahora».` : ''; }
+      bp.innerHTML = pro ? `<b>Con la propuesta llegan +${extra.toLocaleString('es-CO')} animales</b> a ${NHUE} huertas y ${PCH.length} parches de árboles nativos (lotes baldíos, parques de barrio y el distrito Bavaria Común): ${top}. Son polinizadores, aves que comen plagas y lombrices del suelo; las relaciones nuevas se ven arriba en «conexiones ahora».` : ''; }
   }
   addEventListener('escenario', () => setTimeout(pintarEscenario, 50)); setInterval(pintarEscenario, 1500);
   const ficha = document.createElement('div'); ficha.id = 'bt-ficha';
@@ -814,11 +825,11 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
   /* ---------- bucle ---------- */  let ult = performance.now(), tUI = 0, tPot = 0, nCuadro = 0, tAC = 0;
   function cuadro() {
     const ahora = performance.now(), dt = Math.min(0.1, (ahora - ult) / 1000); ult = ahora;
-    if ((tAC -= dt) <= 0) { tAC = 1; actualizarAC(); }
+    if ((tAC -= dt) <= 0) { tAC = 1; actualizarAC(); } VER_PRO = ESTADO.escenario !== 'hoy';
     for (const a of AG) { // escenario "hoy" (ESTADO.escenario, lo cambia el tablero): las huertas del proyecto no existen y su fauna tampoco
-      if (a.h.tipo === 'huerta') { if (ESTADO.escenario === 'hoy') { if (!a._fuera) { a._fuera = true; a.vis = false; a.duerme = true; } continue; } if (a._fuera) { a._fuera = false; a.vis = a.e !== 'abeja'; a.duerme = false; } }
+      if (a.h.pro) { if (ESTADO.escenario === 'hoy') { if (!a._fuera) { a._fuera = true; a.vis = false; a.duerme = true; } continue; } if (a._fuera) { a._fuera = false; a.vis = a.e !== 'abeja'; a.duerme = false; } }
       // escenarios (data3d/escenarios_sim.js · SIM-03): ESTADO.fauna = fracción de las aves que hay; las que «no están» se esconden
-      if (ESTADO.fauna != null && ESP[a.e].ave && a.h.tipo !== 'huerta') { const r = a._r ?? (a._r = Math.random()), fuera = r > ESTADO.fauna;
+      if (ESTADO.fauna != null && ESP[a.e].ave && !a.h.pro) { const r = a._r ?? (a._r = Math.random()), fuera = r > ESTADO.fauna;
         if (fuera) { if (!a._sim) { a._sim = true; a.vis = false; a.duerme = true; } continue; } if (a._sim) { a._sim = false; a.vis = true; a.duerme = false; } }
       if (a.huye && (a.huye.t -= dt) <= 0) a.huye = null; MOV[ESP[a.e].mov](a, dt); }
     actualizarRed(dt); instancias(dt); if ((nCuadro = (nCuadro + 1) % 2) === 0) dibujarRed(ahora / 1000); // líneas y marcas cada dos cuadros: alivia la subida a la tarjeta gráfica
@@ -827,5 +838,5 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
     requestAnimationFrame(cuadro);
   }
   requestAnimationFrame(cuadro);
-  return { AG, ESP, LINKS, ESTADO, TIPOS, CAT, CUENTA, ENC, HAB, AC, CERCA, flora: B.flora, actividad, horaSim, verRed: abrirRed, seleccionar };
+  return { AG, ESP, LINKS, ESTADO, TIPOS, CAT, CUENTA, ENC, HAB, AC, CERCA, PARCHES: PCH, flora: B.flora, actividad, horaSim, verRed: abrirRed, seleccionar };
 }

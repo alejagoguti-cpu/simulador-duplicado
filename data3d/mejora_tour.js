@@ -33,6 +33,11 @@ export function iniciarMejoraTour({ T3 }) {
       hoy: (n) => [fmt(n.hogA), 'hogares con huerta · ' + fmtK(n.perA) + ' personas comen de ellas'], pro: (n) => [fmt(n.hogP), 'hogares con huerta · ' + fmtK(n.perP) + ' personas comen de ellas'],
       mira: 'Cada <b style="color:#9be38f">punto verde</b> es una huerta que se abre en un parque, un lote o un colegio. Mira cómo aparecen año a año, primero cerca de Bavaria.',
       por: 'Cada trimestre Bavaria forma promotores; cada promotor acompaña huertas cerca de su casa, y los vecinos aprenden unos de otros.' },
+    { tag: 'Árboles y fauna', t: 'Parches de árboles nativos: la vida se reparte por todo el barrio', lugar: () => centroParches(), alto: 950, medir: true,
+      hoy: () => MED.hoy ? [fmt(MED.hoy.lug), `lugares con relaciones bióticas ocurriendo · ${fmt(MED.hoy.fuera)} % lejos de los humedales`] : ['…', 'midiendo las relaciones que están ocurriendo'],
+      pro: () => MED.pro ? [fmt(MED.pro.lug), `lugares con relaciones bióticas ocurriendo · ${fmt(MED.pro.fuera)} % lejos de los humedales`] : ['…', 'se mide cuando el mapa muestra la propuesta'],
+      mira: () => { const K = window.KEN_PARCHES; return `Aparecen ${K ? `<b>${K.parches} parches con ${fmt(K.n)} árboles nativos</b>` : 'parches de árboles nativos'} en los parques y junto a las huertas: <b style="color:#f2c230">caucho sabanero, aliso, sauco, chicalá, arrayán</b> y arbustos de flor (chilco, tíbar, raque, mortiño). Llegan colibríes, copetones y mirlas, y las <b>líneas de colores de las relaciones bióticas</b> aparecen lejos del agua.`; },
+      por: 'Cada especie se escogió porque alimenta o da refugio a muchas especies de fauna (el caucho sabanero a 13, el sauco a 10, el aliso a 8); el sauce no, porque casi solo da sombra. Los parches cercanos funcionan como corredores entre los humedales.' },
     { tag: 'Residuos', t: 'Los residuos orgánicos vuelven a la tierra', lugar: BAVC, alto: 520,
       hoy: (n) => [fmt(n.relA, 0) + ' t', 'por semana se van en camión al relleno Doña Juana (28 km)'], pro: (n) => [fmt(n.abP, 0) + ' t', `de abono al año para las huertas · al relleno ${fmt(n.relP, 0)} t/semana`],
       mira: 'Aparece la planta de compost de Bavaria (círculo café): ahí llegan los orgánicos del barrio y salen abono y hongos.',
@@ -44,6 +49,17 @@ export function iniciarMejoraTour({ T3 }) {
     { tag: 'Resumen', t: 'Kennedy en 10 años con la propuesta', lugar: () => [(CORA[0] + BAV[0]) / 2 + (MOV ? 0 : 250), (BURRO[1] + CORA[1]) / 2], alto: 2250, resumen: true,
       mira: 'Pasa de <b>Kennedy hoy</b> a <b>Con la propuesta</b> con los botones de abajo y compara todo el sector.', por: '' }
   ];
+
+  /* ---------- medición en vivo de dónde ocurren las relaciones bióticas (data3d/biotica.js) ---------- */
+  const MED = { hoy: null, pro: null };
+  const medir = () => { const B = T3.bio; if (!B || !B.LINKS) return null; const lug = new Set(); let agua = 0, tot = 0;
+    for (const L of B.LINKS.values()) { if (L.al < 0.3 || Math.hypot(L.b.x - L.a.x, L.b.z - L.a.z) >= B.CERCA) continue; tot++; lug.add(L.a.h); if (L.a.h.tipo === 'humedal') agua++; }
+    return tot ? { lug: lug.size, tot, fuera: (tot - agua) / tot * 100 } : null; };
+  // el lugar del paso de los parches: donde hay más parches juntos, lejos del humedal El Burro
+  const centroParches = () => { const P = (T3.bio && T3.bio.PARCHES) || []; let best = null, bn = -1;
+    for (const p of P) { if (Math.hypot(p.cx - BURRO[0], p.cz - BURRO[1]) < 700) continue; let n = 0; for (const q of P) if (Math.hypot(q.cx - p.cx, q.cz - p.cz) < 650) n++; if (n > bn) { bn = n; best = p; } }
+    return best ? [best.cx, best.cz] : [3200, 300]; };
+  let tCambio = 0;
 
   /* ---------- estilos ---------- */
   const css = document.createElement('style'); css.textContent = `
@@ -104,7 +120,7 @@ body.mt-on #mt{display:block}
   const quitarSolo = () => { const s = T3.escSolo && T3.escSolo(); if (s) { const b = document.querySelector(`#esc-ley [data-s="${s}"]`); if (b) b.click(); } };
   // muestra hoy o la propuesta; los años de la simulación se saltan al año 10 (salvo las huertas, que se ven crecer)
   function mostrar(v, crecer) {
-    vista = v; const K = window.KEN_ESC; if (K && K.e !== v) K.poner(v === 'pro' ? 'proyecto' : 'hoy'); else if (K && v === 'hoy' && K.e === 'hoy') {}
+    vista = v; tCambio = performance.now(); const K = window.KEN_ESC; if (K && K.e !== v) K.poner(v === 'pro' ? 'proyecto' : 'hoy'); else if (K && v === 'hoy' && K.e === 'hoy') {}
     if (!(crecer && v === 'pro')) despues(260, () => { SIMST.t = SEM - 1; const E = window.KEN_ESIM; if (E && E.aplicar) E.aplicar(); });
     // en Bavaria el distrito (edificios, pasajes, huertas de enseñanza) solo se arma con su estrategia escogida: se prende con la propuesta
     const P = PASOS[paso]; if (P.solo && v === 'pro') despues(500, () => { const s = T3.escSolo && T3.escSolo(); if (s !== P.solo) document.querySelector(`#esc-ley [data-s="${P.solo}"]`)?.click(); });
@@ -119,13 +135,13 @@ body.mt-on #mt{display:block}
     if (P.resumen) {
       cuerpo = n ? `<div class="res">${[
         ['Vehículos en la Av. Ciudad de Cali', '100 %', n.tr + ' %'], ['Dependencia de Corabastos', fmt(n.depA) + ' %', fmt(n.depP) + ' %'], ['Hogares con huerta', fmt(n.hogA), fmt(n.hogP)],
-        ['Personas que comen de las huertas', fmtK(n.perA), fmtK(n.perP)], ['Abono que vuelve a la tierra (t/año)', fmt(n.abA), fmt(n.abP)], ['Aves en el humedal El Burro', fmt(n.avA), fmt(n.avP)], ['Pasajes que abren Bavaria', '0', '20']
+        ['Personas que comen de las huertas', fmtK(n.perA), fmtK(n.perP)], ['Abono que vuelve a la tierra (t/año)', fmt(n.abA), fmt(n.abP)], ['Aves en el humedal El Burro', fmt(n.avA), fmt(n.avP)], ['Pasajes que abren Bavaria', '0', '20'], ['Árboles nativos nuevos en parques', '0', window.KEN_PARCHES ? fmt(window.KEN_PARCHES.n) : '…']
       ].map(r => `<div><span>${r[0]}</span><b>${r[1]}</b><i>→</i><strong>${r[2]}</strong></div>`).join('')}</div>` : '';
       cuerpo += `<div class="vs">${caja(!pro, CHOY, 'hoy', ['Hoy', 'el territorio como es'])}<div class="fl" aria-hidden="true">→</div>${caja(pro, CPRO, 'pro', ['Propuesta', `escenario ${e} · ${NE[e]}, año 10`])}</div>`;
     } else if (n) cuerpo = `<div class="vs">${caja(!pro, CHOY, 'hoy', P.hoy(n))}<div class="fl" aria-hidden="true">→</div>${caja(pro, CPRO, 'pro', P.pro(n))}</div>`;
     const año = Math.min(10, Math.floor(SIMST.t / 52) + 1);
-    const ahora = `<div class="ahora" style="--c:${pro ? CPRO : CHOY}"><i></i>El mapa muestra: <b>${pro ? 'Con la propuesta' : 'Kennedy hoy'}</b>${pro ? `<em>${P.crece ? `año ${año} de 10 · ${2026 + año}` : 'año 10 · 2036'}</em>` : '<em>en 3 s cambia a la propuesta</em>'}</div>`;
-    const tx = `<dl class="tx"><dt>Qué mirar</dt><dd>${P.mira}</dd>${P.por ? `<dt>Por qué</dt><dd>${P.por}</dd>` : ''}</dl>`;
+    const ahora = `<div class="ahora" style="--c:${pro ? CPRO : CHOY}"><i></i>El mapa muestra: <b>${pro ? 'Con la propuesta' : 'Kennedy hoy'}</b>${pro ? `<em>${P.crece ? `año ${año} de 10 · ${2026 + año}` : 'año 10 · 2036'}</em>` : `<em>en ${P.medir ? 6 : 3} s cambia a la propuesta</em>`}</div>`;
+    const tx = `<dl class="tx"><dt>Qué mirar</dt><dd>${typeof P.mira === 'function' ? P.mira() : P.mira}</dd>${P.por ? `<dt>Por qué</dt><dd>${P.por}</dd>` : ''}</dl>`;
     const nav = `<div class="nav"><button type="button" data-ant ${paso ? '' : 'disabled'}>Anterior</button><span class="pts" aria-hidden="true">${PASOS.map((_, i) => `<i class="${i === paso ? 'on' : ''}"></i>`).join('')}</span>${P.resumen ? '' : '<button type="button" data-rep title="Ver otra vez el antes y el después">↺ Repetir</button>'}<button type="button" class="pri" data-sig>${paso === PASOS.length - 1 ? 'Terminar' : 'Siguiente'}</button></div>`;
     card.innerHTML = cab + cuerpo + (P.resumen ? '' : ahora) + tx + nav;
   }
@@ -133,8 +149,9 @@ body.mt-on #mt{display:block}
     limpiar(); paso = Math.max(0, Math.min(PASOS.length - 1, i)); const P = PASOS[paso]; quitarSolo();
     volar(P.lugar(), P.alto);
     if (P.resumen) { mostrar('pro'); return; }
-    mostrar('hoy'); despues(RMQ ? 600 : 3200, () => mostrar('pro', P.crece));
-    if (P.crece) for (let k = 1; k < 40; k++) despues(3200 + k * 700, pintar); // el año en la tarjeta sigue a las huertas que se abren
+    mostrar('hoy'); despues(RMQ ? 600 : P.medir ? 6500 : 3200, () => mostrar('pro', P.crece)); // en los parches se deja medir hoy unos segundos
+    if (P.crece) for (let k = 1; k < 40; k++) despues(3200 + k * 700, pintar);
+    if (P.medir) { MED.hoy = MED.pro = null; for (let k = 1; k < 30; k++) despues(k * 600, () => { const K = window.KEN_ESC; if (performance.now() - tCambio < 1800) return; const m = medir(); if (m) MED[K && K.e === 'proyecto' ? 'pro' : 'hoy'] = m; pintar(); }); } // el año en la tarjeta sigue a las huertas que se abren
   }
   function abrir(i) { document.body.classList.add('mt-on'); ir(i); card.querySelector('[data-sig]')?.focus(); }
   function cerrar() { limpiar(); document.body.classList.remove('mt-on'); }
