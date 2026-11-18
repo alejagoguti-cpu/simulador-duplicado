@@ -173,6 +173,9 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
   for (const p of PAT) for (const t of p.arboles) { const E = ESP_PARCHE[t.sp], a = { x: t.x, z: t.z, h: t.h, y: GY + t.h * 0.82, sp: -1, fl: E.fl, n: E.n, pro: true };
     const g = gk(Math.floor(t.x / CEL), Math.floor(t.z / CEL)); if (!GRID.has(g)) GRID.set(g, []); GRID.get(g).push(a); }
   let VER_PRO = true;
+  // cuántos árboles hay hoy y cuántos nativos nuevos trae la propuesta (panel Agentes, data3d/giro_sim.js)
+  const ARBOLES = { hoy: 0, nuevos: 0, porEsp: {} };
+  for (const g of GRID.values()) for (const a of g) { if (a.pro) { ARBOLES.nuevos++; ARBOLES.porEsp[a.n] = (ARBOLES.porEsp[a.n] || 0) + 1; } else ARBOLES.hoy++; }
   const arbolesCerca = (h, x, z, r) => { const L = [], c0 = Math.floor((x - r) / CEL), c1 = Math.floor((x + r) / CEL), r0 = Math.floor((z - r) / CEL), r1 = Math.floor((z + r) / CEL); for (let i = c0; i <= c1; i++) for (let j = r0; j <= r1; j++) { const g = GRID.get(gk(i, j)); if (g) for (const a of g) if ((VER_PRO || !a.pro) && Math.hypot(a.x - x, a.z - z) < r) L.push(a); } return L; };
   const puntoEn = (h) => { for (let k = 0; k < 200; k++) { const x = h.x0 + rnd() * (h.x1 - h.x0), z = h.z0 + rnd() * (h.z1 - h.z0); if (dentro(x, z, h.poly)) return [x, z]; } return [h.cx, h.cz]; };
   const puntoBorde = (h, off = 0) => { const b = h.borde, i = Math.floor(rnd() * (b.length - 1)), f = rnd(), p = [b[i][0] + (b[i + 1][0] - b[i][0]) * f, b[i][1] + (b[i + 1][1] - b[i][1]) * f]; return off ? [p[0] + gauss() * off, p[1] + gauss() * off] : p; };
@@ -838,5 +841,5 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
     requestAnimationFrame(cuadro);
   }
   requestAnimationFrame(cuadro);
-  return { AG, ESP, LINKS, ESTADO, TIPOS, CAT, CUENTA, ENC, HAB, AC, CERCA, PARCHES: PCH, flora: B.flora, actividad, horaSim, verRed: abrirRed, seleccionar };
+  return { ARBOLES, AG, ESP, LINKS, ESTADO, TIPOS, CAT, CUENTA, ENC, HAB, AC, CERCA, PARCHES: PCH, flora: B.flora, actividad, horaSim, verRed: abrirRed, seleccionar };
 }

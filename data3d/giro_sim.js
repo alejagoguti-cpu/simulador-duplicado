@@ -229,10 +229,49 @@ export async function iniciarSimulacion(cfg = {}) {
       <span>P4 visitas de abejas</span><b id="gs-i-visitas">0</b><span>P4 cosecha de huerta</span><b id="gs-i-cosecha">0</b><span>P4 humus de lombriz</span><b id="gs-i-humus">0</b>
     </div>
     <div class="gs-nota">Calles: análisis angular de segmentos (método DepthmapX) sobre OpenStreetMap. Cantidades y horarios son supuestos de escala [SUP] para discutir con el grupo.</div>`;
+  /* ---------- AGENTES (maqueta de Kennedy con estrategias): lo que se mueve y vive en la simulación ----------
+     vehículos (simulación SUMO: carros, motos, camiones y las furgonetas de la propuesta), la fauna que la propuesta quiere atraer
+     (red biótica: data3d/biotica.js) y los árboles (censo + parches de árboles nativos). Columnas: hoy y con la propuesta. */
+  if (SINP && M3) {
+    const FA = [['copeton', 'Copetón'], ['mirla', 'Mirla patiamarilla'], ['colibri', 'Colibrí chillón'], ['torcaza', 'Torcaza'], ['cucarachero', 'Cucarachero'], ['chamon', 'Chamón'], ['abeja', 'Abejas'], ['lombriz', 'Lombriz roja'], ['lagartija', 'Lagartija bogotana'], ['caracol', 'Caracol de jardín']];
+    const VH = [['carro', 'Carros', '#f8fafc'], ['moto', 'Motos', '#fde047'], ['camion', 'Camiones', '#fb923c'], ['van', 'Furgonetas de reparto', '#e2e8f0']];
+    der.innerHTML = `<h3>AGENTES <em id="gs-ag-esc">Kennedy hoy</em></h3>
+      <p class="gs-agp">Lo que se mueve y vive en la simulación. Con la propuesta van menos vehículos a Corabastos y llegan más fauna y árboles nativos.</p>
+      <div class="gs-sub">VEHÍCULOS <span>en la calle ahora</span></div>
+      <table class="gs-t gs-agt">${VH.map(([k, n, c]) => `<tr data-vh="${k}"><td><i style="background:${c}"></i></td><td>${n}</td><td data-n="${k}">–</td></tr>`).join('')}</table>
+      <div class="gs-nota" id="gs-ag-vn"></div>
+      <div class="gs-sub">FAUNA QUE ATRAE LA PROPUESTA <span>hoy · propuesta</span></div>
+      <table class="gs-t gs-agt">${FA.map(([k, n]) => `<tr><td><i style="background:#6ee7b7"></i></td><td>${n}</td><td data-fh="${k}">–</td><td data-fp="${k}">–</td></tr>`).join('')}</table>
+      <div class="gs-sub">ÁRBOLES <span>hoy · propuesta</span></div>
+      <table class="gs-t gs-agt"><tr><td><i style="background:#4d7a3f"></i></td><td>Árboles del censo</td><td data-a="hoy">–</td><td data-a="hoy2">–</td></tr>
+        <tr><td><i style="background:#9be38f"></i></td><td>Nativos nuevos</td><td>0</td><td data-a="nuevos">–</td></tr></table>
+      <div class="gs-nota" id="gs-ag-arb"></div>
+      <div class="gs-nota">Vehículos: simulación SUMO. Fauna y árboles: red de interacciones bióticas y censo de arbolado. Las cantidades de la propuesta son supuestos [SUP] para discutir con el grupo.</div>`;
+    { const css = document.createElement('style'); css.textContent = `.gs-agp{margin:-2px 0 6px;font-size:10.5px;line-height:1.4;color:#94a3b8}.gs-agt td:nth-child(n+3){text-align:right;font-variant-numeric:tabular-nums;padding-left:8px}
+.gs-agt td[data-fp],.gs-agt td[data-a="nuevos"],.gs-agt td[data-a="hoy2"]{color:#6ee7b7;font-weight:600}.gs-agt tr.off{opacity:.35}#gs-ag-esc.pro{color:#6ee7b7}`; document.head.appendChild(css); }
+    const q = (s) => der.querySelector(s), fmt = (v) => Math.round(v).toLocaleString('es-CO');
+    let faunaHecha = false;
+    setInterval(() => {
+      const pro = T3.escenario === 'proyecto', e = q('#gs-ag-esc'); e.textContent = pro ? 'Con la propuesta' : 'Kennedy hoy'; e.classList.toggle('pro', pro);
+      // vehículos en la calle (mismo sorteo de tipo que index.html: 70 % carros, 22 % motos, 8 % camiones; V.cam = 0 en un camión = furgoneta)
+      const V = T3.TRAF && T3.TRAF.vis, n = { carro: 0, moto: 0, camion: 0, van: 0 };
+      if (V) for (let i = 0; i < V.n; i++) { const r = ((V.id[i] * 2654435761) >>> 0) / 4294967296; if (r < 0.70) n.carro++; else if (r < 0.92) n.moto++; else if (V.cam && !V.cam[i] && pro) n.van++; else n.camion++; }
+      for (const k in n) q(`[data-n="${k}"]`).textContent = V ? fmt(n[k]) : '–';
+      q('tr[data-vh="van"]').classList.toggle('off', !pro);
+      const AL = T3.alivio, M = AL && AL.manual, rc = M ? 1 - M.keep : AL ? 1 - AL.KEEP : 0, rk = M ? 1 - M.keepCam : AL ? 1 - AL.KEEP_CAM : 0;
+      q('#gs-ag-vn').innerHTML = pro ? `Cerca de Corabastos: <b style="color:#6ee7b7">−${Math.round(rc * 100)} %</b> carros y motos · <b style="color:#6ee7b7">−${Math.round(rk * 100)} %</b> camiones (sliders en Flujo de carros).` : 'Hoy todo el abastecimiento pasa por Corabastos.';
+      // fauna y árboles: de la red biótica (carga después)
+      const B = T3.bio; if (!B || !B.AG) return;
+      if (!faunaHecha) { faunaHecha = true; const H = {}, P = {}; for (const a of B.AG) { P[a.e] = (P[a.e] || 0) + 1; if (!a.h || !a.h.pro) H[a.e] = (H[a.e] || 0) + 1; }
+        for (const [k] of FA) { q(`[data-fh="${k}"]`).textContent = fmt(H[k] || 0); q(`[data-fp="${k}"]`).textContent = fmt(P[k] || 0); }
+        const A = B.ARBOLES; if (A) { q('[data-a="hoy"]').textContent = fmt(A.hoy); q('[data-a="hoy2"]').textContent = fmt(A.hoy); q('[data-a="nuevos"]').textContent = '+' + fmt(A.nuevos);
+          q('#gs-ag-arb').textContent = Object.entries(A.porEsp).sort((a, b) => b[1] - a[1]).map(([s, c]) => `${s} ${fmt(c)}`).join(' · '); } }
+    }, 1000);
+  }
   const tog = document.createElement('button'); tog.id = 'gs-tog'; tog.textContent = 'DATOS';
   document.body.append(izq, der, tog);
   if (SINP) { const ind = der.querySelector('.gs-ind'); if (ind) { ind.previousElementSibling.remove(); ind.remove(); } } // sin indicadores de las P
-  tog.onclick = () => { const on = !document.body.classList.contains('gs-abierto'); document.body.classList.toggle('gs-abierto', on); tog.classList.toggle('on', on); if (!on) return; const vis = izq.classList.contains('gs-act'); izq.classList.toggle('gs-act', !vis); der.classList.toggle('gs-act', vis); tog.textContent = vis ? 'ACTORES' : 'SIMULACIÓN'; };
+  tog.onclick = () => { const on = !document.body.classList.contains('gs-abierto'); document.body.classList.toggle('gs-abierto', on); tog.classList.toggle('on', on); if (!on) return; const vis = izq.classList.contains('gs-act'); izq.classList.toggle('gs-act', !vis); der.classList.toggle('gs-act', vis); tog.textContent = vis ? 'AGENTES' : 'SIMULACIÓN'; };
   if (matchMedia('(max-width:760px)').matches) { izq.classList.remove('gs-act'); der.classList.add('gs-act'); }
   if (M3) T3.reloj = st0; // el cielo de 24 horas (data3d/cielo.js) sigue esta hora
   // reloj circular de 24 horas (0:00 arriba, sentido horario): se arrastra la bola alrededor y la hora sigue sin cortes por la medianoche
