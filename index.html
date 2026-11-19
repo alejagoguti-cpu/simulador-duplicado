@@ -851,6 +851,9 @@ function flight(ms) {
       if (T3.ao) { const mov = KEN && ahora - (T3._movT || 0) < 300; T3.ao.enabled = !mov; if (T3.rpLiviano) T3.rpLiviano.enabled = mov; }
     }
     if (T3.seguidor) T3.seguidor.update(dt); // seguir un agente (data3d/seguir.js): la cámara lo acompaña
+    { /* materiales transparentes de doble cara: un solo pase (evita el doble dibujo y las búsquedas de programa por cuadro); se revisa cada 2 s y al cambiar de escenario */
+      const t2 = performance.now(); if (t2 - (T3._fspT || 0) > 2000 || T3._fspEsc !== T3.escenario) { T3._fspT = t2; T3._fspEsc = T3.escenario;
+        T3.scene.traverse(o => { const ms = o.material; if (!ms) return; for (const m of Array.isArray(ms) ? ms : [ms]) if (m.transparent && m.side === T3.THREE.DoubleSide && !m.userData._fsp) { m.userData._fsp = 1; m.forceSinglePass = true; } }); } }
     if (!compilandoGPU(cam)) if (!(SIM && SIM.render(cam))) { if (T3.composer) T3.composer.render(); else T3.renderer.render(T3.scene, cam); } // con un sensor (CRT, NVG, FLIR) dibuja el simulador; si no, render con oclusión ambiental
     requestAnimationFrame(flight); return;
   }
@@ -918,9 +921,8 @@ const enZona = (x, y, margen = 0) => !ZON || (x - ZONA.x) ** 2 + (y - ZONA.y) **
 const MOVIL = QUEST || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (matchMedia('(pointer:coarse)').matches && Math.min(screen.width, screen.height) < 900);
 // ?modo=kennedy (giro.html): simulación de agentes de Kennedy sobre la maqueta (calles pintadas con sintaxis espacial, árboles semitransparentes, sin el tráfico ni el HUD de God's Eye)
 const KEN = true; // repositorio "simulador": siempre el simulador de Kennedy
-/* plantas del Tintal: bajan en segundo plano cuando ya se abrió la maqueta. El modelo INEM (24 MB) NO se pre-descarga: con conexiones lentas
-   le quitaba ancho de banda a lo esencial (árboles, vías, tráfico) y la portada tardaba más de un minuto */
-setTimeout(() => ['data3d/models/fern_02.glb', 'data3d/models/calathea_orbifolia_01.glb', 'data3d/models/nettle_plant.glb', 'data3d/models/periwinkle_plant.glb', 'data3d/models/celandine_01.glb', 'data3d/residuos.json?v=1'].forEach(u => fetch(u, { priority: 'low' }).then(r => r.arrayBuffer()).catch(() => {})), 25000);
+/* Sin pre-descargas: el modelo INEM (24 MB) y las plantas del Tintal (2,3 MB) bajaban mientras estaba la portada y le quitaban ancho de banda
+   a lo esencial (medido: la ventana de 25 a 56 s quedaba saturada). Cada módulo pide sus modelos cuando los arma, con la maqueta ya abierta. */
 if (KEN) ZONA.r = MOVIL ? 1500 : 2600; // modo Kennedy: edificios y árboles propios en un radio mayor alrededor de El Burro
 if (MOVIL) { LIVIANO = true; MEDIO = true; } // celular: sin sombras ni tráfico pesado, árboles más livianos y sin los modelos pesados, pero CON los edificios del entorno del humedal (archivo recortado de ~3 MB) desde que abre
 const DIA = { // ambiente de día soleado (se usa al crear la escena y al volver de la noche)
@@ -1516,6 +1518,7 @@ async function crearPostproceso(T) {
   const comp = new EffectComposer(r, new THREE.WebGLRenderTarget(sz.x, sz.y, { type: THREE.HalfFloatType }));
   const ao = new N8AOPass(T.scene, T.camera, sz.x, sz.y);
   Object.assign(ao.configuration, { aoRadius: 9.0, distanceFalloff: 1.5, intensity: 4.5, color: new THREE.Color(0x0b1220), halfRes: true, gammaCorrection: false, screenSpaceRadius: false });
+  ao.autoDetectTransparency = false; ao.configuration.transparencyAware = false; // sin la detección de transparencias: evitaba 2 renders extra de la escena por cuadro
   ao.setQualityMode('Medium');
   comp.addPass(ao);
   { const { RenderPass } = await import('three/addons/postprocessing/RenderPass.js'); const rp = new RenderPass(T.scene, T.camera); rp.enabled = false; comp.insertPass(rp, 0); T.rpLiviano = rp; } /* al girar: dibuja la escena sin oclusión ambiental (antes la imagen se congelaba) */
@@ -2496,7 +2499,7 @@ async function buildTraffic(THREE) {
   T3.scene.add(bodies, cabins, wheels);
   if (KEN) { // Kennedy: la simulación SUMO se dibuja con los vehículos realistas (data3d/vehiculos.js): carros, taxis, camionetas, motos y camiones
     try {
-      const mv = await import('./data3d/vehiculos.js?v=7');
+      const mv = await import('./data3d/vehiculos.js?v=8');
       T3.vehSUMO = mv.crearVehiculos({ T3, movil: LIVIANO, maxDist: LIVIANO ? 1200 : 3200, cuantos: { carro: maxi * 3, moto: Math.ceil(maxi * 3 * 0.32), camion: Math.ceil(maxi * 3 * 0.14) } /* hasta 3 copias de la grabación en hora pico */ });
       T3.sumoActivo = true; // la simulación del giro deja de dibujar sus carros, motos y camiones (sigue contando para los indicadores)
     } catch (e) { console.warn('vehículos SUMO:', e); T3.vehSUMO = null; }
@@ -2504,7 +2507,7 @@ async function buildTraffic(THREE) {
   // arranca a las 16:40 (ya hay unos 2.000 carros en la calle) y en marcha; la barra de abajo permite pausar y mover el tiempo
   TRAF = { steps, NS, NV, dur, maxi, t: tIni, playing: true, vel: 1, pedirTrozo, chunk: I.chunk, bodies, cabins, wheels, dummy: new THREE.Object3D(), head: new Float32Array(maxi * 3),
     vis: { n: 0, x: new Float32Array(maxi * 3), z: new Float32Array(maxi * 3), dx: new Float32Array(maxi * 3), dz: new Float32Array(maxi * 3), v: new Float32Array(maxi * 3), id: new Int32Array(maxi * 3), cam: new Uint8Array(maxi * 3) } }; // vis: posición y velocidad de cada carro en este cuadro (detección y seguimiento del simulador)
-  T3.counts.cars = NV; T3.TRAF = TRAF; T3.LC = LC; /* data3d/origenes.js pasa las posiciones SUMO al mundo */ /* ruido y cierre de vía (data3d/ruido_cierre.js) leen la simulación */
+  T3.counts.cars = NV; T3.TRAF = TRAF; T3.LC = LC; T3.lw = lw; /* lw: modelo -> mundo, para los módulos que se cargan aparte */ /* data3d/origenes.js pasa las posiciones SUMO al mundo */ /* ruido y cierre de vía (data3d/ruido_cierre.js) leen la simulación */
   if (window.trafficPaint) window.trafficPaint();
   updateTraffic(0);
 }
@@ -2561,8 +2564,7 @@ function updateTraffic(dt) {
   if (VS) { VS.inicio(); if (!TRAF.obj) { TRAF.obj = new Array((TRAF.NV + 1) * 3); TRAF.tipo = new Int8Array((TRAF.NV + 1) * 3).fill(-1); TRAF.headF = new Float32Array((TRAF.NV + 1) * 3).fill(NaN); } }
   for (let cl = 0; cl < NCOP; cl++) {
   const ka = (k0 + cl * 487) % TRAF.NS, A = TRAF.steps[ka] || A0, B = TRAF.steps[(ka + 1) % TRAF.NS] || A;
-  const m = new Map();
-  for (let i = 0; i < B.ids.length; i++) m.set(B.ids[i], i);
+  const m = B._idx || (B._idx = (() => { const mm = new Map(); for (let i = 0; i < B.ids.length; i++) mm.set(B.ids[i], i); return mm; })()); // id→índice cacheado en el paso (B se reutiliza entre cuadros y copias)
   for (let i = 0; i < A.ids.length && n < MAXV; i++) {
     const idc = A.ids[i] + cl * (TRAF.NV + 1); /* id propio de cada copia */
     if (pDem < 0.999 && (Math.imul(idc ^ 0x5bd1e995, 0x85ebca6b) >>> 0) / 4294967296 > pDem) continue; /* a esta hora ese vehículo no está en la calle (sorteo propio: con el mismo del tipo, los camiones —el 8 % más alto— desaparecían fuera de la hora pico) */
@@ -3633,7 +3635,7 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
   listoK().then(() => import('./data3d/canchas.js?v=2')).then(m => m.iniciarCanchas({ THREE: T3.THREE, T3, OX: 2095.67, OZ: -109.06, Y0: 0, movil: MOVIL })).catch(e => console.warn('canchas:', e));
   const FAUNA_RED = ['tingua', 'garza', 'pato', 'monjita', 'copeton', 'mirla', 'colibri']; // las mueve la red biótica
   let EST = null; // estrategias de la propuesta (data3d/estrategias.js): reemplazan las convenciones P1-P4
-  Promise.all([import('./data3d/giro_sim.js?v=46'), import('./data3d/estrategias.js?v=21'), listoK()])
+  Promise.all([import('./data3d/giro_sim.js?v=47'), import('./data3d/estrategias.js?v=22'), listoK()])
     .then(async ([m, me]) => {
       /* rendimiento: estrategias, plan de Bavaria y plan de Corabastos se arman a la vez (antes uno tras otro) */
       let PLAN = null, CPLAN = null; // E1 Bavaria Común (data3d/bavaria_plan.js) · E3 Corabastos reducido (data3d/corabastos_plan.js)
@@ -3644,7 +3646,7 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
       T3.planBavaria = PLAN; T3.planCorabastos = CPLAN; T3.EST = EST;
       // selector KENNEDY HOY / CON LA PROPUESTA (data3d/escenario.js): arranca en hoy; la propuesta prende huertas, Bavaria Común,
       // Corabastos reducido, sintaxis con los pasajes, camiones -> furgonetas (ruido) y la fauna de las huertas
-      import('./data3d/escenario.js?v=62').then(me2 => me2.iniciarEscenario({ T3, say })).catch(e => console.warn('escenario:', e));
+      import('./data3d/escenario.js?v=63').then(me2 => me2.iniciarEscenario({ T3, say })).catch(e => console.warn('escenario:', e));
       const lista = EST ? EST.lista.slice() : []; if (PLAN) lista.unshift(PLAN.entrada);
       return m.iniciarSimulacion({ T3, say, sinFauna: FAUNA_RED, sinMalla: ['abeja'], estrategias: lista.length ? lista : null, verEstrategia: (id, on, sola) => { /* la red de gobernanza (data3d/red_gobernanza.js) ya no se muestra al elegir estrategia */ if (on && sola && id !== 'E8' && EST && EST.lugar) volarEstrategia(EST.lugar(id)); if (id === 'E1') { if (EST) EST.marcar('E1', on); if (!window.__colB) window.__colB = import('./data3d/colectivo_bavaria.js?v=4').then(m => m.crearColectivo({ THREE: T3.THREE, T3, lw })); window.__colB.then(cb => cb.ver(on)).catch(e => console.warn('colectivo Bavaria:', e)); return PLAN && PLAN.ver(on); } if (id === 'E3' && CPLAN) { if (EST) EST.marcar('E3', on); return CPLAN.ver(on); } return EST && EST.ver(id, on); } }); // todas muestran su lugar; las conexiones entre estrategias se ven cuando las dos están prendidas
     })
@@ -3692,7 +3694,7 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
         b4.insertAdjacentElement('afterend', b5);
         /* indicadores en 3D (picos de las láminas: anasoficasca-code.github.io/picos); empieza apagado */
         const b6 = document.createElement('button'); b6.id = 'in-btn'; b6.textContent = 'Indicadores'; b6.title = 'Indicadores del diagnóstico como picos 3D sobre Kennedy'; b6.style.cssText = 'width:100%;margin-top:6px';
-        let pIn = null; b6.onclick = async () => { const on = !b6.classList.contains('on'); b6.classList.toggle('on', on); try { const m = await import('./data3d/indicadores.js?v=4'); if (!pIn) pIn = m.crearIndicadores({ THREE: T3.THREE, T3 }); const a = await pIn; a.ver(on); if (on && !a.sel) a.mostrar('SE'); m.panelIndicadores(a, on); } catch (e) { console.warn('indicadores:', e); } };
+        let pIn = null; b6.onclick = async () => { const on = !b6.classList.contains('on'); b6.classList.toggle('on', on); try { const m = await import('./data3d/indicadores.js?v=5'); if (!pIn) pIn = m.crearIndicadores({ THREE: T3.THREE, T3 }); const a = await pIn; a.ver(on); if (on && !a.sel) a.mostrar('SE'); m.panelIndicadores(a, on); } catch (e) { console.warn('indicadores:', e); } };
         b5.insertAdjacentElement('afterend', b6);
       }
       if (!document.getElementById('vi-btn')) { // Visión: la propuesta encendida sobre el territorio oscuro (data3d/vision.js)
@@ -3703,7 +3705,7 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
       }
       return import('./data3d/cielo.js?v=8');
     }).then(m => { T3.cielo = m.iniciarCielo({ THREE: T3.THREE, T3, luzMalla }); }) // cielo y luz de 24 horas con el reloj de la simulación
-    .then(() => Promise.all([import('./data3d/biotica.js?v=32'), import('./data3d/huertas_barrio.js?v=7'), (window.cargarJSON || ((u) => fetch(u).then(r => r.json())))('data3d/huertas_barrio.json?v=3').catch(() => null)])).then(([m, HBm, HB]) => m.iniciarBiotica({ THREE: T3.THREE, T3, lw, OX: 2095.67, OZ: -109.06, Y0: 2.0, movil: MOVIL, huertas: EST ? EST.sitios().concat(HBm.sitiosHuertasBarrio(HB)) : null }))
+    .then(() => Promise.all([import('./data3d/biotica.js?v=33'), import('./data3d/huertas_barrio.js?v=7'), (window.cargarJSON || ((u) => fetch(u).then(r => r.json())))('data3d/huertas_barrio.json?v=3').catch(() => null)])).then(([m, HBm, HB]) => m.iniciarBiotica({ THREE: T3.THREE, T3, lw, OX: 2095.67, OZ: -109.06, Y0: 2.0, movil: MOVIL, huertas: EST ? EST.sitios().concat(HBm.sitiosHuertasBarrio(HB)) : null }))
     .then(bio => { T3.bio = bio; import('./data3d/tablero.js?v=26').then(m => { T3.tablero = m.iniciarTablero({ T3, bio }); }).catch(e => console.warn('tablero:', e)); import('./data3d/seguir.js?v=3').then(m => m.iniciarSeguir({ THREE: T3.THREE, T3, say })).catch(e => console.warn('seguir:', e)); }) // tablero en vivo de las relaciones bióticas
     .then(() => import('./data3d/actores.js?v=7')).then(m => m.iniciarActores({ THREE: T3.THREE, T3, lw, OX: 2095.67, OZ: -109.06, Y0: 2.0 })).then(a => { T3.actores = a; }) // capa de redes de actores (9 estrategias del Excel)
     .catch(e => console.warn('simulación Kennedy:', e));

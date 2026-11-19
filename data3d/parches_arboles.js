@@ -117,5 +117,6 @@ export async function crearParches3D({ T3, P }) {
   const cuadro = () => { requestAnimationFrame(cuadro); if (!grupo.visible) return; const y = T3.camera.position.y; UA.uA.value = Math.max(0, Math.min(1, (y - 220) / 300)); };
   requestAnimationFrame(cuadro);
   const n = todos.length, porEsp = Object.fromEntries(Object.keys(ESPECIES).map(k => [k, todos.filter(t => t.sp === k).length]));
-  return { grupo, ver(on) { grupo.visible = !!on; }, densidad(d) { for (const [im, ks] of DENS) { let lo = 0, hi = ks.length; while (lo < hi) { const m = (lo + hi) >> 1; if (ks[m] < d) lo = m + 1; else hi = m; } im.count = lo; } }, n, parches: P.length, porEsp };
+  let dens = 1; // última densidad pedida por el slider (la leen los indicadores en 3D: solo cuentan los árboles con k < dens)
+  return { grupo, ver(on) { grupo.visible = !!on; }, get dens() { return dens; }, densidad(d) { dens = d; for (const [im, ks] of DENS) { let lo = 0, hi = ks.length; while (lo < hi) { const m = (lo + hi) >> 1; if (ks[m] < d) lo = m + 1; else hi = m; } im.count = lo; } }, n, parches: P.length, porEsp };
 }

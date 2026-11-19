@@ -160,7 +160,7 @@ export async function iniciarHidroponia({ THREE, T3, techos, movil = false }) {
     caseta: capa('caseta', [[gCaseta, matCaseta, true], [gPuerta, matPuerta, true]])
   };
   const o3 = new THREE.Object3D(), foco = new THREE.Vector3();
-  let ultimo = null;
+  let ultimo = null, sucioFrac = false, tFrac = 0;
   let extra = 0;
   function recalcular() {
     if (T3.floresExtra && T3.floresExtra.length > extra) { for (const f of T3.floresExtra.slice(extra)) { const i = FLORES.length; FLORES.push(f); const kk = clave(f[0], f[2]); if (!FC.has(kk)) FC.set(kk, []); FC.get(kk).push(i); } extra = T3.floresExtra.length; } // flores de la huerta del Tintal
@@ -321,16 +321,20 @@ export async function iniciarHidroponia({ THREE, T3, techos, movil = false }) {
     requestAnimationFrame(cuadro);
     if (!grupo.visible) return;
     const ahora = performance.now(), dt = Math.min(0.05, (ahora - tUlt) / 1000); tUlt = ahora;
-    if ((tRec -= dt) <= 0) { tRec = 0.6; recalcular(); }
+    if (sucioFrac && ahora - tFrac > 330) { sucioFrac = false; tFrac = ahora; ultimo = null; tRec = 0.6; recalcular(); } // cambió la fracción de cubiertas: se recalcula aquí, no en cada paso
+    else if ((tRec -= dt) <= 0) { tRec = 0.6; recalcular(); }
     const cam = T3.camera;
+    const hi = {}; // por especie: mayor índice tocado en este cuadro (para subir solo ese tramo de matrices)
     for (const a of AG) {
       // el que quedó lejos del área visible reaparece cerca
       if (a.st !== 'nuevo' && (a.x - centro.x) ** 2 + (a.z - centro.z) ** 2 > (radio * 1.6) ** 2) a.st = 'nuevo';
       const lejos = (a.x - cam.position.x) ** 2 + (a.z - cam.position.z) ** 2 > 450 * 450;
-      if (lejos && a.st !== 'nuevo') { if (!a.oculto) { a.oculto = true; const m = MESH[a.e]; m.cuerpo.setMatrixAt(a.i, OCULTO); for (const par of m.alas) for (const im of par) im.setMatrixAt(a.i, OCULTO); } continue; }
-      a.oculto = false; moverA(a, dt, cam); dibujarA(a, dt, cam);
+      if (lejos && a.st !== 'nuevo') { if (!a.oculto) { a.oculto = true; const m = MESH[a.e]; m.cuerpo.setMatrixAt(a.i, OCULTO); for (const par of m.alas) for (const im of par) im.setMatrixAt(a.i, OCULTO); if (a.i > (hi[a.e] ?? -1)) hi[a.e] = a.i; } continue; }
+      a.oculto = false; moverA(a, dt, cam); dibujarA(a, dt, cam); if (a.i > (hi[a.e] ?? -1)) hi[a.e] = a.i;
     }
-    for (const m of Object.values(MESH)) { m.cuerpo.instanceMatrix.needsUpdate = true; for (const par of m.alas) for (const im of par) im.instanceMatrix.needsUpdate = true; }
+    // sube a la GPU solo si hubo agentes visibles (o recién ocultos), con el tramo 0..índice mayor; el resto de matrices no cambió
+    for (const k in MESH) { const m = MESH[k], h = hi[k]; if (h === undefined) continue; const n = (h + 1) * 16;
+      for (const im of [m.cuerpo, ...m.alas.flat()]) { im.instanceMatrix.clearUpdateRanges(); im.instanceMatrix.addUpdateRange(0, n); im.instanceMatrix.needsUpdate = true; } }
     // aristas de la red: se desvanecen en ~40 s; las que cruzan de un edificio a otro, más brillantes
     let n = 0;
     for (const r of aristas) {
@@ -348,7 +352,7 @@ export async function iniciarHidroponia({ THREE, T3, techos, movil = false }) {
     // f en [0, 1]: fracción de cubiertas con huerta; las que se abren en este paso disparan un pulso de luz (data3d/resaltes.js)
     fraccion(f) { f = Math.max(0, Math.min(1, f)); if (Math.abs(f - frac) < 0.002) return; const antes = frac; frac = f; uFrac.value = f;
       if (f > antes && grupo.visible) import('./resaltes.js?v=1').then(m => { const R2 = m.resaltes(T3); let k = 0; for (const [ti, o] of ORD) if (o > antes && o <= f && k++ < 60) { const c = TCEN.get(ti); if (c) R2.pulso(c[0], c[1], c[2], 25); } }).catch(() => {});
-      ultimo = null; if (grupo.visible) recalcular(); },
+      sucioFrac = true; if (grupo.visible && performance.now() - tFrac > 330) { tFrac = performance.now(); sucioFrac = false; ultimo = null; recalcular(); } }, // tope ~3 veces/s; el resto lo hace el tick de cuadro()
     get frac() { return frac; },
     centros: () => [...ORD].map(([ti, o]) => [TCEN.get(ti), o]), // [centro, orden] de cada cubierta con huerta
     ver: (on) => { grupo.visible = on; panel.style.display = on ? 'flex' : 'none'; const v = on ? '1' : '0'; if (panel.dataset.on !== v) { panel.dataset.on = v; dispatchEvent(new Event('dock-cambio')); } if (on) { ultimo = null; recalcular(); } }

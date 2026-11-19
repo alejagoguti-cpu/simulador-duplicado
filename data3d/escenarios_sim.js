@@ -254,6 +254,14 @@ ${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, FMT.luz)}${slider(
     const hum = s3.hum[t] / 100; aHum.material.color.setRGB(0.88 - 0.55 * hum, 0.35 + 0.45 * hum, 0.3); aHum.material.opacity = 0.4 + 0.3 * hum;
     const nTr = e === 'A' || P3.anti ? 0 : Math.round(TR.length * Math.min(1, P3.borde / 40) * P3.luz * 1.6); TR.forEach((m) => { m.visible = false; });
     if (VACA) VACA.aplicar(t, e, P3);
+    // los paneles (etiquetas, «lo que ves en el mapa», indicadores) se repintan aparte y, durante la reproducción, a ~4 Hz
+    CTX = { e, t, s1, s2, s3, s3A, A, dep, hum, ab, al, nTr }; sucioPan = true;
+    if (!enPaso) pintarPanel();
+  }
+  let CTX = null, sucioPan = false, enPaso = false, tPan = 0;
+  function pintarPanel() {
+    if (!CTX) return; sucioPan = false; tPan = performance.now();
+    const { e, t, s1, s2, s3, s3A, A, dep, hum, ab, al, nTr } = CTX;
     // etiquetas
     const año = Math.floor(t / AÑO) + 1;
     ET.cora.innerHTML = `<b><i style="background:${aCor.material.color.getStyle()}"></i>Corabastos</b>Dependencia ${fmt(dep * 100)} %${e === 'A' ? '' : ` · <em>vías ${al && al.hoy > 0.5 ? '−' + fmt((1 - al.pro / al.hoy) * 100) + ' % carros' : 'con menos carros'}</em>`}`;
@@ -289,7 +297,10 @@ ${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, FMT.luz)}${slider(
   /* ---------------- eventos ---------------- */
   let play = 0, prev = 0;
   const parar = () => { if (play) cancelAnimationFrame(play); play = 0; $('[data-play]').textContent = '▶'; };
-  const paso = (now) => { const dt = Math.min(0.1, (now - prev) / 1000); prev = now; SIMST.t = Math.min(SEM - 1, SIMST.t + dt * 22); aplicar(); if (SIMST.t >= SEM - 1) { parar(); return; } play = requestAnimationFrame(paso); };
+  let tEnt = -1; // aplicar() solo cuando cambia el semana entera (los efectos dependen de Math.floor(SIMST.t))
+  const paso = (now) => { const dt = Math.min(0.1, (now - prev) / 1000); prev = now; SIMST.t = Math.min(SEM - 1, SIMST.t + dt * 22);
+    const ent = Math.floor(SIMST.t); if (ent !== tEnt) { tEnt = ent; enPaso = true; try { aplicar(); } finally { enPaso = false; } }
+    if (SIMST.t >= SEM - 1) { parar(); pintarPanel(); return; } play = requestAnimationFrame(paso); };
   const arrancar = () => { if (RMQ) { SIMST.t = SEM - 1; aplicar(); return; } if (SIMST.t >= SEM - 1) SIMST.t = 0; prev = performance.now(); $('[data-play]').textContent = '❚❚'; play = requestAnimationFrame(paso); };
   el.addEventListener('click', (ev) => {
     const b = ev.target.closest('button'); if (!b) return;
@@ -324,6 +335,7 @@ ${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, FMT.luz)}${slider(
   const V = new THREE.Vector3();
   function cuadro(now) {
     requestAnimationFrame(cuadro);
+    if (sucioPan && performance.now() - tPan > 250) pintarPanel(); // paneles a ~4 Hz
     const tt = RMQ ? 0 : now / 1000, e = esc();
     for (let i = 0; i < NP; i++) { const p = PART[i]; if (!p.on || !EST.length) { PP[i * 3 + 1] = -999; continue; }
       const rutas = RUTAS[p.r], cv = rutas[p.k % rutas.length]; const v = p.r === 'rell' ? 0.05 : 0.11; cv.getPoint((p.f + tt * v) % 1, V); PP[i * 3] = V.x; PP[i * 3 + 1] = V.y; PP[i * 3 + 2] = V.z; }

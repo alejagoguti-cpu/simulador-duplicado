@@ -535,7 +535,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
     if (pulso && np < MAXL) { const u = ((tiempo * (0.5 + 30 / (d + 30)) * 0.5 + C.n * 0.137) % 1), o = np * 3, oc = np * 4; pt(u, Q); pp[o] = Q[0]; pp[o + 1] = Q[1]; pp[o + 2] = Q[2]; pc[oc] = Math.min(1, c.r * 1.25 + 0.12); pc[oc + 1] = Math.min(1, c.g * 1.25 + 0.12); pc[oc + 2] = Math.min(1, c.b * 1.25 + 0.12); pc[oc + 3] = 1; np++; }
     C.n++;
   }
-  function dibujarRed(tiempo) {
+  function dibujarRed(tiempo, sinSubir) { // sinSubir: solo recuenta (CUENTA/ENC que leen los paneles), sin buffers ni marcas
     FUERTE.n = TENUE.n = 0; np = 0; CUENTA.fill(0); ENC.fill(0);
     const sel = ESTADO.sel;
     if (ESTADO.on) for (const L of LINKS.values()) {
@@ -549,7 +549,15 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
     }
     // red potencial del agente elegido: hasta el individuo o árbol más cercano de cada especie con la que tiene relación
     if (sel && ESTADO.pot) for (const p of ESTADO.pot) pintar(FUERTE, sel, p.b, p.t, true, tiempo);
-    for (const C of [FUERTE, TENUE]) { C.g.instanceCount = C.n * SEG; C.p.needsUpdate = true; C.c.needsUpdate = true; }
+    for (const C of [FUERTE, TENUE]) {
+      C.g.instanceCount = C.n * SEG;
+      if (sinSubir) { C.nAnt = MAXL; continue; } // al volver a verse se sube el búfer completo una vez
+      if (C.n === 0 && C.nAnt === 0) continue; // oculto o vacío: no se sube nada a la GPU
+      // solo se sube el tramo usado (antes el búfer entero de MAXL*SEG*6 floats en cada cuadro); si bajó el número, también el tramo que se vació
+      const len = Math.max(C.n, C.nAnt || 0) * SEG * 6; C.nAnt = C.n;
+      for (const b of [C.p, C.c]) { b.clearUpdateRanges(); b.addUpdateRange(0, len); b.needsUpdate = true; }
+    }
+    if (sinSubir) return;
     pg.setDrawRange(0, np); pg.attributes.position.needsUpdate = true; pg.attributes.color.needsUpdate = true;
     const cam = T3.camera; cam.updateMatrixWorld();
     AG.forEach((a, i) => {
@@ -835,9 +843,16 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
     cancelAnimationFrame(animRed); animRed = requestAnimationFrame(cuadro);
   }
 
-  /* ---------- bucle ---------- */  let ult = performance.now(), tUI = 0, tPot = 0, nCuadro = 0, tAC = 0;
+  /* ---------- bucle ---------- */  let ult = performance.now(), tUI = 0, tPot = 0, nCuadro = 0, tAC = 0, tOc = 0, dtI = 0;
   function cuadro() {
     const ahora = performance.now(), dt = Math.min(0.1, (ahora - ult) / 1000); ult = ahora;
+    // red biótica oculta (grupo apagado, o sin líneas ni agentes): no se simula ni se suben buffers; solo se recuenta cada ~1 s para los paneles
+    if (!grupo.visible || (!ESTADO.on && ESTADO.agentes === false)) {
+      requestAnimationFrame(cuadro);
+      if ((tOc += dt) >= 1) { tOc = 0; actualizarRed(0.1); dibujarRed(ahora / 1000, true); TIPOS.forEach(t => { const el = document.getElementById('bt-c-' + t.id); if (el) el.textContent = CUENTA[t.id]; }); }
+      return;
+    }
+    tOc = 0;
     if ((tAC -= dt) <= 0) { tAC = 1; actualizarAC(); } VER_PRO = ESTADO.escenario !== 'hoy';
     for (const a of AG) { // escenario "hoy" (ESTADO.escenario, lo cambia el tablero): las huertas del proyecto no existen y su fauna tampoco
       if (a.h.soloHoy) { if (ESTADO.escenario !== 'hoy') { if (!a._fuera) { a._fuera = true; a.vis = false; a.duerme = true; } continue; } if (a._fuera) { a._fuera = false; a.vis = true; a.duerme = false; } } // ratas de las basuras: solo hoy
@@ -846,7 +861,11 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
       if (ESTADO.fauna != null && ESP[a.e].ave && !a.h.pro) { const r = a._r ?? (a._r = Math.random()), fuera = r > ESTADO.fauna;
         if (fuera) { if (!a._sim) { a._sim = true; a.vis = false; a.duerme = true; } continue; } if (a._sim) { a._sim = false; a.vis = true; a.duerme = false; } }
       if (a.huye && (a.huye.t -= dt) <= 0) a.huye = null; MOV[ESP[a.e].mov](a, dt); }
-    actualizarRed(dt); instancias(dt); if ((nCuadro = (nCuadro + 1) % 2) === 0) dibujarRed(ahora / 1000); // líneas y marcas cada dos cuadros: alivia la subida a la tarjeta gráfica
+    actualizarRed(dt); dtI += dt; nCuadro = (nCuadro + 1) % 2;
+    // matrices de los animales cada dos cuadros si la cámara está lejos (a esa distancia no se nota); dtI acumula el tiempo para el aleteo
+    const lejosCam = T3.orbit && T3.camera.position.distanceTo(T3.orbit.target) > 700;
+    if (!lejosCam || nCuadro === 1) { instancias(dtI); dtI = 0; }
+    if (nCuadro === 0) dibujarRed(ahora / 1000); // líneas y marcas cada dos cuadros: alivia la subida a la tarjeta gráfica
     if ((tUI -= dt) <= 0) { tUI = 0.5; TIPOS.forEach(t => { const el = document.getElementById('bt-c-' + t.id); if (el) el.textContent = CUENTA[t.id]; }); if (ESTADO.sel) pintarFicha(); }
     if (ESTADO.sel && (tPot -= dt) <= 0) { tPot = 1.5; ESTADO.pot = redPotencial(ESTADO.sel); }
     requestAnimationFrame(cuadro);

@@ -413,12 +413,19 @@ export function crearVehiculos({ T3, cuantos, movil, maxDist = Infinity }) {
       const S = SOMBRA[tipo]; ds.position.set(x, y + 0.03, z); ds.rotation.set(0, rumbo, 0); ds.scale.set(S[0], 1, S[1]); ds.updateMatrix(); blob.setMatrixAt(nb++, ds.matrix);
     },
     fin() {
+      // sube a la GPU solo el tramo usado (n instancias) y nada si la malla sigue vacía; las vacías se ocultan
+      const subir = (m, n) => {
+        const antes = m.userData._nPrev || 0; m.count = n; m.visible = n > 0; m.userData._nPrev = n;
+        if (n <= 0 && antes <= 0) return;
+        m.instanceMatrix.clearUpdateRanges(); m.instanceMatrix.addUpdateRange(0, n * 16); m.instanceMatrix.needsUpdate = true;
+        if (m.instanceColor) { m.instanceColor.clearUpdateRanges(); m.instanceColor.addUpdateRange(0, n * 3); m.instanceColor.needsUpdate = true; }
+      };
       for (const k in V) {
         const o = V[k];
-        for (const [lista, n] of [[o.cerca, o.nc], [o.lejos, o.nl]]) for (const p of lista) { p.m.count = n; p.m.instanceMatrix.needsUpdate = true; if (p.m.instanceColor) p.m.instanceColor.needsUpdate = true; }
+        for (const [lista, n] of [[o.cerca, o.nc], [o.lejos, o.nl]]) for (const p of lista) subir(p.m, n);
       }
-      blob.count = nb; blob.instanceMatrix.needsUpdate = true;
-      if (REAL) for (const p of REAL.cerca) { p.m.count = REAL.nc; p.m.instanceMatrix.needsUpdate = true; if (p.m.instanceColor) p.m.instanceColor.needsUpdate = true; }
+      subir(blob, nb);
+      if (REAL) for (const p of REAL.cerca) subir(p.m, REAL.nc);
     },
     set visible(v) { grupo.visible = v; },
     setCerca(m) { CERCA = m; }

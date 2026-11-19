@@ -207,7 +207,7 @@ export async function iniciarSimulacion(cfg = {}) {
     <div class="gs-reloj"><svg id="gs-dial" viewBox="0 0 120 120" role="slider" tabindex="0" aria-label="Hora del día (24 horas): arrastra alrededor" aria-valuemin="0" aria-valuemax="1439"></svg><div><b id="gs-hora">06:30</b><small id="gs-jor">Antes de la jornada</small><em>Arrastra la bola alrededor: después de las 23:59 sigue la 00:00</em></div></div>
     <div class="gs-fila"><button id="gs-play">❚❚</button><button data-v="20">x20</button><button data-v="60" class="on">x60</button><button data-v="240">x240</button></div>
     <div class="gs-sub">SINTAXIS ESPACIAL <span>DepthmapX</span></div>
-    <div class="gs-fila gs-fila3" id="gs-capa"><button data-c="i">Integración</button><button data-c="c">Elección</button><button data-c="d" class="gs-cambio" title="Qué calles ganan o pierden integración con la propuesta">Cambio</button><button data-c="" class="on">Apagar</button></div>
+    <div class="gs-fila gs-fila3" id="gs-capa"><button data-c="i">Integración</button><button data-c="c">Elección</button><button data-c="d" class="gs-cambio" title="Qué calles ganan o pierden elección e integración con la propuesta">Cambio</button><button data-c="" class="on">Apagar</button></div>
     <div class="gs-ley" id="gs-ley-sx"><span>baja</span><i></i><span>alta</span></div>
     <div id="gs-sx-pro" class="gs-sxpro"></div>
     <div class="gs-fila" style="grid-template-columns:1fr 1fr"><button id="gs-ag" class="on">Agentes</button><button id="gs-cv-b" class="${SINP ? '' : 'on'}">${SINP ? 'Estrategias' : 'Convenciones'}</button></div>
@@ -516,6 +516,47 @@ export async function iniciarSimulacion(cfg = {}) {
           for (let k = 0; k < r[1] * 2; k++) pD.set(c, (r[0] + k) * 3); }
         COLS.dP = pD; COLS.d = pD; SXPRO = { nuevos: SP.nuevos.length, sube, baja, m: Math.round(SP.nuevos.reduce((a, s) => { let L = 0; for (let i = 1; i < s.p.length; i++) L += Math.hypot(s.p[i][0] - s.p[i - 1][0], s.p[i][1] - s.p[i - 1][1]); return a + L; }, 0)) };
       }
+      /* ===== ELECCIÓN / CAMBIO CON LA PROPUESTA: la ubicación de los mercados de barrio y de las huertas mueve el paso de gente =====
+         Parte de la sintaxis con los pasajes de Bavaria (cP) y le suma, calle por calle (todo precalculado una vez; al cambiar de escenario o mover un slider solo se recorren las calles, nunca mercado × calle):
+         · GANAN elección las calles a pie de cada mercado de barrio (carga.json, 8) y de cada huerta de parque (huertas_barrio.json, 51): ganancia = núcleo gaussiano de la distancia
+           (mercado: 300 m ≈ 4 min a pie; huerta: 200 m), saturada; máximo +0,22 (mercados) y +0,12 (huertas). [SUP] el slider «Mercados de barrio» (20 = base) y «Hogares con huerta» (10 = base) escalan cada ganancia (tope ×1,5 y ×2).
+         · PIERDEN las vías colectoras y arterias (j ≥ 3) de los corredores de camiones hacia Corabastos: pérdida = máx. 0,30 × peso de cercanía a Corabastos (1 hasta 600 m, 0 a 2,6 km) × reducción de camiones y carros (T3.alivio, sliders)
+           × (0,4 + 0,6·elección actual): las más recorridas por la carga son las que más bajan. Las arterias (j ≥ 4) pesan 1; las colectoras 0,6.
+         · Aparece poco a poco (~8 s) al cambiar a la propuesta. «Cambio» = Δ integración + Δ elección (verde gana, rojo pierde). */
+      { const OXz = OX, OZz = OZ, nS = S.length, IP0 = new Float32Array(nS), CP0 = new Float32Array(nS), gM = new Float32Array(nS), gH = new Float32Array(nS), lP = new Float32Array(nS);
+        for (let si = 0; si < nS; si++) { IP0[si] = S[si].i; CP0[si] = S[si].c; } for (const [si, iP, cP] of SP.cambios) { if (si < nS) { IP0[si] = iP; CP0[si] = cP; } }
+        const CORA_W = [1132.1, 948.6], pesoC = (x, z) => { const d = Math.hypot(x - CORA_W[0], z - CORA_W[1]); return d <= 600 ? 1 : d >= 2600 ? 0 : 1 - (d - 600) / 2000; };
+        const nucleo = (d, R) => Math.exp(-(d / R) * (d / R)), lim = (v) => Math.max(0, Math.min(1, v)), enRango = (v, a, b) => Math.max(a, Math.min(b, v));
+        let MER = [], HUE = [], tEsc = 0, tElec = 0, listo = false; const ahora = () => performance.now();
+        const resumen = { sube: 0, baja: 0, mer: 0, hue: 0, max: 0 };
+        const aplicar = () => {
+          const pro = T3.escenario === 'proyecto', rampa = pro ? Math.min(1, (ahora() - tEsc) / 8000) : 0, CSx = T3.coraCS || { merc: 20, huer: 10 };
+          const AL = T3.alivio, M = AL && AL.manual, redC = AL ? 1 - (M ? M.keep : 1) * AL.KEEP : 0.4, redK = AL ? 1 - (M ? M.keepCam : 1) * AL.KEEP_CAM : 0.7, rT = 0.35 * redC + 0.65 * redK;
+          const fm = enRango(CSx.merc / 20, 0, 1.5), fh = enRango(CSx.huer / 10, 0, 2); let sube = 0, baja = 0, mx = 0;
+          for (const [si, r] of donde) { const c0 = S[si].c;
+            const c1 = pro ? lim(CP0[si] + rampa * (0.22 * gM[si] * fm + 0.12 * gH[si] * fh - 0.30 * lP[si] * rT * (0.4 + 0.6 * c0) / 0.5)) : CP0[si], dC = c1 - CP0[si];
+            if (dC > 0.02) sube++; else if (dC < -0.02) baja++; if (Math.abs(dC) > mx) mx = Math.abs(dC);
+            const cc = rgb(c1); for (let k = 0; k < r[1] * 2; k++) COLS.cP.set(cc, (r[0] + k) * 3);
+            const d = (IP0[si] - S[si].i) + (c1 - c0), q = Math.abs(d) < 0.003 ? null : Math.min(1, Math.abs(d) / 0.08), col = !q ? [0.42, 0.45, 0.5] : d > 0 ? [0.55 - 0.42 * q, 0.75 + 0.2 * q, 0.45 - 0.2 * q] : [0.95, 0.45 - 0.2 * q, 0.4 - 0.2 * q];
+            for (let k = 0; k < r[1] * 2; k++) COLS.dP.set(col, (r[0] + k) * 3); }
+          resumen.sube = sube; resumen.baja = baja; resumen.mer = MER.length; resumen.hue = HUE.length; resumen.max = mx; resumen.rampa = rampa; T3.eleccionPro = resumen;
+          if (SXPRO) { SXPRO.eSube = sube; SXPRO.eBaja = baja; SXPRO.mer = MER.length; SXPRO.hue = HUE.length; SXPRO.eMax = mx; }
+          if (pro && rampa < 1 && st0.capa) setTimeout(pedir, 500);
+        };
+        const pedir = () => { clearTimeout(tElec); tElec = setTimeout(() => { if (!listo) return; aplicar(); if (st0.capa) capa3D(); }, 60); };
+        Promise.all([fetch('data3d/carga.json?v=1').then(r => r.json()).catch(() => null), fetch('data3d/huertas_barrio.json?v=3').then(r => r.json()).catch(() => null)]).then(([K, HB]) => {
+          const lwM = typeof T3.lw === 'function' ? T3.lw : (x, y) => [x - 5341.33, 3161.9 - y];
+          MER = ((K && K.mercados) || []).filter(m => m.p).map(m => lwM(m.p[0], m.p[1])); HUE = ((HB && HB.huertas) || []).filter(h => h.tipo === 'parque' && h.c).map(h => [h.c[0], h.c[1]]);
+          for (const [si] of donde) { const s = S[si], n = s.p.length, pts = [s.p[0], s.p[n >> 1], s.p[n - 1]].map(q => [q[0] + OXz, q[1] + OZz]);
+            let a = 0, b = 0; for (const m of MER) { let d = 1e9; for (const q of pts) d = Math.min(d, Math.hypot(q[0] - m[0], q[1] - m[1])); a += nucleo(d, 300); }
+            for (const h of HUE) { let d = 1e9; for (const q of pts) d = Math.min(d, Math.hypot(q[0] - h[0], q[1] - h[1])); b += nucleo(d, 200); }
+            gM[si] = 1 - Math.exp(-a * 1.4); gH[si] = 1 - Math.exp(-b * 0.9);
+            const w = s.v ? (s.j >= 4 ? 1 : s.j >= 3 ? 0.6 : 0) : 0; lP[si] = w ? w * pesoC(pts[1][0], pts[1][1]) : 0; }
+          listo = true; aplicar(); if (st0.capa) capa3D(); });
+        addEventListener('escenario', () => { tEsc = ahora(); pedir(); });
+        addEventListener('cora-cambio', pedir);
+        if (T3.escenario === 'proyecto') tEsc = ahora() - 9000; T3.eleccionRecalcular = pedir;
+      }
       const P = [], CI = [], CC = [], X = [];
       for (const s of SP.nuevos) { const b = P.length / 3, n = s.p.length, ci = rgb(s.i), cc = rgb(s.c);
         for (let k = 0; k < n; k++) { const a = s.p[Math.max(0, k - 1)], q = s.p[Math.min(n - 1, k + 1)]; let dx = q[0] - a[0], dy = q[1] - a[1]; const l = Math.hypot(dx, dy) || 1; dx /= l; dy /= l;
@@ -526,10 +567,10 @@ export async function iniciarSimulacion(cfg = {}) {
       NUEVAS.renderOrder = 9; NUEVAS.frustumCulled = false; NUEVAS.visible = false; NUEVAS.userData.C = { i: new Float32Array(CI), c: new Float32Array(CC), d: new Float32Array(CI.length).map((_, k) => [0.13, 0.83, 0.93][k % 3]) }; T3.scene.add(NUEVAS); capa3D();
     }).catch(e => console.warn('sintaxis con la propuesta:', e));
     capa3D = () => { const pro = T3.escenario === 'proyecto' && !!(T3.PROP && T3.PROP.sintaxis); // con la propuesta: sintaxis con los pasajes de Bavaria Común
-      { const cp = izq.querySelector('#gs-capa'); if (cp) cp.classList.remove('pro'); /* misma gama DepthmapX que «Kennedy hoy»: sin modo Cambio */
-        if (st0.capa === 'd') { const b = izq.querySelector('#gs-capa button[data-c="i"]'); if (b) { b.click(); return; } }
+      { const cp = izq.querySelector('#gs-capa'), conCambio = pro && !!COLS.dP; if (cp) cp.classList.toggle('pro', conCambio); /* con la propuesta vuelve el modo Cambio (elección + integración); hoy, solo la gama DepthmapX */
+        if (st0.capa === 'd' && !conCambio) { const b = izq.querySelector('#gs-capa button[data-c="i"]'); if (b) { b.click(); return; } }
         const ley = izq.querySelector('#gs-ley-sx'); if (ley) { const d = st0.capa === 'd'; ley.children[0].textContent = d ? 'pierde' : 'baja'; ley.children[2].textContent = d ? 'gana' : 'alta'; ley.children[1].style.background = d ? 'linear-gradient(90deg,#f2724f,#6b737f 50%,#22c55e)' : ''; }
-        const nt = izq.querySelector('#gs-sx-pro'); if (nt && ley && ley.nextElementSibling !== nt) ley.after(nt); /* la nota va justo debajo de la leyenda */ if (nt) { nt.classList.toggle('on', pro && !!st0.capa && !!SXPRO); if (SXPRO) nt.innerHTML = `<b>Con la propuesta:</b> ${SXPRO.nuevos} pasajes nuevos en Bavaria Común (${SXPRO.m.toLocaleString('es-CO')} m). ` + (SXPRO.sube || SXPRO.baja ? `${SXPRO.sube.toLocaleString('es-CO')} calles ganan integración` + (SXPRO.baja ? ` y ${SXPRO.baja.toLocaleString('es-CO')} pierden` : '') : 'Las calles vecinas casi no cambian; lo nuevo son los pasajes') + `. Misma escala de color que hoy.`; } }
+        const nt = izq.querySelector('#gs-sx-pro'); if (nt && ley && ley.nextElementSibling !== nt) ley.after(nt); /* la nota va justo debajo de la leyenda */ if (nt) { nt.classList.toggle('on', pro && !!st0.capa && !!SXPRO); if (SXPRO) nt.innerHTML = `<b>Con la propuesta:</b> ${SXPRO.nuevos} pasajes nuevos en Bavaria Común (${SXPRO.m.toLocaleString('es-CO')} m). ` + (SXPRO.sube || SXPRO.baja ? `${SXPRO.sube.toLocaleString('es-CO')} calles ganan integración` + (SXPRO.baja ? ` y ${SXPRO.baja.toLocaleString('es-CO')} pierden` : '') : 'Las calles vecinas casi no cambian; lo nuevo son los pasajes') + `. Misma escala de color que hoy.` + (SXPRO.mer != null && (st0.capa === 'c' || st0.capa === 'd') ? `<br><b>Elección:</b> ${SXPRO.eSube.toLocaleString('es-CO')} calles ganan paso a pie porque llevan a los ${SXPRO.mer} mercados de barrio y a ${SXPRO.hue} huertas (hasta +${Math.round(SXPRO.eMax * 100)} puntos), y ${SXPRO.eBaja.toLocaleString('es-CO')} pierden: son los corredores de camiones hacia Corabastos, que dejan de ser el camino de la compra. Mueve los sliders de Corabastos para ver cómo cambia.` : ''); } }
       CINTAS.material.opacity = 0.82; /* colores plenos de DepthmapX (antes 0,22 y con tone mapping: salían lavados) */
       if (NUEVAS) { NUEVAS.visible = !!st0.capa && pro; if (NUEVAS.visible) { NUEVAS.geometry.attributes.color.array.set(NUEVAS.userData.C[st0.capa]); NUEVAS.geometry.attributes.color.needsUpdate = true; } }
       if (!st0.capa) { CINTAS.visible = false; return; } CINTAS.visible = true; geo.attributes.color.array.set(COLS[st0.capa + (pro && COLS.iP ? 'P' : '')]); geo.attributes.color.needsUpdate = true; };
@@ -561,7 +602,7 @@ export async function iniciarSimulacion(cfg = {}) {
     }
     // ---- vehículos realistas: reemplazan las cajas de carros, motos, camiones y bicis (las cajas siguen guardando la posición para las luces de noche) ----
     try {
-      const mv = await import('./vehiculos.js?v=5');
+      const mv = await import('./vehiculos.js?v=6');
       VEH = mv.crearVehiculos({ T3, cuantos, movil: !!T3.movil });
       VEH.tipos = { carro: 1, moto: 1, camion: 1, bici: 1 };
       for (const k of Object.keys(VEH.tipos)) if (MALLAS[k]) MALLAS[k].visible = false;
@@ -644,7 +685,7 @@ export async function iniciarSimulacion(cfg = {}) {
          · Corabastos reducido: cada 10 % de naves retiradas evita 5 % de los carros y 12 % de los camiones (la carga grande se queda en el patio de transferencia)
          · Mercados de barrio: cada mercado evita 1,2 % de los carros y 0,8 % de los camiones
          · Hogares con huerta: cada 10 % de hogares evita 8 % de los carros y 3 % de los camiones */
-      const CS = { cora: 19, merc: 20, huer: 10 };
+      const CS = { cora: 19, merc: 20, huer: 10 }; T3.coraCS = CS; /* la capa «Elección» (más abajo) escala la ganancia de los mercados y las huertas con estos sliders */
       const calcCora = () => { const a = CS.cora / 100, b = CS.merc, c = CS.huer / 100;
         const car = 1 - (1 - a * 0.5) * (1 - Math.min(0.6, b * 0.012)) * (1 - c * 0.8), cam = 1 - (1 - Math.min(0.85, a * 1.2)) * (1 - Math.min(0.4, b * 0.008)) * (1 - c * 0.3);
         return { car, cam }; };
@@ -680,7 +721,7 @@ export async function iniciarSimulacion(cfg = {}) {
       }
       addEventListener('escenario', () => setTimeout(pintarCora, 80)); setInterval(() => { if (T3.alivio && !T3.alivio.manual) pintarCora(); }, 1000);
       pintarCora();
-      import('./origenes.js?v=1').then(m => { T3.origenes = m.crearOrigenes({ T3, izq, despues: caja }); }).catch(e => console.warn('orígenes:', e)); // ¿de dónde vienen los carros? (puntos de origen y horario de Corabastos)
+      import('./origenes.js?v=2').then(m => { T3.origenes = m.crearOrigenes({ T3, izq, despues: caja }); }).catch(e => console.warn('orígenes:', e)); // ¿de dónde vienen los carros? (puntos de origen y horario de Corabastos)
       { /* cuántos carros hay en la calle a esta hora (demanda según el reloj: index.html, demandaHora) */
         izq.querySelector('#gs-fc').insertAdjacentHTML('beforebegin', '<div id="gs-dem" style="font-size:10.5px;color:#94a3b8;margin:2px 0 6px"></div>');
         const dem = izq.querySelector('#gs-dem');
