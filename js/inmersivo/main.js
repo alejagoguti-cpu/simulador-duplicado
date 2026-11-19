@@ -18,7 +18,12 @@ const smooth = (a, b, x) => {
 };
 const MOV = matchMedia('(max-width: 760px)').matches || matchMedia('(pointer: coarse)').matches;
 const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const raf = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+const raf = () => new Promise((r) => {
+  let hecho = false;
+  const fin = () => { if (!hecho) { hecho = true; r(); } };
+  requestAnimationFrame(() => requestAnimationFrame(fin));
+  setTimeout(fin, 150);
+});
 const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /* ---------- edificio ---------- */
