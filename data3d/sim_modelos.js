@@ -5,11 +5,14 @@
 export const SEM = 520, AÑO = 52, POB_K = 1034000; // 10 años; población de Kennedy (proyección DANE 2024, aprox.)
 export const PAR = {
   P1: { rend: 6, alcance: 0.5, auto: 0.35, merma: 0.1, precio: 2600, acopio: 15000, reac: 0.5, cupos: 12, retardo: 12, c: 1000, rotacion: 12, mu: 6, zona: 50000, sup: 98000, regional: 0.45,
+    pares: 3, // [SUP] promotores que forman los propios hogares en C, por cada 10.000 hogares por semana (solo lo usa la simulación sin fin, data3d/sim_vida.js)
     sequia: false, bloqueo: false, crece: false, baldios: false },
   P2: { frac: 0.4, cap: 6000, mad: 10, sust: 0.2, dist: 1.5 },
   P3: { disp: 400, borde: 20, arboles: 0.4, luz: 0.5, anti: true, rec: 0.02 }
 };
-export const SIMST = { esc: 'C', t: SEM - 1 }; // escenario de la propuesta (B o C; «Kennedy hoy» es A) y semana que se mira
+// escenario de la propuesta (B o C; «Kennedy hoy» es A) y semana que se mira. En el mapa la simulación ya no termina (data3d/sim_vida.js):
+// SIMST.t puede pasar de SEM; los modelos de abajo siguen siendo los de 10 años del documento (los usa el tablero). semilla = réplica que se ve en el mapa
+export const SIMST = { esc: 'C', t: SEM - 1, semilla: 1 };
 export const avisar = (origen) => dispatchEvent(new CustomEvent('sim-cambio', { detail: { origen } }));
 
 /* ---------------- SIM-01 · red de huertas, abastecimiento, conocimiento y decisión ---------------- */

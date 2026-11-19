@@ -574,6 +574,6 @@ body.tb-abierto #dock{display:none}
   let nT = 0; tick(); setInterval(() => { tick(); pintarTexto(); pintarCali(); pintarFomento(); if (++nT % 8 === 0 && abierto()) pintarComparacion(); }, 500);
   aplicarEsc(T3.escenario || 'hoy');
   // SIMULACIONES (SIM-01 huertas, SIM-02 orgánicos, SIM-03 fauna): primera pestaña; cambian con Kennedy hoy / Con la propuesta
-  import('./simulaciones.js?v=10').then(m => { m.iniciarSimulaciones({ T3, tb, verPestana }); verPestana('sim'); }).catch(e => console.warn('simulaciones:', e));
+  import('./simulaciones.js?v=11').then(m => { m.iniciarSimulaciones({ T3, tb, verPestana }); verPestana('sim'); }).catch(e => console.warn('simulaciones:', e));
   return { abrir, tb, verPestana };
 }

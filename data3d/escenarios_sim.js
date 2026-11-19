@@ -1,6 +1,6 @@
 /* ============ ESCENARIOS EN EL TERRITORIO (SIM-01, SIM-02 y SIM-03 con sliders, sobre el mapa) ============
    A = «Kennedy hoy» (sin intervención). B = nodo único con decisión central. C = clúster con decisión rotativa.
-   El modelo (data3d/sim_modelos.js, el mismo del tablero) corre 10 años semana a semana y CADA resultado se ve en el 3D:
+   El modelo (data3d/sim_vida.js: SIM-01/02/03 del tablero escritos como regla de paso) corre SIN FIN semana a semana y CADA resultado se ve en el 3D:
    · SIM-01  hogares con huerta  -> huertas de barrio que se abren desde Bavaria hacia afuera (y se cierran si hay abandono)
              dependencia de Corabastos -> menos carros y camiones en la Av. Ciudad de Cali (T3.alivio.KEEP) y el anillo de Corabastos
              promotores formados -> etiqueta en Bavaria Común
@@ -8,16 +8,33 @@
              con partículas proporcionales a los kilos y la ocupación de cada estación
    · SIM-03  aves -> fracción de aves visibles en la red biótica (T3.bio.ESTADO.fauna); integridad del humedal -> anillo de El Burro;
              trampas ecológicas (luz y vidrio) -> huertas del borde en rojo si no hay medida antitrampa */
-import { SEM, AÑO, PAR, SIMST, avisar, correrTodo } from './sim_modelos.js?v=2';
+import { SEM, AÑO, PAR, SIMST, avisar, correrTodo } from './sim_modelos.js?v=3';
+/* SIMULACIÓN SIN FIN (data3d/sim_vida.js): el mapa ya no muestra 10 años precalculados. A, B y C avanzan semana a semana desde su estado,
+   con perturbaciones al azar (semilla = SIMST.semilla) y reglas de colapso fijas. La corrida del mapa es la réplica «semilla N» del modo Evaluar. */
+import { crear as crearVida, paso as pasoVida, diagnostico, tendencia, REGLAS, NOMBRE_EV, ARRANQUE } from './sim_vida.js?v=1';
 export async function iniciarEscenariosSim({ T3, cj }) {
   const THREE = T3.THREE, MOV = innerWidth < 760, RMQ = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const HB = await cj('data3d/huertas_barrio.json?v=3').catch(() => ({ huertas: [] }));
   const { P1, P2, P3 } = PAR;
-  let R = correrTodo();
+  if (P1.pares == null) P1.pares = 3;
+  const R = correrTodo(); // solo para la referencia fija REF (modelo de 10 años del documento, valores por defecto)
+  /* ---------- estado vivo: A, B y C con la misma semilla (viven los mismos eventos) ---------- */
+  const VIDA = { seed: SIMST.semilla || 1, S: null, vel: 0, maxT: SEM - 1, avisado: {} };
+  const reiniciarVida = () => { VIDA.S = { A: crearVida('A', VIDA.seed), B: crearVida('B', VIDA.seed), C: crearVida('C', VIDA.seed) }; VIDA.avisado = {}; };
+  const avanzarA = (w) => { w = Math.max(0, Math.floor(w)); if (!VIDA.S || VIDA.S.A.t > w) reiniciarVida(); const S = VIDA.S; while (S.A.t < w) { pasoVida(S.A, PAR); pasoVida(S.B, PAR); pasoVida(S.C, PAR); } if (w > VIDA.maxT) VIDA.maxT = w; };
+  // vista compatible con el formato viejo (R.S1[e].act[t] …) para los módulos que lo leen (capas_escenario.js, mejora_tour.js): cualquier semana da el valor vivo
+  const vista = (k, key) => new Proxy([], { get: (o, p) => p === 'length' ? SEM : (typeof p === 'string' && /^\d+$/.test(p)) ? VIDA.S[k].o[key] : Reflect.get(o, p) });
+  const K1 = ['act', 'dep', 'pers', 'pct', 'prom', 'prod', 'auto', 'merma', 'exc', 'm2p', 'cal', 'espera', 'pc', 'carga', 'retiro', 'reg'], K2 = { relleno: 'relleno', compost: 'compost', hongos: 'hongos', vuelve: 'vuelve', pct: 'pct2', km: 'km', pila: 'pila', desv: 'desv', ocup: 'ocup' }, K3 = ['aves', 'riq', 'hum', 'trampa'];
+  const RV = { S1: {}, S2: {}, S3: {} };
+  for (const k of 'ABC') { RV.S1[k] = Object.fromEntries(K1.map(q => [q, vista(k, q)])); Object.defineProperty(RV.S1[k], 'N', { get: () => VIDA.S[k].o.N });
+    RV.S2[k] = Object.fromEntries(Object.entries(K2).map(([q, q2]) => [q, vista(k, q2)])); Object.defineProperty(RV.S2[k], 'gen', { get: () => VIDA.S[k].o.gen });
+    RV.S3[k] = Object.fromEntries(K3.map(q => [q, vista(k, q)])); Object.defineProperty(RV.S3[k], 'conect', { get: () => VIDA.S[k].o.conect }); }
+  avanzarA(SIMST.t);
   // referencia FIJA (valores por defecto): huertas del escenario al año 10. Las cubiertas verdes y la fauna se miden contra ella, así los
   // sliders que suben o bajan los hogares con huerta cambian cuántas cubiertas y cuánta fauna se ven (antes siempre llegaba al 100 %)
   const ALC0 = P1.alcance || 0.5; // alcance por defecto
   const REF = {}; for (const k of ['B', 'C']) { const s = R.S1[k]; REF[k] = s ? Math.max(0.01, s.act[s.act.length - 1] / R.S1.C.N) : 1; }
+  const NC = R.S1.C.N, NREG = Object.fromEntries(REGLAS.map(Q => [Q.k, Q.n.toLowerCase()]));
   const fmt = (v, d = 0) => (v == null || !isFinite(v)) ? '–' : v.toLocaleString('es-CO', { maximumFractionDigits: d, minimumFractionDigits: d });
   const fmtK = (v) => v >= 1e6 ? fmt(v / 1e6, 1) + ' M' : v >= 1e4 ? fmt(v / 1e3, 0) + ' mil' : fmt(v);
   const Y = T3.sueloY != null ? T3.sueloY : 0.35;
@@ -161,6 +178,25 @@ body.tb-abierto #esim{display:none}
 #esim .mapa button:hover{background:rgba(255,255,255,.06)}#esim .mapa button:focus-visible{outline:2px solid #fff}#esim .mapa button b{color:#fff;font-weight:600}
 #esim .mapa .sw{justify-self:center;display:block}#esim .mapa .sw.b{width:22px;border-radius:3px}#esim .mapa .sw.p{width:12px;height:12px;border-radius:50%;box-shadow:0 0 0 2px rgba(255,255,255,.7)}
 #esim.min .mapa{display:block}
+#esim .tl .vel{width:auto;min-width:34px;padding:0 6px;border-radius:15px;background:rgba(255,255,255,.1);color:#e9ecee;font-size:11px;font-weight:600;box-sizing:border-box}
+#esim .tl output{width:76px}
+#esim .vida{margin:2px 12px 0;padding:7px 10px;border-radius:10px;font-size:11.5px;line-height:1.4;background:rgba(255,255,255,.05);border-left:3px solid var(--c,#59a14f);color:#dfe4e6}
+#esim .vida b{color:#fff;font-weight:600}#esim .vida small{display:block;color:#a7b0b5;font-size:10.5px}
+#esim .vctl{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 12px 0;font-size:11px;color:#a7b0b5}
+#esim .vctl>button{all:unset;cursor:pointer;padding:4px 9px;border-radius:8px;background:rgba(255,255,255,.08);color:#e9ecee;font-weight:500}#esim .vctl>button:hover{background:rgba(255,255,255,.14)}
+#esim .vctl>button[data-eval]{background:rgba(226,165,91,.2);box-shadow:inset 0 0 0 1px rgba(226,165,91,.5)}
+#esim .vctl .sem{display:inline-flex;align-items:center;gap:4px;margin-right:auto}#esim .vctl .sem button{all:unset;cursor:pointer;width:22px;height:22px;display:grid;place-items:center;border-radius:6px;background:rgba(255,255,255,.08);color:#e9ecee}
+#esim .vctl .sem b{min-width:18px;text-align:center;color:#fff;font-variant-numeric:tabular-nums}
+#esim .vctl button:focus-visible{outline:2px solid #fff;outline-offset:1px}
+#esim .como{margin:6px 12px 0;padding:8px 10px;border-radius:10px;background:rgba(0,0,0,.25);font-size:11px;line-height:1.45;color:#c3cace}#esim .como[hidden]{display:none}#esim .como ol{margin:0;padding-left:16px}#esim .como li{margin:2px 0}
+#esim .reglas .rg{display:grid;grid-template-columns:1fr auto;gap:1px 8px;padding:5px 8px;margin:3px 0;border-radius:8px;background:rgba(255,255,255,.04);font-size:11px;color:#c3cace}
+#esim .reglas .rg b{color:#fff;font-weight:600}#esim .reglas .rg strong{font-weight:600;text-align:right;font-variant-numeric:tabular-nums}#esim .reglas .rg small{grid-column:1/-1;color:#8d969b;font-size:10.5px}
+#esim .reglas .rg i{grid-column:1/-1;display:block;height:3px;border-radius:2px;background:rgba(255,255,255,.08);overflow:hidden}#esim .reglas .rg i u{display:block;height:100%;background:#ff8a80}
+#esim .reglas .rg.ok strong{color:#8fd18a}#esim .reglas .rg.cerca strong{color:#f2c995}#esim .reglas .rg.mal strong{color:#ff8a80}
+#esim .reglas canvas{display:block;width:100%;height:56px;margin:6px 0 2px}
+#esim .senales{font-size:11px;color:#c3cace}#esim .senales p{margin:3px 0}#esim .senales b{color:#fff;font-weight:600}
+#esim.min .vctl,#esim.min .como{display:none}
+@media (max-width:760px){#esim:not(.min){overflow-y:auto;max-height:56vh!important}#esim:not(.min)>*{flex-shrink:0}#esim:not(.min) .cuerpo{overflow:visible}#esim .exp.ley2{display:none}}
 @media (max-width:760px){#esim{left:8px;right:8px;width:auto;top:146px;bottom:auto;max-height:40vh}#esim .cab{padding:8px 10px 6px 12px}}`;
   document.head.appendChild(css);
   const chip = (html) => { const d = document.createElement('div'); d.className = 'es-et'; d.innerHTML = html; document.body.appendChild(d); return d; };
@@ -170,22 +206,35 @@ body.tb-abierto #esim{display:none}
   /* ---------------- panel ---------------- */
   const slider = (P, k, n, min, max, paso, f = (v) => fmt(v)) => `<label>${n}<output data-o="${k}">${f(P[k])}</output><input type="range" data-g="${P === P1 ? 1 : P === P2 ? 2 : 3}" data-k="${k}" min="${min}" max="${max}" step="${paso}" value="${P[k]}"></label>`;
   const pct = (v) => fmt(v * 100) + ' %';
-  const FMT = { alcance: pct, auto: pct, frac: pct, sust: pct, precio: (v) => '$' + fmt(v), zona: fmtK, reac: (v) => fmt(v, 2), arboles: (v) => fmt(v, 2), luz: (v) => fmt(v, 2), rec: (v) => fmt(v, 3), dist: (v) => fmt(v, 1) };
+  const FMT = { alcance: pct, auto: pct, frac: pct, sust: pct, precio: (v) => '$' + fmt(v), zona: fmtK, reac: (v) => fmt(v, 2), arboles: (v) => fmt(v, 2), luz: (v) => fmt(v, 2), rec: (v) => fmt(v, 3), dist: (v) => fmt(v, 1), pares: (v) => fmt(v, 2) };
   const el = document.createElement('section'); el.id = 'esim'; el.setAttribute('aria-label', 'Escenarios de la simulación');
-  el.innerHTML = `<div class="cab"><b>Escenarios · 10 años de la propuesta</b><button type="button" data-guia aria-label="Cómo se usa" title="Cómo se usa">?</button><button type="button" data-min aria-label="Plegar" title="Plegar">–</button></div>
-<p class="exp">Escoge un escenario y dale ▶: corren 10 años y el mapa cambia. Mueve las variables de abajo y mira qué pasa en el territorio.</p>
-<p class="exp ley2"><i style="background:#8fd18a"></i>cada punto verde fijo en el mapa es una huerta que se abrió </p>
+  el.innerHTML = `<div class="cab"><b>Escenarios · simulación sin fin</b><button type="button" data-guia aria-label="Cómo se usa" title="Cómo se usa">?</button><button type="button" data-min aria-label="Plegar" title="Plegar">–</button></div>
+<p class="exp">Escoge un escenario y dale ▶: corre año tras año, sin final, con sequías, bloqueos y recortes que llegan al azar. Las reglas de colapso están fijas antes de correr: mira si la propuesta se sostiene y cuándo se cae.</p>
+<p class="exp ley2"><i style="background:#8fd18a"></i>cada punto verde fijo en el mapa es una huerta abierta (se cierran si la red se cae)</p>
 <div class="seg" role="group" aria-label="Escenario"><button type="button" data-e="A" style="--c:#8fb0c9"><b>A</b>Kennedy hoy</button><button type="button" data-e="B" style="--c:#b07aa1"><b>B</b>Nodo central</button><button type="button" data-e="C" style="--c:#e2a55b"><b>C</b>Clúster rotativo</button></div>
-<div class="tl"><button type="button" data-play aria-label="Correr 10 años">▶</button><input type="range" min="0" max="${SEM - 1}" value="${SIMST.t}" data-t aria-label="Semana de la simulación"><output data-año></output></div>
-<div class="mapa" data-mapa aria-live="polite"></div><div class="aviso" data-aviso hidden></div><div class="cuerpo"><ul data-kpi></ul>
+<div class="tl"><button type="button" data-play aria-label="Correr o pausar">▶</button><button type="button" class="vel" data-vel aria-label="Velocidad" title="Velocidad">×1</button><input type="range" min="0" max="${SEM - 1}" value="${Math.floor(SIMST.t)}" data-t aria-label="Semana de la simulación"><output data-año></output></div>
+<div class="vida" data-vida aria-live="polite"></div>
+<div class="vctl"><span class="sem">Semilla<button type="button" data-sd="-1" aria-label="Semilla anterior">‹</button><b data-seed>${VIDA.seed}</b><button type="button" data-sd="1" aria-label="Semilla siguiente">›</button></span><button type="button" data-eval>Evaluar 30 corridas</button><button type="button" data-como aria-expanded="false">Cómo funciona</button></div>
+<div class="como" data-como-txt hidden><ol>
+<li>Cada semana el estado nuevo sale solo del estado anterior (hogares con huerta, promotores, compost, humedal), como en el juego de la vida. No hay año final.</li>
+<li>Las sequías, bloqueos, picos de precio, pérdida de lotes, recortes del programa y daños al humedal llegan al azar con probabilidades fijas, declaradas en «Evaluar».</li>
+<li>El azar sale de una semilla: la misma semilla da siempre la misma historia, y A, B y C viven los mismos eventos.</li>
+<li>Las 5 reglas de colapso (abajo) se fijaron antes de correr y no cambian. Empiezan a contar en el año 3, cuando la propuesta ya está montada.</li>
+<li>Funciona si ninguna regla se cumple y se recupera tras cada golpe; está en riesgo si un indicador está cerca del límite; colapsa cuando una regla se cumple las semanas seguidas que dice.</li>
+<li>Una corrida sola no prueba nada: «Evaluar» corre 30 semillas fijas por 100 años y muestra todas, también las que colapsan, comparadas con Kennedy hoy.</li>
+<li>Si mueves un control, la corrida vuelve a empezar con la misma semilla y avanza rápido hasta el año en que ibas.</li></ol></div>
+<div class="mapa" data-mapa aria-live="polite"></div><div class="aviso" data-aviso hidden></div><div class="cuerpo">
+<details class="reglas" open><summary>Reglas de colapso · fijas antes de correr</summary><div data-reglas></div><canvas data-spark height="56" aria-label="Hogares con huerta a lo largo de la corrida" role="img"></canvas><div class="senales" data-senales></div></details>
+<ul data-kpi></ul>
 <details><summary>Comida · huertas y Corabastos (SIM-01)</summary>
 ${slider(P1, 'rend', 'Rendimiento (kg/m²·año)', 1, 12, 1)}${slider(P1, 'alcance', 'Alcance sobre lotes y techos', 0.1, 1, 0.05, pct)}${slider(P1, 'auto', 'Autoconsumo', 0.1, 0.7, 0.05, pct)}
 ${slider(P1, 'precio', 'Precio de excedentes ($/kg)', 1500, 4500, 100, FMT.precio)}${slider(P1, 'acopio', 'Capacidad de acopio (kg/semana)', 2000, 40000, 1000)}${slider(P1, 'reac', 'Reacción de precio de la central', 0, 1, 0.05, FMT.reac)}
 ${slider(P1, 'cupos', 'Cupos de formación en Bavaria (por trimestre)', 0, 40, 1)}${slider(P1, 'retardo', 'Retardo de aprendizaje (semanas)', 2, 40, 1)}${slider(P1, 'c', 'm² por promotor', 400, 3000, 100)}
 ${slider(P1, 'rotacion', 'Periodo de rotación (semanas)', 4, 52, 1)}${slider(P1, 'mu', 'Capacidad de decisión central (solicitudes/semana)', 1, 20, 1)}${slider(P1, 'zona', 'Población de la zona de servicio', 10000, 300000, 5000, fmtK)}
 ${slider(P1, 'sup', 'Huertas de la propuesta: parques, techos y Bavaria (m²)', 0, 200000, 5000, fmtK)}${slider(P1, 'regional', 'Compras directas a productores de la región', 0, 0.8, 0.05, pct)}
-<div class="chk">${[['sequia', 'Sequía (años 3-4)'], ['bloqueo', 'Bloqueo del mayorista (año 6)'], ['crece', 'Crecimiento poblacional'], ['baldios', 'Revocación de baldíos (año 6)']].map(([k, n]) => `<label><input type="checkbox" data-b="${k}" ${P1[k] ? 'checked' : ''}>${n}</label>`).join('')}</div>
-<p class="nota">Los estreses solo afectan B y C. [SUP] Las compras directas a productores de la región (acopio de Bavaria y mercados de barrio) también bajan la dependencia de Corabastos.</p></details>
+${slider(P1, 'pares', 'Formación entre vecinos en C (promotores por 10.000 hogares por semana)', 0, 6, 0.25, FMT.pares)}
+<div class="chk">${[['sequia', 'Sequía forzada (años 3-4)'], ['bloqueo', 'Bloqueo forzado del mayorista (año 6)'], ['crece', 'Crecimiento poblacional'], ['baldios', 'Revocación forzada de baldíos (año 6)']].map(([k, n]) => `<label><input type="checkbox" data-b="${k}" ${P1[k] ? 'checked' : ''}>${n}</label>`).join('')}</div>
+<p class="nota">Los estreses forzados se suman a los que llegan al azar y afectan a los tres escenarios por igual. [SUP] Las compras directas a productores de la región (acopio de Bavaria y mercados de barrio) también bajan la dependencia de Corabastos. [SUP] «Formación entre vecinos» es la hipótesis del clúster rotativo: bájala para ver desde dónde C deja de sostenerse.</p></details>
 <details><summary>Residuos orgánicos y compost (SIM-02)</summary>
 ${slider(P2, 'frac', 'Fracción desviada', 0.05, 0.9, 0.05, pct)}${slider(P2, 'cap', 'Capacidad de la estación (kg/semana)', 1000, 30000, 500)}${slider(P2, 'mad', 'Semanas de maduración', 4, 24, 1)}
 ${slider(P2, 'sust', 'Fracción de sustrato al distrito (hongos)', 0, 0.6, 0.05, pct)}${slider(P2, 'dist', 'Distancia estación – huertas (km)', 0.2, 6, 0.1, FMT.dist)}
@@ -226,9 +275,11 @@ ${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, FMT.luz)}${slider(
   /* ---------------- aplicar al territorio ---------------- */
   let ultHB = -1, ultAb = null;
   function aplicar() {
-    const e = esc(), t = Math.max(0, Math.min(SEM - 1, Math.floor(SIMST.t))), A = R.S1.A, s1 = R.S1[e], s2 = R.S2[e], s3 = R.S3[e], s3A = R.S3.A;
-    // SIM-01 · huertas abiertas y Corabastos
-    const f = e === 'A' ? 0 : s1.act[t] / R.S1.C.N; let ab = null;
+    // la simulación sin fin: el estado vivo se lleva hasta la semana que se mira (si se mira atrás, se repite desde el año 0 con la misma semilla)
+    const t = Math.max(0, Math.floor(SIMST.t)); if (!VIDA.S || VIDA.S.A.t !== t) avanzarA(t);
+    const e = esc(), sv = VIDA.S[e], o = sv.o, oA = VIDA.S.A.o;
+    // SIM-01 · huertas abiertas y Corabastos (si la red colapsa, los hogares bajan y las huertas se cierran)
+    const f = e === 'A' ? 0 : o.act / NC; let ab = null;
     const HBAR = window.KEN_HBAR; if (HBAR && HBAR.fraccion && Math.abs(f - ultHB) > 0.004) { ab = HBAR.fraccion(f); ultHB = f; } if (ab) ultAb = ab; else ab = ultAb;
     /* la red crece año a año: las huertas en cubiertas se abren y la fauna de las huertas llega en la misma proporción (al año 10, todas):
        las relaciones bióticas suben de a poco hasta llegar a muchas */
@@ -236,78 +287,131 @@ ${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, FMT.luz)}${slider(
       const HI = window.KEN_HIDRO; if (HI && HI.fraccion) HI.fraccion(g);
       const BIo = T3.bio && T3.bio.ESTADO; if (BIo) BIo.proFrac = g; }
     { const vis = e === 'A' ? 0 : f; if (Math.abs(vis - fMarcas) > 0.002 || e === 'A') { fMarcas = vis; MK.forEach((m, i) => { mO[i] = e === 'A' ? 0 : (m[3] === 'par' ? (m[4] < vis ? 1 : 0) : m[3] === 'lote' ? (vis > 0.06 ? 1 : 0) : 1); }); gm.attributes.on.needsUpdate = true; } }
-    const dep = s1.dep[t], al = T3.alivio; if (al) { al.KEEP = e === 'A' ? 1 : 0.3 + 0.7 * dep; al.KEEP_CAM = e === 'A' ? 1 : 0.1 + 0.9 * dep; }
+    const dep = o.dep, al = T3.alivio; if (al) { al.KEEP = e === 'A' ? 1 : 0.3 + 0.7 * dep; al.KEEP_CAM = e === 'A' ? 1 : 0.1 + 0.9 * dep; }
     kTr = e === 'A' ? 1 : 0.3 + 0.7 * dep; UB.uC.value.copy(colorTr(kTr)); // franja de tráfico de la Av. Ciudad de Cali
     aCor.material.color.set(dep > 0.66 ? '#e15759' : dep > 0.33 ? '#f28e2b' : '#59a14f');
     if (via) { const k2 = e === 'A' ? 1 : Math.max(0, Math.min(1, (dep - 0.2) / 0.8)); via.material.color.setRGB(0.35 + 0.53 * k2, 0.63 - 0.29 * k2, 0.31 + 0.04 * k2); } aCor.material.opacity = 0.35 + 0.4 * dep;
     // SIM-02 · orgánicos
-    const gen = s2.gen, rel = s2.relleno[t] / gen, des = s2.desv[t] / gen;
+    const gen = o.gen, rel = o.relleno / gen, des = o.desv / gen;
     { const bc = BAVC(); cPos[(CP.length - 1) * 3] = bc[0]; cPos[(CP.length - 1) * 3 + 2] = bc[1]; gc.attributes.position.needsUpdate = true;
-      CP.forEach((c, i) => { cOn[i] = e === 'B' ? (i < CP.length - 1 ? 1 : 0) : e === 'C' ? (i === CP.length - 1 ? 1 : 0) : 0; }); gc.attributes.on.needsUpdate = true; }
-    ESTM.forEach(s => { s.g.visible = e === 'B'; const o = s2.ocup[t]; s.pilas.forEach((p, i) => { p.scale.set(1.4, Math.max(0.05, Math.min(1.6, o * 1.4 - i * 0.25)), 1); p.material.color.set(o > 1 ? '#5a2a1f' : '#3b2b1f'); }); });
+      const vivo = Math.max(0.08, Math.min(1, des / Math.max(0.01, P2.frac * 0.15))); // [SUP] el círculo de compost se apaga si casi no entra nada (programa cortado o planta caída)
+      CP.forEach((c, i) => { cOn[i] = (e === 'B' ? (i < CP.length - 1 ? 1 : 0) : e === 'C' ? (i === CP.length - 1 ? 1 : 0) : 0) * vivo; }); gc.attributes.on.needsUpdate = true; }
+    ESTM.forEach(s => { s.g.visible = e === 'B'; const oc = o.ocup; s.pilas.forEach((p, i) => { p.scale.set(1.4, Math.max(0.05, Math.min(1.6, oc * 1.4 - i * 0.25)), 1); p.material.color.set(oc > 1 ? '#5a2a1f' : '#3b2b1f'); }); });
     const nRel = Math.round(NP * Math.min(1, rel) * 0.6), nDes = Math.round(NP * Math.min(1, des) * 1.6);
     PART.forEach((p, i) => { if (i < nRel) { p.r = 'rell'; p.on = true; } else if (i < nRel + nDes && e !== 'A') { p.r = e === 'B' ? 'est' : 'bav'; p.on = true; } else p.on = false;
       const c = COLR[p.r]; PC.set([c.r, c.g, c.b], i * 3); });
     gp.attributes.color.needsUpdate = true;
     // SIM-03 · aves, humedal y trampas
-    const BI = T3.bio && T3.bio.ESTADO; if (BI) BI.fauna = Math.max(0.12, Math.min(1, s3.aves[t] / 1400));
-    const hum = s3.hum[t] / 100; aHum.material.color.setRGB(0.88 - 0.55 * hum, 0.35 + 0.45 * hum, 0.3); aHum.material.opacity = 0.4 + 0.3 * hum;
+    const BI = T3.bio && T3.bio.ESTADO; if (BI) BI.fauna = Math.max(0.12, Math.min(1, o.aves / 1400));
+    const hum = o.hum / 100; aHum.material.color.setRGB(0.88 - 0.55 * hum, 0.35 + 0.45 * hum, 0.3); aHum.material.opacity = 0.4 + 0.3 * hum;
     const nTr = e === 'A' || P3.anti ? 0 : Math.round(TR.length * Math.min(1, P3.borde / 40) * P3.luz * 1.6); TR.forEach((m) => { m.visible = false; });
-    if (VACA) VACA.aplicar(t, e, P3);
+    // La Vaca sigue su recuperación de 10 años; [SUP] si el humedal cae bajo el límite de colapso (27 %), su avance retrocede
+    if (VACA) VACA.aplicar(Math.round(Math.min(SEM - 1, t) * Math.max(0, Math.min(1, (o.hum - 15) / 12))), e, P3);
+    // aviso cuando la corrida que se ve colapsa (una vez por escenario y semilla)
+    if (sv.colapso && !VIDA.avisado[e] && t >= sv.colapso.t) { VIDA.avisado[e] = true; avisar2(`Colapsó en el año ${fmt(sv.colapso.t / AÑO + 1)} por ${sv.colapso.causas.map(k => NREG[k]).join(', ')}. La simulación sigue`, sv.colapso.causas.includes('humedal') && sv.colapso.causas.length === 1 ? 'humedal' : sv.colapso.causas.includes('residuos') && sv.colapso.causas.length === 1 ? 'compost' : 'huertas'); }
     // los paneles (etiquetas, «lo que ves en el mapa», indicadores) se repintan aparte y, durante la reproducción, a ~4 Hz
-    CTX = { e, t, s1, s2, s3, s3A, A, dep, hum, ab, al, nTr }; sucioPan = true;
+    CTX = { e, t, o, oA, sv, dep, hum, ab, al, nTr }; sucioPan = true;
     if (!enPaso) pintarPanel();
   }
   let CTX = null, sucioPan = false, enPaso = false, tPan = 0;
   function pintarPanel() {
     if (!CTX) return; sucioPan = false; tPan = performance.now();
-    const { e, t, s1, s2, s3, s3A, A, dep, hum, ab, al, nTr } = CTX;
+    const { e, t, o, oA, sv, dep, hum, ab, al, nTr } = CTX;
     // etiquetas
-    const año = Math.floor(t / AÑO) + 1;
+    const año = Math.floor(t / AÑO) + 1, dg = diagnostico(sv);
     ET.cora.innerHTML = `<b><i style="background:${aCor.material.color.getStyle()}"></i>Corabastos</b>Dependencia ${fmt(dep * 100)} %${e === 'A' ? '' : ` · <em>vías ${al && al.hoy > 0.5 ? '−' + fmt((1 - al.pro / al.hoy) * 100) + ' % carros' : 'con menos carros'}</em>`}`;
-    ET.hum.innerHTML = `<b><i style="background:${aHum.material.color.getStyle()}"></i>Humedal El Burro</b>Integridad ${fmt(hum * 100)} % · ${fmt(s3.aves[t])} aves${nTr ? ` · <em style="color:#ff8a80">${nTr} huertas-trampa</em>` : ''}`;
-    ET.bav.innerHTML = e === 'A' ? `<b><i style="background:#9aa1a6"></i>Bavaria</b>Sin intervención` : `<b><i style="background:#e2a55b"></i>Bavaria Común</b>${fmt(s1.prom[t])} promotores formados · ${fmt(s1.act[t])} hogares con huerta`;
-    ET.comp.innerHTML = e === 'B' ? `<b><i style="background:#c8a26a"></i>Estaciones de compost (${EST.length})</b>Ocupación ${fmt(s2.ocup[t] * 100)} %` : e === 'C' ? `<b><i style="background:#e2a55b"></i>Planta de compost · Bavaria</b>${fmt(s2.desv[t] / 1000, 1)} t/semana · ${fmt(s2.hongos[t])} kg de hongos` : '';
-    ET.dj.innerHTML = `<b><i style="background:#9aa1a6"></i>Al relleno Doña Juana</b>${fmt(s2.relleno[t] / 1000, 1)} t/semana · ${fmtK(s2.km[t])} km de camión`;
+    ET.hum.innerHTML = `<b><i style="background:${aHum.material.color.getStyle()}"></i>Humedal El Burro</b>Integridad ${fmt(hum * 100)} % · ${fmt(o.aves)} aves${nTr ? ` · <em style="color:#ff8a80">${nTr} huertas-trampa</em>` : ''}`;
+    ET.bav.innerHTML = e === 'A' ? `<b><i style="background:#9aa1a6"></i>Bavaria</b>Sin intervención` : `<b><i style="background:${dg.estado === 'colapso' ? '#ff8a80' : '#e2a55b'}"></i>Bavaria Común</b>${fmt(o.prom)} promotores activos · ${fmt(o.act)} hogares con huerta${dg.estado === 'colapso' ? `<br><em style="color:#ff8a80">la red colapsó en el año ${fmt(sv.colapso.t / AÑO + 1)}</em>` : o.prog ? '' : '<br><em>programa de formación cortado</em>'}`;
+    ET.comp.innerHTML = e === 'B' ? `<b><i style="background:#c8a26a"></i>Estaciones de compost (${EST.length})</b>Ocupación ${fmt(o.ocup * 100)} %` : e === 'C' ? `<b><i style="background:#e2a55b"></i>Planta de compost · Bavaria</b>${fmt(o.desv / 1000, 1)} t/semana · ${fmt(o.hongos)} kg de hongos` : '';
+    ET.dj.innerHTML = `<b><i style="background:#9aa1a6"></i>Al relleno Doña Juana</b>${fmt(o.relleno / 1000, 1)} t/semana · ${fmtK(o.km)} km de camión`;
     const pctTr = Math.round(kTr * 100), cTr = colorTr(kTr).getStyle();
     ET.via.innerHTML = `<b><i style="background:${cTr}"></i>Av. Ciudad de Cali · tráfico ${nivelTr(kTr)}</b>${e === 'A' ? 'como hoy: todo el abastecimiento pasa hacia Corabastos' : `<em>${pctTr} % de los vehículos de hoy</em> (−${100 - pctTr} %)`}`;
     // «lo que ves en el mapa»: cada cosa que cambia, con su color, su número y un botón para ir
     { const nH = ab ? ab.abiertas : (e === 'A' ? 0 : null), COLE = { A: '#8fb0c9', B: '#b07aa1', C: '#e2a55b' }, NE = { A: 'Kennedy hoy', B: 'Nodo central', C: 'Clúster rotativo' };
       $('[data-mapa]').innerHTML = `<h5 style="--c:${COLE[e]}">Lo que ves en el mapa<span>${e} · ${NE[e]}</span></h5>
       <button type="button" data-ir="trafico"><i class="sw b" style="height:${(4 + 6 * kTr).toFixed(0)}px;background:${cTr}"></i><span>Franja sobre la <b>Av. Ciudad de Cali</b>: tráfico <b>${nivelTr(kTr)}</b> · ${e === 'A' ? '100 % (hoy)' : `${pctTr} % del de hoy`}</span></button>
-      <button type="button" data-ir="huertas"><i class="sw p" style="background:#6fcf6a"></i><span>${e === 'A' ? '<b>Sin huertas nuevas</b>: solo las que ya hay en casas' : `Puntos verdes: <b>${nH != null ? fmt(nH) : '…'} huertas abiertas</b> · ${fmt(s1.act[t])} hogares`}</span></button>
+      <button type="button" data-ir="huertas"><i class="sw p" style="background:#6fcf6a"></i><span>${e === 'A' ? '<b>Sin huertas nuevas</b>: solo las que ya hay en casas' : `Puntos verdes: <b>${nH != null ? fmt(nH) : '…'} huertas abiertas</b> · ${fmt(o.act)} hogares`}</span></button>
       ${e === 'A' ? '' : (() => { const KP = window.KEN_PARCHES; return `<button type="button" data-ir="parches"><i class="sw p" style="background:#1f6b38"></i><span>Puntos verde oscuro: <b>${KP ? KP.parches + ' parches de árboles nativos' : 'parches de árboles nativos'}</b>${KP ? ` · ${fmt(KP.n)} árboles (caucho sabanero, aliso, sauco, chicalá…)` : ''}</span></button>`; })()}
-      <button type="button" data-ir="compost"><i class="sw p" style="background:${e === 'A' ? '#9aa1a6' : '#b8875a'}"></i><span>${e === 'A' ? `<b>Sin compostaje</b>: ${fmt(s2.relleno[t] / 1000, 1)} t/semana van en camión a Doña Juana` : e === 'B' ? `Círculos café: <b>${EST.length} estaciones de compost</b> de barrio · ${fmt(s2.pct[t], 0)} % vuelve a la tierra` : `Círculo café: <b>1 planta de compost</b> en Bavaria · ${fmt(s2.pct[t], 0)} % vuelve a la tierra`}</span></button>
+      <button type="button" data-ir="compost"><i class="sw p" style="background:${e === 'A' ? '#9aa1a6' : '#b8875a'}"></i><span>${e === 'A' ? `<b>Sin compostaje</b>: ${fmt(o.relleno / 1000, 1)} t/semana van en camión a Doña Juana` : e === 'B' ? `Círculos café: <b>${EST.length} estaciones de compost</b> de barrio · ${fmt(o.pct2, 0)} % vuelve a la tierra` : `Círculo café: <b>1 planta de compost</b> en Bavaria · ${fmt(o.pct2, 0)} % vuelve a la tierra`}</span></button>
       ${VACA && VACA.ESTADO.on ? (() => { const V = VACA.ESTADO; return `<button type="button" data-ir="vaca"><i class="sw p" style="background:#8fd18a"></i><span><b>Humedal La Vaca se recupera</b>: +${fmt(V.ha, 1)} ha de humedal · ${fmt(V.arboles)} árboles nativos (${fmt(V.grandes)} grandes) · ${V.especies} especies de aves</span></button>`; })() : ''}
-      <button type="button" data-ir="humedal"><i class="sw p" style="background:#7fb3d5"></i><span>Pájaros en el humedal El Burro: <b>${fmt(s3.aves[t])} aves</b>${e === 'A' ? '' : ` (${s3.aves[t] >= s3A.aves[t] ? '+' : '−'}${fmt(Math.abs(s3.aves[t] - s3A.aves[t]))} frente a hoy)`}</span></button>`; }
+      <button type="button" data-ir="humedal"><i class="sw p" style="background:#7fb3d5"></i><span>Pájaros en el humedal El Burro: <b>${fmt(o.aves)} aves</b>${e === 'A' ? '' : ` (${o.aves >= oA.aves ? '+' : '−'}${fmt(Math.abs(o.aves - oA.aves))} frente a hoy)`}</span></button>`; }
     // panel
-    $('[data-t]').value = t; $('[data-año]').innerHTML = `${2026 + año}<span class="yr">año ${año} de 10</span>`;
+    const inp = $('[data-t]'); inp.max = Math.max(SEM - 1, VIDA.maxT); inp.value = t;
+    $('[data-año]').innerHTML = `${2026 + año}<span class="yr">año ${año} · sem ${t % AÑO + 1}</span>`;
+    pintarVida(e, t, sv, dg);
     const d = (v, a, menos, f2) => { if (e === 'A' || !isFinite(a) || Math.abs(v - a) < 1e-9) return ''; const mej = menos ? v < a : v > a; return ` · <em style="color:${mej ? '#8fd18a' : '#ff8a80'}">${v >= a ? '+' : '−'}${f2(Math.abs(v - a))} frente a hoy</em>`; };
-    const sA2 = R.S2.A;
     $('[data-kpi]').innerHTML = [
-      ['Hogares con huerta', fmt(s1.act[t]), `huertas abiertas en el mapa${ab ? `: ${ab.abiertas} de ${ab.total}` : ''}${d(s1.act[t], A.act[t], false, fmt)}`],
-      ['Personas que comen de las huertas', fmtK(s1.pers[t]), `${fmt(s1.pct[t], 1)} % de Kennedy${d(s1.pers[t], A.pers[t], false, fmtK)}`],
-      ['Dependencia de Corabastos', fmt(dep * 100) + ' %', `menos tráfico en la Av. Ciudad de Cali${d(dep * 100, A.dep[t] * 100, true, (v) => fmt(v) + ' pts')}`],
-      ['Orgánicos que vuelven a la tierra', fmt(s2.pct[t], 1) + ' %', `${fmt(s2.relleno[t] / 1000, 1)} t/semana siguen al relleno${d(s2.pct[t], sA2.pct[t], false, (v) => fmt(v, 1) + ' pts')}`],
-      ['Aves en el borde del humedal', fmt(s3.aves[t]), `integridad del humedal ${fmt(hum * 100)} %${d(s3.aves[t], s3A.aves[t], false, fmt)}`]
+      ['Hogares con huerta', fmt(o.act), `huertas abiertas en el mapa${ab ? `: ${ab.abiertas} de ${ab.total}` : ''}${d(o.act, oA.act, false, fmt)}`],
+      ['Personas que comen de las huertas', fmtK(o.pers), `${fmt(o.pct, 1)} % de Kennedy${d(o.pers, oA.pers, false, fmtK)}`],
+      ['Dependencia de Corabastos', fmt(dep * 100) + ' %', `menos tráfico en la Av. Ciudad de Cali${d(dep * 100, oA.dep * 100, true, (v) => fmt(v) + ' pts')}`],
+      ['Orgánicos que vuelven a la tierra', fmt(o.pct2, 1) + ' %', `${fmt(o.relleno / 1000, 1)} t/semana siguen al relleno${d(o.pct2, oA.pct2, false, (v) => fmt(v, 1) + ' pts')}`],
+      ['Aves en el borde del humedal', fmt(o.aves), `integridad del humedal ${fmt(hum * 100)} %${d(o.aves, oA.aves, false, fmt)}`]
     ].map(([n, v, s2], i) => `<li><span>${n}</span><strong>${v}</strong><small>${s2}</small><button type="button" data-ir="${['huertas', 'huertas', 'trafico', 'compost', 'humedal'][i]}">Ver en el mapa →</button></li>`).join('');
     el.querySelectorAll('.seg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.e === e)));
+  }
+
+  /* ---------------- estado de la corrida: funcionando / en riesgo / colapsó, reglas y señales de que funciona ---------------- */
+  const VT = { huertas: (v) => fmt(v) + ' hogares', corabastos: (v) => fmt(v, 1) + ' %', residuos: (v) => fmt(v, 1) + ' % al relleno', humedal: (v) => fmt(v, 1) + ' %', red: (v) => fmt(v) + ' promotores' };
+  const UT = { huertas: '500 hogares', corabastos: '97 %', residuos: '97 % o compost desbordado', humedal: '27 %', red: '1 promotor' };
+  const QUE = { huertas: 'se van cerrando las huertas', corabastos: 'vuelve el tráfico hacia Corabastos', residuos: 'el compost se apaga y los orgánicos vuelven al relleno', humedal: 'el humedal pierde integridad y aves', red: 'sin promotores, las huertas se van cerrando' };
+  const LETRA = { A: 'A · Kennedy hoy', B: 'B · Nodo central', C: 'C · Clúster rotativo' };
+  const añoDe = (w) => fmt(Math.floor(w / AÑO) + 1);
+  function pintarVida(e, t, sv, dg) {
+    const o = sv.o, box = $('[data-vida]'); let c, h;
+    if (dg.estado === 'colapso') { c = '#ff8a80'; h = `<b>${LETRA[e]} · colapsó en el año ${añoDe(sv.colapso.t)}</b> por ${sv.colapso.causas.map(k => NREG[k]).join(', ')}.<small>La simulación sigue corriendo: en el mapa ${sv.colapso.causas.map(k => QUE[k]).join(', ')}.</small>`; }
+    else if (dg.antes) { c = '#8fb0c9'; h = `<b>${LETRA[e]} · montaje, año ${añoDe(t)} de 3</b><small>Las reglas de colapso empiezan a contar en el año 3, cuando la propuesta ya está montada.</small>`; }
+    else if (dg.estado === 'riesgo') { const rs = dg.riesgos.slice().sort((a, b) => (b.racha / b.R.sem) - (a.racha / a.R.sem)), r = rs[0]; c = '#f2c995';
+      h = `<b>${LETRA[e]} · en riesgo: ${r.R.n.toLowerCase()}</b> ${VT[r.R.k](r.v)} (límite ${UT[r.R.k]})<small>${r.racha ? `lleva ${r.racha} de ${r.R.sem} semanas seguidas: colapsa en ${r.faltan} semanas si no se recupera` : 'cerca del límite, todavía sin cumplir la regla'}${rs.length > 1 ? ` · también cerca: ${rs.slice(1).map(x => x.R.n.toLowerCase()).join(', ')}` : ''}</small>`; }
+    else { c = '#59a14f'; const tr = tendencia(sv); h = `<b>${LETRA[e]} · funcionando, año ${añoDe(t)}</b><small>Ninguna regla de colapso se cumple${tr ? ` · hogares con huerta ${tr.pctAño >= 0 ? '+' : '−'}${fmt(Math.abs(tr.pctAño), 1)} %/año` : ''}.</small>`; }
+    box.style.setProperty('--c', c); box.innerHTML = h;
+    const det = $('details.reglas'); if (!det) return; { const cu = $('.cuerpo'); if (cu && cu.firstElementChild !== det) cu.prepend(det); } // las reglas van arriba de la tabla de indicadores
+    if (!det.open || el.classList.contains('min')) return;
+    $('[data-reglas]').innerHTML = REGLAS.map(R => { const v = R.val(o), r = sv.racha[R.k], cerca = dg.riesgos.some(x => x.R.k === R.k), cls = r > 0 || (sv.colapso && sv.colapso.causas.includes(R.k)) ? 'mal' : cerca ? 'cerca' : 'ok';
+      return `<div class="rg ${cls}"><span><b>${R.n}</b></span><strong>${VT[R.k](v)}${R.k === 'residuos' && o.rech > 0.3 ? ' · desbordado' : ''}</strong><small>Colapsa si: ${R.txt}, ${R.sem} semanas seguidas${r ? ` · lleva ${r}` : ''}</small><i><u style="width:${Math.min(100, r / R.sem * 100).toFixed(0)}%"></u></i></div>`; }).join('');
+    const tr = tendencia(sv), rc = sv.rec, L = [];
+    if (tr) L.push(`Tendencia (últimos ${fmt(tr.años)} años): hogares con huerta <b>${tr.pctAño >= 0 ? '+' : '−'}${fmt(Math.abs(tr.pctAño), 1)} %/año</b> · ${Math.abs(tr.pctAño) < 1 ? 'estable' : tr.pctAño > 0 ? 'creciendo' : 'bajando'}`);
+    if (rc.pend) L.push(`Recuperándose de <b>${NOMBRE_EV[rc.pend.k]}</b> (año ${añoDe(rc.pend.t0)}): lleva ${t - rc.pend.t0} semanas`);
+    else if (rc.ult) L.push(`Tras ${NOMBRE_EV[rc.ult.k].toLowerCase()} del año ${añoDe(rc.ult.t0)}: ${rc.ult.sem != null ? `volvió a su nivel en <b>${rc.ult.sem} semanas</b>` : '<b>no volvió</b> a su nivel en 5 años'}`);
+    if (rc.n) L.push(`Capacidad de recuperarse: <b>${fmt(rc.suma / rc.n)} semanas</b> en promedio (${rc.n} golpes${rc.fallidas ? `, ${rc.fallidas} sin recuperarse` : ''})`);
+    if (e !== 'A') L.push(`Programa de formación en Bavaria: <b>${o.prog ? 'activo' : 'cortado'}</b> · ${fmt(o.prom)} promotores activos`);
+    if (sv.log.length) L.push(`Últimos eventos: ${sv.log.slice(-4).reverse().map(x => `año ${añoDe(x.t)} · ${NOMBRE_EV[x.k].toLowerCase()}`).join('; ')}`);
+    $('[data-senales]').innerHTML = L.map(x => `<p>${x}</p>`).join('');
+    // gráfica corta: hogares con huerta en toda la corrida (historia submuestreada), con el umbral de 500 y el inicio de las reglas
+    const cv = $('[data-spark]'), W = cv.clientWidth, Hh = 56; if (!W) return; const dpr = Math.min(2, devicePixelRatio || 1); cv.width = W * dpr; cv.height = Hh * dpr;
+    const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, Hh); const H = sv.H, n = H.t.length; if (n < 2) return;
+    let max = 600; for (const v of H.act) if (v > max) max = v; const tMax = Math.max(H.t[n - 1], AÑO * 10), X = (w) => 2 + (W - 4) * w / tMax, Yp = (v) => Hh - 10 - (Hh - 16) * v / max;
+    g.strokeStyle = 'rgba(255,255,255,.12)'; g.beginPath(); g.moveTo(X(ARRANQUE), 4); g.lineTo(X(ARRANQUE), Hh - 10); g.stroke();
+    g.strokeStyle = '#ff8a80'; g.setLineDash([3, 3]); g.beginPath(); g.moveTo(2, Yp(500)); g.lineTo(W - 2, Yp(500)); g.stroke(); g.setLineDash([]);
+    g.strokeStyle = { A: '#8fb0c9', B: '#b07aa1', C: '#e2a55b' }[e]; g.lineWidth = 1.8; g.beginPath(); for (let i = 0; i < n; i++) { const x = X(H.t[i]), y = Yp(H.act[i]); i ? g.lineTo(x, y) : g.moveTo(x, y); } g.stroke();
+    if (sv.colapso) { const x = X(sv.colapso.t); g.strokeStyle = '#ff8a80'; g.lineWidth = 1; g.beginPath(); g.moveTo(x, 4); g.lineTo(x, Hh - 10); g.stroke(); }
+    g.fillStyle = '#8d969b'; g.font = '9.5px system-ui, sans-serif'; g.textAlign = 'left'; g.fillText('hogares con huerta · umbral 500', 4, Hh - 1); g.textAlign = 'right'; g.fillText(`año ${añoDe(H.t[n - 1])}`, W - 3, Hh - 1);
   }
 
   /* ---------------- eventos ---------------- */
   let play = 0, prev = 0;
   const parar = () => { if (play) cancelAnimationFrame(play); play = 0; $('[data-play]').textContent = '▶'; };
-  let tEnt = -1; // aplicar() solo cuando cambia el semana entera (los efectos dependen de Math.floor(SIMST.t))
-  const paso = (now) => { const dt = Math.min(0.1, (now - prev) / 1000); prev = now; SIMST.t = Math.min(SEM - 1, SIMST.t + dt * 22);
+  let tEnt = -1; // aplicar() solo cuando cambia el semana entera (los efectos dependen de Math.floor(SIMST.t)); a velocidad alta, una vez por cuadro
+  const VEL = [1, 4, 16, 52]; // ×1 = 22 semanas por segundo (≈ 2,4 s por año); ×52 ≈ 22 años por segundo
+  const paso = (now) => { const dt = Math.min(0.1, (now - prev) / 1000); prev = now; SIMST.t += dt * 22 * VEL[VIDA.vel]; // sin final: corre hasta que se pausa
     const ent = Math.floor(SIMST.t); if (ent !== tEnt) { tEnt = ent; enPaso = true; try { aplicar(); } finally { enPaso = false; } }
-    if (SIMST.t >= SEM - 1) { parar(); pintarPanel(); return; } play = requestAnimationFrame(paso); };
-  const arrancar = () => { if (RMQ) { SIMST.t = SEM - 1; aplicar(); return; } if (SIMST.t >= SEM - 1) SIMST.t = 0; prev = performance.now(); $('[data-play]').textContent = '❚❚'; play = requestAnimationFrame(paso); };
+    play = requestAnimationFrame(paso); };
+  const arrancar = () => { if (play) cancelAnimationFrame(play); prev = performance.now(); $('[data-play]').textContent = '❚❚'; play = requestAnimationFrame(paso); };
+  // un cambio de parámetros: la corrida vuelve a empezar desde el año 0 con la misma semilla y avanza rápido hasta la semana en que iba
+  const rehacer = () => { reiniciarVida(); avanzarA(Math.floor(SIMST.t)); };
+  const ponerSemilla = (s, e) => { VIDA.seed = SIMST.semilla = Math.max(1, Math.min(999, s)); $('[data-seed]').textContent = VIDA.seed; VIDA.maxT = SEM - 1;
+    if (e && e !== 'A') { SIMST.esc = e; avisar('mapa'); if (T3.escenario !== 'proyecto') document.querySelector('.sw button[data-e="proyecto"]')?.click(); }
+    else if (e === 'A' && T3.escenario === 'proyecto') document.querySelector('.sw button[data-e="hoy"]')?.click();
+    SIMST.t = 0; reiniciarVida(); aplicar(); arrancar(); };
   el.addEventListener('click', (ev) => {
     const b = ev.target.closest('button'); if (!b) return;
     if (b.dataset.ir) { LUGAR[b.dataset.ir].ir(); return; }
     if (b.dataset.guia !== undefined) { import('./guia.js?v=2').then(m => m.abrirGuia(true)); return; }
-    if (b.dataset.min !== undefined) { el.classList.toggle('min'); b.textContent = el.classList.contains('min') ? '+' : '–'; return; }
+    if (b.dataset.min !== undefined) { el.classList.toggle('min'); b.textContent = el.classList.contains('min') ? '+' : '–'; pintarPanel(); return; }
     if (b.dataset.play !== undefined) { play ? parar() : arrancar(); return; }
+    if (b.dataset.vel !== undefined) { VIDA.vel = (VIDA.vel + 1) % VEL.length; b.textContent = '×' + VEL[VIDA.vel]; return; }
+    if (b.dataset.sd) { ponerSemilla(VIDA.seed + +b.dataset.sd); return; }
+    if (b.dataset.como !== undefined) { const c = $('[data-como-txt]'); c.hidden = !c.hidden; b.setAttribute('aria-expanded', String(!c.hidden)); return; }
+    if (b.dataset.eval !== undefined) { import('./vida_evaluar.js?v=1').then(m => m.abrirEvaluar({ PAR, esc: esc() === 'A' ? 'C' : esc(), verCorrida: (s, e) => ponerSemilla(s, e) })).catch(er => console.warn('evaluar:', er)); return; }
     if (b.dataset.tab !== undefined) { const t = document.getElementById('b-tablero'); if (t) t.click(); return; }
     if (b.dataset.e) { const e = b.dataset.e; setTimeout(vistaGeneral, 250); if (e === 'A') { if (T3.escenario === 'proyecto') document.querySelector('.sw button[data-e="hoy"]')?.click(); }
       else { SIMST.esc = e; avisar('mapa'); if (T3.escenario !== 'proyecto') document.querySelector('.sw button[data-e="proyecto"]')?.click(); }
@@ -317,16 +421,18 @@ ${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, FMT.luz)}${slider(
     if (i.dataset.t !== undefined) { parar(); SIMST.t = +i.value; aplicar(); return; }
     if (i.dataset.k) { const P = i.dataset.g === '1' ? P1 : i.dataset.g === '2' ? P2 : P3; P[i.dataset.k] = +i.value;
       if (esc() === 'A') { SIMST.esc = SIMST.esc && SIMST.esc !== 'A' ? SIMST.esc : 'C'; document.querySelector('.sw button[data-e="proyecto"]')?.click(); } // en «Kennedy hoy» los sliders no cambian nada: se pasa a la propuesta
-      if (play) parar(); SIMST.t = SEM - 1; // el efecto se ve de una vez, al año 10 (si la línea de tiempo seguía corriendo, se mezclaba con el paso de los años)
+      // [SIN FIN] ya no salta al año 10: la corrida se rehace desde el año 0 con la misma semilla y avanza rápido hasta la semana en que iba (sigue corriendo si corría)
+      if (SIMST.t < 1 && !play) SIMST.t = SEM - 1; // si estaba en la semana 0 y en pausa, se muestra el año 10 para que el cambio se vea
       setTimeout(() => dispatchEvent(new Event('cora-cambio')), 30); // los indicadores en 3D se recalculan con la nueva dependencia de Corabastos
       if (i.dataset.k === 'arboles' && window.KEN_PARCHES && window.KEN_PARCHES.densidad) window.KEN_PARCHES.densidad(Math.max(0.15, +i.value)); /* densidad de árboles: más o menos árboles en los parches */
-      const o = el.querySelector(`output[data-o="${i.dataset.k}"]`); if (o) o.textContent = (FMT[i.dataset.k] || fmt)(+i.value); R = correrTodo(); aplicar(); avisar('mapa');
+      const o = el.querySelector(`output[data-o="${i.dataset.k}"]`); if (o) o.textContent = (FMT[i.dataset.k] || fmt)(+i.value); rehacer(); aplicar(); avisar('mapa');
       const lab = i.closest('label').firstChild.textContent.trim(); GRUPO[i.dataset.g].forEach((l, j) => { if (!j) avisar2(`Cambiaste «${lab}»`, i.dataset.g === '1' && /zona|regional|reac|precio/.test(i.dataset.k) ? 'trafico' : l); }); }
   });
   el.addEventListener('change', (ev) => { const i = ev.target;
-    if (i.dataset.b) { P1[i.dataset.b] = i.checked; R = correrTodo(); aplicar(); avisar('mapa'); avisar2(i.checked ? 'Activaste un estrés' : 'Quitaste un estrés', 'huertas'); }
-    if (i.dataset.anti !== undefined) { P3.anti = i.checked; R = correrTodo(); aplicar(); avisar('mapa'); avisar2(i.checked ? 'Con medida antitrampa' : 'Sin medida antitrampa', 'humedal'); } });
-  addEventListener('sim-cambio', (ev) => { if (ev.detail && ev.detail.origen === 'mapa') return; R = correrTodo(); el.querySelectorAll('input[data-k]').forEach(i => { const P = i.dataset.g === '1' ? P1 : i.dataset.g === '2' ? P2 : P3; i.value = P[i.dataset.k]; }); aplicar(); });
+    if (i.dataset.b) { P1[i.dataset.b] = i.checked; rehacer(); aplicar(); avisar('mapa'); avisar2(i.checked ? 'Activaste un estrés forzado' : 'Quitaste un estrés forzado', 'huertas'); }
+    if (i.dataset.anti !== undefined) { P3.anti = i.checked; rehacer(); aplicar(); avisar('mapa'); avisar2(i.checked ? 'Con medida antitrampa' : 'Sin medida antitrampa', 'humedal'); } });
+  el.addEventListener('toggle', (ev) => { if (ev.target.classList && ev.target.classList.contains('reglas') && ev.target.open) pintarPanel(); }, true);
+  addEventListener('sim-cambio', (ev) => { if (ev.detail && ev.detail.origen === 'mapa') return; rehacer(); el.querySelectorAll('input[data-k]').forEach(i => { const P = i.dataset.g === '1' ? P1 : i.dataset.g === '2' ? P2 : P3; i.value = P[i.dataset.k]; }); aplicar(); });
   addEventListener('escenario', () => setTimeout(() => { SIMST.t = 0; ultHB = -1; aplicar(); arrancar(); }, 60));
   // la huerta de barrio carga después: se aplica cuando aparece
   const espera = setInterval(() => { if (window.KEN_HBAR && window.KEN_HBAR.fraccion) { clearInterval(espera); ultHB = -1; aplicar(); } }, 800);
@@ -353,7 +459,8 @@ ${slider(P3, 'luz', 'Intensidad de luz y vidrio', 0, 1, 0.05, FMT.luz)}${slider(
   requestAnimationFrame(cuadro);
   aplicar();
   setTimeout(() => import('./guia.js?v=2').then(m => m.abrirGuia(false)).catch(() => {}), 2500); // la primera vez: cómo se usa
-  import('./mejora_tour.js?v=5').then(m => { T3.mejora = m.iniciarMejoraTour({ T3 }); }).catch(e => console.warn('recorrido:', e)); // «¿Cómo mejora Kennedy?»: antes y después en cada lugar
-  import('./capas_escenario.js?v=3').then(m => m.iniciarCapasEscenario({ T3 })).catch(e => console.warn('capas:', e)); // sintaxis, ruido, usos e indicadores cambian con la propuesta
-  return { aplicar, arrancar, get R() { return R; }, get via() { return via; }, marcas, mO };
+  import('./mejora_tour.js?v=6').then(m => { T3.mejora = m.iniciarMejoraTour({ T3 }); }).catch(e => console.warn('recorrido:', e)); // «¿Cómo mejora Kennedy?»: antes y después en cada lugar
+  import('./capas_escenario.js?v=5').then(m => m.iniciarCapasEscenario({ T3 })).catch(e => console.warn('capas:', e)); // sintaxis, ruido, usos e indicadores cambian con la propuesta
+  // R = vista viva compatible (capas_escenario.js y mejora_tour.js la leen); vida = estado de la simulación sin fin (A, B, C con la semilla actual)
+  return { aplicar, arrancar, parar, get R() { return RV; }, get vida() { return VIDA; }, semilla: (s, e) => ponerSemilla(s, e), get via() { return via; }, marcas, mO };
 }
