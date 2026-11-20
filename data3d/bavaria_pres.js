@@ -614,8 +614,81 @@ const setEscena = (k) => {
   camObj = { s: e.cam.s * (MOVIL ? 1.15 : 1), az: e.cam.az, el: e.cam.el, x: t[0], z: t[1], y: e.cam.y || 0 };
   giroAz = 0;
   $('#leyenda').innerHTML = LEY[e.ley] || '';
+  actualizarUIInteractivas(k);
 };
 const lerp = (a, b, f) => a + (b - a) * f;
+
+/* ---------------- sincronización de landing interactiva ---------------- */
+function actualizarUIInteractivas(k) {
+  // 1. Barra superior
+  document.querySelectorAll('.nav-link').forEach(btn => {
+    const target = btn.dataset.nav;
+    const act = (target === k) ||
+      (target === 'kennedy' && (k === 'kennedy' || k === 'predio' || k === 'bosque' || k === 'cerrado')) ||
+      (target === 'red_abasto' && k === 'red_abasto') ||
+      (target === 'sx_desp' && k.startsWith('sx_')) ||
+      (target === 'capas' && (k === 'capas' || k.startsWith('capa_') || k === 'plan')) ||
+      (target === 'sectores' && k === 'sectores') ||
+      (target === 'corredor' && k === 'corredor');
+    btn.classList.toggle('act', act);
+  });
+  // 2. Dots laterales
+  document.querySelectorAll('.sdot').forEach(btn => {
+    btn.classList.toggle('act', btn.dataset.scene === k);
+  });
+  // 3. Botones en HUD
+  document.querySelectorAll('.cdock-btn').forEach(btn => {
+    const cp = btn.dataset.capa;
+    const act = (cp === 'abasto' && k === 'red_abasto') ||
+      (cp === 'sx' && k.startsWith('sx_')) ||
+      (cp === 'nbic' && (k === 'capas' || k.startsWith('capa_') || k === 'plan')) ||
+      (cp === 'bosque' && (k === 'bosque' || k === 'capa_bosque')) ||
+      (cp === 'fed' && (k === 'sectores' || k === 'corredor'));
+    btn.classList.toggle('act', act);
+  });
+}
+
+window.setEscena = setEscena;
+window.irAEscena = (k) => {
+  setEscena(k);
+  const target = document.querySelector(`[data-escena="${k}"]`) || document.getElementById(k);
+  if (target) {
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+};
+
+window.toggleExplorar = (forzar) => {
+  if (typeof forzar === 'boolean' && explorar === forzar) return;
+  const btn = $('#b-explorar');
+  if (btn) btn.click();
+};
+
+window.filtrarAbasto = (id, el) => {
+  document.querySelectorAll('.interact-box .ib-btn').forEach(b => b.classList.remove('act'));
+  if (el) el.classList.add('act');
+  const det = $('#abasto-detalle');
+  const info = {
+    todos: 'Mostrando toda la red: <b>Ventaquemada, Boyacá</b> (hortalizas y papa); <b>Villavicencio, Meta</b> (frutas y plátano); <b>Sumapaz–Usme</b> (tubérculos y hortalizas) llegando a 6+ mercados barriales de Kennedy.',
+    boyaca: '<b>Ruta Ventaquemada, Boyacá</b>: Hortalizas de clima frío y papa llegan directo a Bavaria Común, Castilla/Tintal y Corabastos.',
+    meta: '<b>Ruta Villavicencio, Meta</b>: Frutas, plátano y arroz entran desde el oriente a Carvajal, Kennedy Central y Corabastos.',
+    sumapaz: '<b>Ruta Periferia Rural Sumapaz–Usme</b>: Tubérculos andinos y hortalizas abastecen a Patio Bonito, Kennedy Central y Bavaria Común.'
+  };
+  if (det) det.innerHTML = info[id] || info.todos;
+};
+
+window.verNBIC = (tipo, el) => {
+  document.querySelectorAll('.nbic-pills .ib-btn').forEach(b => b.classList.remove('act'));
+  if (el) el.classList.add('act');
+  const d = $('#nbic-detalle');
+  if (!d) return;
+  const info = {
+    bio: '<b>Biotecnología</b>: Se aplica a la producción hidropónica en invernaderos de las naves recuperadas, compostaje acelerado y cultivo experimental de hongos con sustratos vegetales adecuados.',
+    tic: '<b>Tecnologías de la Información</b>: Ayudan a registrar pedidos vecinales, entregas escalonadas, balances de nutrientes y excedentes para los mercados barriales.',
+    cog: '<b>Ciencias Cognitivas</b>: Orientan el diseño de herramientas para que familias y comerciantes usen esa información al tomar decisiones cotidianas sobre alimentación y cultivo.',
+    nano: '<b>Nanotecnología</b>: Se plantea como una línea de investigación universitaria sobre materiales de empaque avanzados para conservar alimentos frescos.'
+  };
+  d.innerHTML = info[tipo] || '';
+};
 
 /* ---------------- cámara ---------------- */
 const controles = new OrbitControls(cam, renderer.domElement); controles.enabled = false; controles.enableDamping = true; controles.zoomToCursor = true;
@@ -641,6 +714,12 @@ $('#b-giro').onclick = (ev) => { giro = !giro; ev.currentTarget.setAttribute('ar
 $('#b-explorar').onclick = (ev) => {
   explorar = !explorar; ev.currentTarget.setAttribute('aria-pressed', String(explorar)); document.body.classList.toggle('explorar', explorar);
   controles.enabled = explorar; ev.currentTarget.textContent = explorar ? 'Volver al relato' : 'Explorar el 3D';
+  const heroBtn = document.getElementById('btn-toggle-orbit');
+  if (heroBtn) {
+    heroBtn.classList.toggle('act', explorar);
+    const sp = heroBtn.querySelector('span');
+    if (sp) sp.textContent = explorar ? 'Volver al relato' : 'Explorar 3D';
+  }
 };
 
 /* ---------------- bucle ---------------- */

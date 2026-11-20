@@ -114,6 +114,430 @@ main{position:relative;z-index:3}
 #atrib{position:fixed;left:10px;bottom:8px;z-index:5;font:10px/1.3 var(--sans);color:rgba(255,255,255,.75);text-shadow:0 1px 3px #000;pointer-events:none;max-width:60vw}
 #carga{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:var(--bg);font:12px var(--mono);color:var(--mu);letter-spacing:.14em;transition:opacity .6s}
 #carga.fuera{opacity:0;pointer-events:none}
+
+/* ============ LANDING INTERACTIVA ============ */
+#nav-landing {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 58px;
+  background: rgba(11, 16, 21, 0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 clamp(14px, 3.5vw, 36px);
+  z-index: 55;
+  transition: transform 0.3s ease;
+}
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--tx);
+  cursor: pointer;
+}
+.brand-badge {
+  width: 14px; height: 14px;
+  border-radius: 4px;
+  background: var(--amb);
+  box-shadow: 0 0 10px rgba(227, 166, 74, 0.6);
+  flex: none;
+}
+.brand-text {
+  display: flex;
+  flex-direction: column;
+}
+.brand-text b {
+  font: 700 13px/1.1 var(--sans);
+  letter-spacing: 0.08em;
+  color: #fff;
+}
+.brand-text span {
+  font: 500 9.5px/1.2 var(--mono);
+  color: var(--mu);
+}
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 3px 5px;
+  border-radius: 30px;
+  border: 1px solid var(--line);
+}
+.nav-link {
+  all: unset;
+  cursor: pointer;
+  padding: 5px 11px;
+  font: 500 11.5px var(--sans);
+  color: var(--mu);
+  border-radius: 20px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+.nav-link:hover {
+  color: var(--tx);
+  background: rgba(255, 255, 255, 0.06);
+}
+.nav-link.act {
+  color: #111;
+  background: var(--amb);
+  font-weight: 600;
+  box-shadow: 0 0 12px rgba(227, 166, 74, 0.45);
+}
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn-hero-3d {
+  all: unset;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(227, 166, 74, 0.12);
+  border: 1px solid var(--amb);
+  color: var(--amb);
+  border-radius: 20px;
+  padding: 5px 13px;
+  font: 600 11px var(--mono);
+  letter-spacing: 0.04em;
+  transition: all 0.2s;
+}
+.btn-hero-3d:hover, .btn-hero-3d.act {
+  background: var(--amb);
+  color: #111;
+  box-shadow: 0 0 16px rgba(227, 166, 74, 0.5);
+}
+.nav-link-ext {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font: 500 10.5px var(--mono);
+  color: var(--mu);
+  text-decoration: none;
+  padding: 5px 9px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  transition: all 0.2s;
+}
+.nav-link-ext:hover {
+  color: var(--tx);
+  border-color: var(--line2);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* Navegador de puntos lateral */
+#side-nav {
+  position: fixed;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 6px;
+  background: rgba(11, 16, 21, 0.68);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.sdot {
+  all: unset;
+  cursor: pointer;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+  position: relative;
+  transition: all 0.25s ease;
+}
+.sdot:hover {
+  background: var(--tx);
+  transform: scale(1.3);
+}
+.sdot.act {
+  background: var(--amb);
+  box-shadow: 0 0 10px var(--amb);
+  transform: scale(1.4);
+}
+.sdot-tip {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(13, 19, 26, 0.95);
+  border: 1px solid var(--line2);
+  border-radius: 4px;
+  padding: 3px 8px;
+  font: 500 10.5px var(--mono);
+  color: var(--tx);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
+}
+.sdot:hover .sdot-tip {
+  opacity: 1;
+  transform: translateY(-50%) translateX(-4px);
+}
+
+/* Portada landing interactiva */
+#portada {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(86px, 12vh, 120px) clamp(16px, 4vw, 56px) 60px;
+  max-width: 1080px;
+}
+.hero-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(227, 166, 74, 0.12);
+  border: 1px solid rgba(227, 166, 74, 0.35);
+  color: var(--amb);
+  font: 600 11px var(--mono);
+  letter-spacing: 0.16em;
+  padding: 5px 12px;
+  border-radius: 20px;
+  margin-bottom: 18px;
+  width: fit-content;
+}
+.chip-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--amb); box-shadow: 0 0 8px var(--amb);
+}
+#portada h1 {
+  font-size: clamp(38px, 6.2vw, 84px);
+  line-height: 0.95;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  margin: 0 0 16px;
+  text-shadow: 0 4px 40px rgba(0,0,0,0.8);
+}
+#portada .sub {
+  max-width: 760px;
+  font-size: clamp(15.5px, 1.7vw, 19.5px);
+  line-height: 1.5;
+  color: #d8e2e8;
+  margin: 0 0 24px;
+  text-shadow: 0 2px 16px rgba(0,0,0,0.9);
+}
+.hero-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
+  max-width: 680px;
+  margin-bottom: 26px;
+}
+.hm-item {
+  background: rgba(13, 19, 26, 0.78);
+  border: 1px solid var(--line2);
+  border-radius: 8px;
+  padding: 10px 14px;
+  backdrop-filter: blur(8px);
+}
+.hm-item b {
+  display: block;
+  font: 700 22px/1 var(--sans);
+  color: var(--tx);
+  letter-spacing: -0.02em;
+}
+.hm-item span {
+  font: 500 10px var(--mono);
+  color: var(--mu);
+  margin-top: 4px;
+  display: block;
+}
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+.btn-primary {
+  all: unset;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--amb);
+  color: #0b1015;
+  font: 700 12.5px var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 12px 22px;
+  border-radius: 8px;
+  box-shadow: 0 10px 28px rgba(227, 166, 74, 0.35);
+  transition: all 0.2s ease;
+}
+.btn-primary:hover {
+  background: #ffb854;
+  transform: translateY(-2px);
+  box-shadow: 0 14px 34px rgba(227, 166, 74, 0.5);
+}
+.btn-secondary {
+  all: unset;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--line2);
+  color: var(--tx);
+  font: 600 12.5px var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 12px 20px;
+  border-radius: 8px;
+  backdrop-filter: blur(8px);
+  transition: all 0.2s ease;
+}
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--tx);
+  transform: translateY(-2px);
+}
+.hero-quick-access {
+  max-width: 960px;
+  background: rgba(11, 16, 21, 0.65);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px 18px 18px;
+  backdrop-filter: blur(12px);
+}
+.hqa-title {
+  font: 600 10px var(--mono);
+  letter-spacing: 0.18em;
+  color: var(--mu);
+  margin-bottom: 10px;
+}
+.hqa-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+}
+.hqa-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.hqa-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--amb);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+}
+.hqa-tag {
+  font: 600 9.5px var(--mono);
+  letter-spacing: 0.12em;
+  margin-bottom: 4px;
+}
+.hqa-card b {
+  display: block;
+  font-size: 13.5px;
+  color: var(--tx);
+  margin-bottom: 4px;
+}
+.hqa-card p {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--mu);
+}
+
+/* Cajas interactivas dentro de tarjetas */
+.interact-box {
+  margin: 14px 0 12px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--line2);
+  border-radius: 8px;
+  padding: 11px 13px;
+}
+.ib-label {
+  font: 600 9.5px var(--mono);
+  letter-spacing: 0.14em;
+  color: var(--mu);
+  margin-bottom: 8px;
+}
+.ib-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.ib-btn {
+  all: unset;
+  cursor: pointer;
+  font: 500 11px var(--mono);
+  padding: 4px 9px;
+  border-radius: 14px;
+  border: 1px solid var(--line2);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--tx);
+  transition: all 0.2s;
+}
+.ib-btn:hover {
+  border-color: var(--amb);
+  color: var(--amb);
+}
+.ib-btn.act {
+  background: var(--amb);
+  border-color: var(--amb);
+  color: #111;
+  font-weight: 600;
+  box-shadow: 0 0 10px rgba(227, 166, 74, 0.4);
+}
+.ib-info {
+  font-size: 12px;
+  line-height: 1.45;
+  color: #c9d3da;
+}
+
+/* Dock de capas en HUD */
+.capas-dock {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 5px 7px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  pointer-events: auto;
+}
+.cdock-btn {
+  all: unset;
+  cursor: pointer;
+  font: 500 10px var(--mono);
+  color: var(--mu);
+  padding: 3px 7px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+}
+.cdock-btn:hover {
+  color: var(--tx);
+  background: rgba(255, 255, 255, 0.06);
+}
+.cdock-btn.act {
+  color: var(--amb);
+  border-color: rgba(227, 166, 74, 0.5);
+  background: rgba(227, 166, 74, 0.12);
+  font-weight: 600;
+}
+
 @media (max-width:760px){
   .paso{align-items:flex-end;padding:0 16px 7vh;min-height:110vh}
   .tarj{width:100%;padding:16px 16px;max-height:52vh;overflow:auto}
@@ -122,11 +546,13 @@ main{position:relative;z-index:3}
   .desliza::after{content:'Deslizar →';display:block;font:10px var(--mono);color:var(--mu2);margin-top:6px}
   .tarj h3{font-size:19px}
   .tarj p{font-size:14px}
-  #hud{right:10px;left:10px;top:10px;bottom:auto;align-items:stretch}
+  #hud{right:10px;left:10px;top:auto;bottom:10px;align-items:stretch}
   #leyenda{max-width:none;min-width:0;padding:8px 10px;font-size:11px}
   .btns{justify-content:flex-end}
   .cabeza-cap{padding:0 16px 8vh}
-  #portada{padding:0 16px 10vh}
+  #portada{padding:80px 16px 8vh}
+  #nav-landing .nav-links{display:none}
+  #side-nav{display:none}
 }
 </style>
 </head>
@@ -136,7 +562,61 @@ main{position:relative;z-index:3}
 <div id="lienzo" aria-hidden="true"></div>
 <div id="etiquetas" aria-hidden="true"></div>
 <div id="atrib">Google</div>
+
+<!-- Barra de Navegación Flotante Superior (Landing Interactiva) -->
+<header id="nav-landing">
+  <div class="nav-left">
+    <a href="#" class="nav-brand" onclick="window.irAEscena && window.irAEscena('portada'); return false;">
+      <span class="brand-badge"></span>
+      <div class="brand-text">
+        <b>BAVARIA COMÚN</b>
+        <span>Distrito de Tecnologías Convergentes · Kennedy</span>
+      </div>
+    </a>
+  </div>
+  <nav class="nav-links">
+    <button type="button" class="nav-link" data-nav="kennedy" onclick="window.irAEscena('kennedy')">01 Territorio</button>
+    <button type="button" class="nav-link" data-nav="red_abasto" onclick="window.irAEscena('red_abasto')">02 Red de Abasto</button>
+    <button type="button" class="nav-link" data-nav="sx_desp" onclick="window.irAEscena('sx_desp')">03 Sintaxis Espacial</button>
+    <button type="button" class="nav-link" data-nav="capas" onclick="window.irAEscena('capas')">04 Clúster NBIC</button>
+    <button type="button" class="nav-link" data-nav="sectores" onclick="window.irAEscena('sectores')">05 Federación</button>
+    <button type="button" class="nav-link" data-nav="corredor" onclick="window.irAEscena('corredor')">06 Especies</button>
+  </nav>
+  <div class="nav-right">
+    <button type="button" class="btn-hero-3d" id="btn-toggle-orbit" onclick="window.toggleExplorar && window.toggleExplorar()">
+      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      <span>Explorar 3D</span>
+    </button>
+    <a href="https://anasoficasca-code.github.io/red-de-problemas/" target="_blank" class="nav-link-ext" title="Ver Red de Problemas de Kennedy">
+      <span>Problemas</span>
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M7 17L17 7M7 7h10v10"/></svg>
+    </a>
+  </div>
+</header>
+
+<!-- Navegador de puntos lateral (Side Dot-Nav) -->
+<nav id="side-nav" aria-label="Navegación de escenas">
+  <button type="button" class="sdot act" data-scene="portada" onclick="window.irAEscena('portada')" title="Portada"><span class="sdot-tip">Inicio</span></button>
+  <button type="button" class="sdot" data-scene="kennedy" onclick="window.irAEscena('kennedy')" title="01 El Territorio"><span class="sdot-tip">01 El Territorio</span></button>
+  <button type="button" class="sdot" data-scene="red_abasto" onclick="window.irAEscena('red_abasto')" title="02 Red de Abasto"><span class="sdot-tip">02 Red de Abasto</span></button>
+  <button type="button" class="sdot" data-scene="predio" onclick="window.irAEscena('predio')" title="03 El Predio"><span class="sdot-tip">03 El Predio</span></button>
+  <button type="button" class="sdot" data-scene="bosque" onclick="window.irAEscena('bosque')" title="04 El Bosque"><span class="sdot-tip">04 El Bosque</span></button>
+  <button type="button" class="sdot" data-scene="sx_base" onclick="window.irAEscena('sx_base')" title="05 Sintaxis"><span class="sdot-tip">05 Sintaxis</span></button>
+  <button type="button" class="sdot" data-scene="capas" onclick="window.irAEscena('capas')" title="06 Propuesta NBIC"><span class="sdot-tip">06 Clúster NBIC</span></button>
+  <button type="button" class="sdot" data-scene="capa_techos" onclick="window.irAEscena('capa_techos')" title="07 Huertas en Viviendas"><span class="sdot-tip">07 Viviendas</span></button>
+  <button type="button" class="sdot" data-scene="sectores" onclick="window.irAEscena('sectores')" title="08 Federación"><span class="sdot-tip">08 Federación</span></button>
+  <button type="button" class="sdot" data-scene="corredor" onclick="window.irAEscena('corredor')" title="09 Especies Bióticas"><span class="sdot-tip">09 Especies</span></button>
+</nav>
+
+<!-- HUD de Control Interactivo -->
 <div id="hud">
+  <div class="capas-dock">
+    <button class="cdock-btn" data-capa="abasto" onclick="window.irAEscena('red_abasto')">🌾 Red Abasto</button>
+    <button class="cdock-btn" data-capa="sx" onclick="window.irAEscena('sx_desp')">🚶 Pasajes</button>
+    <button class="cdock-btn" data-capa="nbic" onclick="window.irAEscena('capas')">🏭 Clúster NBIC</button>
+    <button class="cdock-btn" data-capa="bosque" onclick="window.irAEscena('bosque')">🌳 Bosque</button>
+    <button class="cdock-btn" data-capa="fed" onclick="window.irAEscena('sectores')">🏛️ Federación</button>
+  </div>
   <div class="btns">
     <button class="btn" id="b-giro" aria-pressed="true" type="button">Giro</button>
     <button class="btn" id="b-explorar" aria-pressed="false" type="button">Explorar el 3D</button>
@@ -149,11 +629,73 @@ main{position:relative;z-index:3}
 <section class="cap">
   <div class="paso" data-escena="portada" style="min-height:100vh;padding:0">
     <div id="portada">
-      <div class="k">Kennedy · Bogotá · Tesis de Arquitectura y Urbanismo</div>
+      <div class="hero-chip">
+        <span class="chip-dot"></span>
+        PROPUESTA DE GRADO · ARQUITECTURA Y URBANISMO · BOGOTÁ 2026
+      </div>
       <h1>Distrito Bavaria Común</h1>
-      <p class="sub">La antigua fábrica de Bavaria como una federación de huertas, compostaje, mercado y bosque, gobernada por quienes viven alrededor.</p>
+      <p class="sub">La antigua fábrica de Bavaria como una <b>federación de huertas, compostaje, mercado y bosque</b>, gobernada por quienes viven alrededor mediante asambleas barriales y un <b>Distrito de Tecnologías Convergentes (NBIC)</b>.</p>
+      
+      <!-- Métricas clave en vivo -->
+      <div class="hero-metrics">
+        <div class="hm-item">
+          <b>78 ha</b>
+          <span>Predio recuperado</span>
+        </div>
+        <div class="hm-item">
+          <b>14.000+</b>
+          <span>Árboles protegidos</span>
+        </div>
+        <div class="hm-item">
+          <b>4</b>
+          <span>Tecnologías NBIC</span>
+        </div>
+        <div class="hm-item">
+          <b>3</b>
+          <span>Territorios de abasto</span>
+        </div>
+      </div>
+
+      <!-- Botones de Acción Primarios -->
+      <div class="hero-actions">
+        <button type="button" class="btn-primary" onclick="window.irAEscena('kennedy')">
+          <span>Iniciar Recorrido Guiado</span>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+        </button>
+        <button type="button" class="btn-secondary" onclick="window.toggleExplorar && window.toggleExplorar(true)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          <span>Explorar el 3D Libre</span>
+        </button>
+      </div>
+
+      <!-- Selector Rápido de Ejes de la Propuesta (Interactive Quick Navigator) -->
+      <div class="hero-quick-access">
+        <div class="hqa-title">EXPLORAR EJES DE LA PROPUESTA INTERACTIVA</div>
+        <div class="hqa-grid">
+          <div class="hqa-card" onclick="window.irAEscena('red_abasto')">
+            <div class="hqa-tag" style="color:#8fc46a">01 · RED REGIONAL</div>
+            <b>Reorganización del Abasto</b>
+            <p>Ventaquemada, Villavicencio y Sumapaz directo a mercados barriales, con Corabastos como un mercado de la red.</p>
+          </div>
+          <div class="hqa-card" onclick="window.irAEscena('sx_desp')">
+            <div class="hqa-tag" style="color:#e3a64a">02 · SINTAXIS ESPACIAL</div>
+            <b>Apertura del Predio</b>
+            <p>Integración y elección para conectar las naves con las calles de Kennedy en áreas ya ocupadas.</p>
+          </div>
+          <div class="hqa-card" onclick="window.irAEscena('capas')">
+            <div class="hqa-tag" style="color:#a98bd6">03 · CLÚSTER NBIC</div>
+            <b>Tecnologías Convergentes</b>
+            <p>Nanomateriales de conservación, bio (hidroponía y hongos), TIC de registro y ciencias cognitivas.</p>
+          </div>
+          <div class="hqa-card" onclick="window.irAEscena('sectores')">
+            <div class="hqa-tag" style="color:#ffd166">04 · GOBERNANZA</div>
+            <b>Federación de Asambleas</b>
+            <p>Decisiones comunes vinculantes sobre uso de espacios, cuidado del bosque y alimentos con vocería rotativa.</p>
+          </div>
+        </div>
+      </div>
+
       <div class="autores">Ana Sofía Casas · Alejandra Gómez · Juan José Trujillo · 2026</div>
-      <div class="bajar">Desplazarse para empezar ↓</div>
     </div>
   </div>
 </section>
@@ -174,7 +716,19 @@ main{position:relative;z-index:3}
     </div>
     <p>Esta red nos ayudó a identificar la centralización de servicios como el problema con más conexiones. Por eso, la propuesta empieza por reorganizar el abastecimiento de alimentos en Kennedy.</p>
     <p>Los alimentos que solo pueden abastecerse desde fuera de la localidad seguirían llegando de otros territorios. Lo que cambia es <b>dónde se reciben y se distribuyen</b>: los productores llegarían a distintos mercados barriales y puntos de abastecimiento, con <b>Corabastos como uno de los mercados de la red</b>.</p>
-    <p style="font-size:13px;color:#8b9aa7;margin-top:6px">Orígenes regionales: <b>Ventaquemada, Boyacá</b> (hortalizas y papa); <b>Villavicencio, Meta</b> (frutas y plátano); y la <b>periferia rural Sumapaz–Usme</b> (tubérculos y hortalizas).</p>
+
+    <!-- Filtro interactivo de abastecimiento -->
+    <div class="interact-box">
+      <div class="ib-label">INTERACCIÓN · RUTAS REGIONALES:</div>
+      <div class="ib-pills">
+        <button type="button" class="ib-btn act" onclick="window.filtrarAbasto && window.filtrarAbasto('todos', this)">Toda la red</button>
+        <button type="button" class="ib-btn" onclick="window.filtrarAbasto && window.filtrarAbasto('boyaca', this)">Ventaquemada, Boyacá</button>
+        <button type="button" class="ib-btn" onclick="window.filtrarAbasto && window.filtrarAbasto('meta', this)">Villavicencio, Meta</button>
+        <button type="button" class="ib-btn" onclick="window.filtrarAbasto && window.filtrarAbasto('sumapaz', this)">Sumapaz–Usme</button>
+      </div>
+      <div id="abasto-detalle" class="ib-info">Orígenes regionales: <b>Ventaquemada, Boyacá</b> (hortalizas y papa); <b>Villavicencio, Meta</b> (frutas y plátano); y la <b>periferia rural Sumapaz–Usme</b> (tubérculos y hortalizas).</div>
+    </div>
+
     <div class="cifras">
       <div><b>6+</b><span>mercados barriales</span></div>
       <div><b>3</b><span>territorios regionales</span></div>
@@ -329,6 +883,21 @@ main{position:relative;z-index:3}
   <div class="paso" data-escena="capa_prog"><div class="tarj">
     <div class="k">Capa 3 · Programa · Enfoque NBIC</div>
     <h3>Cuatro tecnologías convergentes</h3>
+    
+    <!-- Pestañas interactivas NBIC -->
+    <div class="interact-box">
+      <div class="ib-label">INTERACCIÓN · EXPLORAR TECNOLOGÍA NBIC (ROCO Y BAINBRIDGE):</div>
+      <div class="ib-pills nbic-pills">
+        <button type="button" class="ib-btn act" onclick="window.verNBIC && window.verNBIC('bio', this)">🧬 Bio</button>
+        <button type="button" class="ib-btn" onclick="window.verNBIC && window.verNBIC('tic', this)">💻 TIC</button>
+        <button type="button" class="ib-btn" onclick="window.verNBIC && window.verNBIC('cog', this)">🧠 Cognitiva</button>
+        <button type="button" class="ib-btn" onclick="window.verNBIC && window.verNBIC('nano', this)">🔬 Nano</button>
+      </div>
+      <div id="nbic-detalle" class="ib-info">
+        <b>Biotecnología</b>: Se aplica a la producción hidropónica en invernaderos de las naves recuperadas, compostaje acelerado y cultivo experimental de hongos con sustratos vegetales adecuados.
+      </div>
+    </div>
+
     <p><b>La biotecnología</b> se aplica a la producción hidropónica, el compostaje y el cultivo experimental de hongos con materiales vegetales adecuados.</p>
     <p><b>Las tecnologías de la información</b> ayudan a registrar pedidos, entregas y excedentes.</p>
     <p><b>Las ciencias cognitivas</b> orientan el diseño de herramientas para que familias y comerciantes usen esa información al tomar decisiones.</p>
