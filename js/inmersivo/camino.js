@@ -57,21 +57,38 @@ export function crearCamino(E0, EQ) {
   for (const i of idx) {
     const [nombre, med, txt, x, y, z] = EQ[i];
     const centro = Math.abs(z) < 1.15 && Math.abs(x) < Math.max(1.6, L * 0.16);
+    const paredZ = Math.abs(z) > W / 2 - 1.35;
+    const paredX = Math.abs(x) > L / 2 - 1.35;
     let px, pz;
     if (centro) {
       // equipos de isla: se miran de costado para que la mesa no tape el fondo
       px = x + (x >= 0 ? -2.7 : 2.7);
       pz = z + 0.35;
-    } else {
-      // equipos de muro: se retrocede hacia el pasillo central
+    } else if (paredZ && y < 1.7) {
+      // equipo bajo de muro: cámara en el pasillo junto al muro, sin mesón delante
+      px = clamp(x + (x >= 0 ? -1.2 : 1.2), -L / 2 + 1.0, L / 2 - 1.0);
+      pz = z + (z > 0 ? -1.3 : 1.3);
+    } else if (paredZ) {
+      // equipo alto de muro: cámara en el pasillo central, por encima del mesón
       px = x * 0.55;
       pz = z > 0 ? z - 3.0 : z + 3.0;
+    } else if (paredX && y < 1.7) {
+      px = x + (x > 0 ? -1.3 : 1.3);
+      pz = clamp(z + (z >= 0 ? -1.4 : 1.4), -W / 2 + 1.0, W / 2 - 1.0);
+    } else if (paredX) {
+      px = x * 0.55;
+      pz = z > 0 ? z - 2.8 : z + 2.8;
+    } else {
+      px = x;
+      pz = z + (z >= 0 ? -1.6 : 1.6);
     }
     px = clamp(px, -L / 2 + 1.0, L / 2 - 1.0);
     pz = clamp(pz, -W / 2 + 1.0, W / 2 - 1.0);
+    // si la etiqueta cae entre dos máquinas, apuntar a la de la derecha
+    const lx = paredZ && Math.abs(x) < 0.6 ? x + 0.4 : x;
     add(
       v(px, clamp(y + 0.04, 1.5, 1.78), pz),
-      v(x, Math.max(0.4, y - 0.12), z),
+      v(lx, Math.max(0.55, y * 0.72), z),
       48,
       `0${n} · En detalle`, nombre, txt, med, i
     );

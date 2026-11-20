@@ -367,6 +367,90 @@ fetch('data3d/corabastos.json').then(r => r.json()).then(cb => { const m = new T
 const corrMats = [];
 HUM.forEach(h => { const a = new THREE.Vector3(0, 10, 0), b = new THREE.Vector3(h.p[0], 10, h.p[1]); const m = a.clone().lerp(b, 0.5); m.y = a.distanceTo(b) * 0.22; const cur = new THREE.QuadraticBezierCurve3(a, m, b); const mat = new THREE.MeshBasicMaterial({ color: h.cora ? '#e0664f' : '#5fb3d9', transparent: true, opacity: 0 }); corrMats.push(mat); corredor.add(new THREE.Mesh(new THREE.TubeGeometry(cur, 60, MOVIL ? 6 : 4, 6), mat)); const d = new THREE.Mesh(new THREE.CylinderGeometry(70, 70, 2, 40), mat); d.position.set(b.x, 1, b.z); corredor.add(d); h.v = b; });
 
+// ---------------- Red descentralizada de abastecimiento (periferias y mercados barriales) ----------------
+const ORIGENES_ALIMENTOS = [
+  { id: 'boyaca', n: 'Ventaquemada, Boyacá', sub: 'Hortalizas de clima frío y papa', p: [1800, 35, -5400], c: '#8fc46a' },
+  { id: 'meta', n: 'Villavicencio, Meta', sub: 'Frutas, plátano y arroz', p: [5400, 35, 2200], c: '#e3a64a' },
+  { id: 'sumapaz', n: 'Periferia rural Sumapaz–Usme', sub: 'Tubérculos andinos y hortalizas', p: [-1400, 35, 5500], c: '#5fb3d9' }
+];
+
+const MERCADOS_RED = [
+  { id: 'bavaria', n: 'Bavaria Común', sub: 'Mercado de proximidad y clúster NBIC', p: [0, 8, 0], c: '#ffd166', r: 85 },
+  { id: 'corabastos', n: 'Corabastos', sub: 'Un mercado más de la red', p: [CORA[0], 8, CORA[1]], c: '#e0664f', r: 120 },
+  { id: 'castilla', n: 'Mercado barrial Castilla / Tintal', sub: 'Punto de abastecimiento', p: [-1900, 8, -1200], c: '#8fc46a', r: 60 },
+  { id: 'patio', n: 'Mercado barrial Patio Bonito', sub: 'Punto de abastecimiento', p: [-2400, 8, 800], c: '#8fc46a', r: 60 },
+  { id: 'central', n: 'Mercado barrial Kennedy Central', sub: 'Punto de abastecimiento', p: [200, 8, 2200], c: '#8fc46a', r: 60 },
+  { id: 'carvajal', n: 'Mercado barrial Carvajal', sub: 'Punto de abastecimiento', p: [2000, 8, 1200], c: '#8fc46a', r: 60 }
+];
+
+const abastoMats = [];
+const redAbasto = new THREE.Group();
+scene.add(redAbasto);
+
+const rutasAbasto = [
+  { a: ORIGENES_ALIMENTOS[0].p, b: MERCADOS_RED[0].p, c: '#8fc46a' },
+  { a: ORIGENES_ALIMENTOS[0].p, b: MERCADOS_RED[2].p, c: '#8fc46a' },
+  { a: ORIGENES_ALIMENTOS[0].p, b: MERCADOS_RED[1].p, c: '#8fc46a' },
+  { a: ORIGENES_ALIMENTOS[1].p, b: MERCADOS_RED[1].p, c: '#e3a64a' },
+  { a: ORIGENES_ALIMENTOS[1].p, b: MERCADOS_RED[5].p, c: '#e3a64a' },
+  { a: ORIGENES_ALIMENTOS[1].p, b: MERCADOS_RED[4].p, c: '#e3a64a' },
+  { a: ORIGENES_ALIMENTOS[1].p, b: MERCADOS_RED[0].p, c: '#e3a64a' },
+  { a: ORIGENES_ALIMENTOS[2].p, b: MERCADOS_RED[4].p, c: '#5fb3d9' },
+  { a: ORIGENES_ALIMENTOS[2].p, b: MERCADOS_RED[3].p, c: '#5fb3d9' },
+  { a: ORIGENES_ALIMENTOS[2].p, b: MERCADOS_RED[1].p, c: '#5fb3d9' },
+  { a: ORIGENES_ALIMENTOS[2].p, b: MERCADOS_RED[0].p, c: '#5fb3d9' },
+];
+
+rutasAbasto.forEach(r => {
+  const vA = new THREE.Vector3(...r.a), vB = new THREE.Vector3(...r.b);
+  const mid = vA.clone().lerp(vB, 0.5);
+  mid.y = vA.distanceTo(vB) * 0.16 + 30;
+  const cur = new THREE.QuadraticBezierCurve3(vA, mid, vB);
+  r.curva = cur;
+  const mat = new THREE.MeshBasicMaterial({ color: r.c, transparent: true, opacity: 0 });
+  abastoMats.push(mat);
+  redAbasto.add(new THREE.Mesh(new THREE.TubeGeometry(cur, 48, MOVIL ? 5 : 4, 6), mat));
+});
+
+ORIGENES_ALIMENTOS.forEach(o => {
+  const mat = new THREE.MeshBasicMaterial({ color: o.c, transparent: true, opacity: 0 });
+  abastoMats.push(mat);
+  const d = new THREE.Mesh(new THREE.CylinderGeometry(140, 140, 3, 32), mat);
+  d.position.set(o.p[0], 2, o.p[2]);
+  redAbasto.add(d);
+});
+
+MERCADOS_RED.forEach(m => {
+  const mat = new THREE.MeshBasicMaterial({ color: m.c, transparent: true, opacity: 0 });
+  abastoMats.push(mat);
+  const d = new THREE.Mesh(new THREE.CylinderGeometry(m.r || 60, m.r || 60, 3, 32), mat);
+  d.position.set(m.p[0], 2, m.p[2]);
+  redAbasto.add(d);
+});
+
+const NPA = MOVIL ? 4 : 6;
+const abastoFlujoGeo = new THREE.BufferGeometry();
+const fposA = new Float32Array(rutasAbasto.length * NPA * 3);
+const fcolA = new Float32Array(rutasAbasto.length * NPA * 3);
+rutasAbasto.forEach((r, i) => {
+  const c = new THREE.Color(r.c);
+  for (let k = 0; k < NPA; k++) fcolA.set([c.r, c.g, c.b], (i * NPA + k) * 3);
+});
+abastoFlujoGeo.setAttribute('position', new THREE.BufferAttribute(fposA, 3));
+abastoFlujoGeo.setAttribute('color', new THREE.BufferAttribute(fcolA, 3));
+const abastoFlujoMat = new THREE.PointsMaterial({ size: MOVIL ? 4.5 : 6, sizeAttenuation: false, vertexColors: true, transparent: true, opacity: 0, depthTest: false });
+abastoMats.push(abastoFlujoMat);
+const abastoFlujos = new THREE.Points(abastoFlujoGeo, abastoFlujoMat);
+abastoFlujos.renderOrder = 12;
+redAbasto.add(abastoFlujos);
+
+ORIGENES_ALIMENTOS.forEach(o => {
+  addEt(`<i style="background:${o.c}"></i><b>${o.n}</b><br><span style="font-size:10px;color:#8b9aa7">${o.sub}</span>`, [o.p[0], 35, o.p[2]], ['abasto']);
+});
+MERCADOS_RED.forEach(m => {
+  addEt(`<i style="background:${m.c}"></i><b>${m.n}</b><br><span style="font-size:10px;color:#8b9aa7">${m.sub}</span>`, [m.p[0], 25, m.p[2]], ['abasto']);
+});
+
 // guías de la axonometría explotada (verticales en las esquinas del rectángulo del lote)
 const esquinas = (() => { const c = Math.cos(angL), s = Math.sin(angL); let mnu = 1e9, mxu = -1e9, mnv = 1e9, mxv = -1e9; D.sitio.forEach(([x, y]) => { const u = (x - CX) * c + (y - CY) * s, v = -(x - CX) * s + (y - CY) * c; mnu = Math.min(mnu, u); mxu = Math.max(mxu, u); mnv = Math.min(mnv, v); mxv = Math.max(mxv, v); }); return [[mnu, mnv], [mxu, mnv], [mxu, mxv], [mnu, mxv]].map(([u, v]) => W(CX + u * c - v * s, CY + u * s + v * c)); })();
 const OFF = !SIN_G ? { suelo: 130, red: 260, edif: 390, bosque: 0, flujos: 540 } : { suelo: 0, red: 260, edif: 520, bosque: 800, flujos: 1060 }; // con la malla: la base es el territorio real (suelo y bosque de la foto)
@@ -392,6 +476,7 @@ addEt('Av. Boyacá', (() => { const p = W(8840, 2700); return [p[0] - 40, 10, p[
 const E = {
   portada: { cam: { s: 1600, az: -38, el: 28 }, ctx: 1, edif: 'hoy', muro: 1, arb: 1, giro: 1, red: 0 },
   kennedy: { lim: 1, cam: { s: 8000, az: -20, el: 50, t: 'ken' }, ctx: 1, edif: 'hoy', muro: 1, arb: 1, borde: 1, corr: 1, et: 'kennedy', ley: 'kennedy' },
+  red_abasto: { lim: 1, cam: { s: 9800, az: -20, el: 48, t: 'ken' }, ctx: 0.35, edif: 'prog', muro: 1, arb: 1, borde: 1, abasto: 1, et: 'abasto', ley: 'abasto' },
   predio: { cam: { s: 1100, az: -32, el: 30 }, ctx: 1, edif: 'hoy', muro: 1, arb: 1, borde: 1, ley: 'hoy' },
   bosque: { cam: { s: 950, az: 18, el: 30 }, ctx: 0.6, edif: 'ghost', muro: 1, arb: 1, ley: 'bosque' },
   cerrado: { cam: { s: 1100, az: -60, el: 26 }, ctx: 1, edif: 'hoy', muro: 1, arb: 1, borde: 1, ley: 'cerrado' },
@@ -439,11 +524,17 @@ const LEY = {
   flujos: '<div class="t">Flujos</div><div class="f"><i style="background:#b98a57"></i>Residuos orgánicos al compostaje</div><div class="f"><i style="background:#8fc46a"></i>Cosecha al mercado</div><div class="f"><i style="background:#e3a64a"></i>Del mercado a las puertas</div>',
   sectores: '<div class="t">Federación</div>' + COL_SECT.map((c, k) => `<div class="f"><i style="background:${c}"></i>Sector ${k + 1} · puertas ${ENT.map((_, i) => i).filter(i => sectorDeEnt[i] === k).map(i => 'P' + (i + 1)).join(', ')}</div>`).join(''),
   corredor: '<div class="t">Conexiones</div><div class="f"><i style="background:#5fb3d9"></i>Corredor hacia los humedales</div><div class="f"><i style="background:#e0664f"></i>Corabastos (residuos y trabajo)</div>',
+  abasto: '<div class="t">Red descentralizada de alimentos</div>' +
+    '<div class="f"><i style="background:#8fc46a"></i>Ventaquemada (Boyacá) · Hortalizas y papa</div>' +
+    '<div class="f"><i style="background:#e3a64a"></i>Villavicencio (Meta) · Frutas y plátano</div>' +
+    '<div class="f"><i style="background:#5fb3d9"></i>Sumapaz–Usme · Tubérculos y hortalizas</div>' +
+    '<div class="f"><i style="background:#ffd166"></i>Puntos de abastecimiento y mercados barriales</div>' +
+    '<div class="f"><i style="background:#e0664f"></i>Corabastos (un mercado de la red, no monopolio)</div>',
 };
-if (MOVIL) for (const k of ['prog', 'sectores']) LEY[k] = LEY[k].replace(/<div class="f">.*$/s, '<div class="f">Ver etiquetas en el modelo</div>');
+if (MOVIL) for (const k of ['prog', 'sectores', 'abasto']) LEY[k] = LEY[k].replace(/<div class="f">.*$/s, '<div class="f">Ver etiquetas en el modelo</div>');
 
 /* ---------------- estado animado ---------------- */
-const est = { lim: 0, ctx: 1, edif: 1, prog: 0, muro: 1, arb: 1, red: 0, pas: 0, banc: 0, inv: 0, techos: 0, flu: 0, expl: 0, corr: 0, borde: 0 };
+const est = { lim: 0, ctx: 1, edif: 1, prog: 0, muro: 1, arb: 1, red: 0, pas: 0, banc: 0, inv: 0, techos: 0, flu: 0, expl: 0, corr: 0, borde: 0, abasto: 0 };
 const obj = { ...est };
 let escena = 'portada', camObj = null, giroAz = 0;
 const camAct = { s: 2300, az: -38, el: 34, x: 0, z: 0, y: 0 };
@@ -452,7 +543,7 @@ const setEscena = (k) => {
   obj.ctx = typeof e.ctx === 'number' ? e.ctx : 1; pintarCtx(e.ctx === 'sector' ? 'sector' : 'gris');
   obj.edif = e.edif === 'ghost' ? 0.25 : 1; obj.prog = e.edif === 'prog' ? 1 : 0; obj.muro = e.muro ? 1 : 0;
   obj.arb = e.arb === 1 ? 1 : e.arb === 'g' ? 0.3 : 0; obj.red = e.red ? 1 : 0; obj.pas = e.pas ? 1 : 0;
-  obj.banc = e.banc === 1 ? 1 : e.banc === 'g' ? 0.35 : 0; obj.inv = e.inv ? 1 : 0; obj.techos = e.techos ? 1 : 0; obj.flu = e.flu ? 1 : 0; obj.expl = e.expl ? 1 : 0; obj.corr = e.corr ? 1 : 0; obj.borde = e.borde ? 1 : 0;
+  obj.banc = e.banc === 1 ? 1 : e.banc === 'g' ? 0.35 : 0; obj.inv = e.inv ? 1 : 0; obj.techos = e.techos ? 1 : 0; obj.flu = e.flu ? 1 : 0; obj.expl = e.expl ? 1 : 0; obj.corr = e.corr ? 1 : 0; obj.borde = e.borde ? 1 : 0; obj.abasto = e.abasto ? 1 : 0;
   if (REAL()) { // la foto ya muestra la fábrica, el bosque, el muro y los barrios: de lo propio queda solo lo nuevo
     obj.ctx = e.ctx === 'sector' ? 0.6 : 0; obj.edif = e.edif === 'prog' ? 1 : 0; obj.prog = 1; obj.muro = 0; obj.arb = 0; // los árboles son los de la foto
     G.luzObj = e.luz ?? (e.red ? 0.38 : e.ctx === 'sector' ? 0.75 : 1);
@@ -518,6 +609,17 @@ function cuadro() {
   if (est.flu > 0.02) { rutas.forEach((r, i) => { for (let k = 0; k < NP; k++) { const u = ((t * (r.cora ? 0.05 : 0.11) + k / NP + i * 0.37) % 1); fpos.set([lerp(r.a[0], r.b[0], u), 5 + Math.sin(u * Math.PI) * 18, lerp(r.a[1], r.b[1], u)], (i * NP + k) * 3); } }); flujoGeo.attributes.position.needsUpdate = true; }
   limMat.opacity = est.lim * 0.9; limite.visible = est.lim > 0.02;
   corrMats.forEach(m => { m.opacity = est.corr * 0.75; m.visible = est.corr > 0.02; });
+  abastoMats.forEach(m => { m.opacity = est.abasto * 0.85; m.visible = est.abasto > 0.02; });
+  if (est.abasto > 0.02) {
+    rutasAbasto.forEach((r, i) => {
+      for (let k = 0; k < NPA; k++) {
+        const u = ((t * 0.08 + k / NPA + i * 0.19) % 1);
+        const pt = r.curva.getPoint(u);
+        fposA.set([pt.x, pt.y, pt.z], (i * NPA + k) * 3);
+      }
+    });
+    abastoFlujoGeo.attributes.position.needsUpdate = true;
+  }
   guiasMat.opacity = est.expl * 0.5; guias.visible = est.expl > 0.02;
   for (const k in capas) capas[k].position.y = OFF[k] * est.expl;
   // etiquetas
@@ -712,24 +814,134 @@ datos('#fed-datos', [
   [fmt(C.nucleos), 'núcleos de huerta de 15 a 25 personas', `${fmt(C.nucleos * 20)} personas activas en las huertas`, 'propuesta'],
   [String(nCons), 'vocerías en el consejo federal; todas rotan cada seis meses', `${fmt(nCons * 10)} personas habrán llevado la voz en cinco años`, 'propuesta'],
 ]);
-{ const ancho = 1000, s = lienzo('#g-federacion', ancho, 560);
-  // asamblea general (envolvente)
-  s.append(sv('rect', { x: 10, y: 10, width: ancho - 20, height: 540, rx: 16, fill: 'none', stroke: '#3a4550', 'stroke-dasharray': '5 5' }), mono(28, 34, 'ASAMBLEA GENERAL · ABIERTA A TODAS LAS PERSONAS · 2 AL AÑO', { fill: '#8b9aa7' }));
-  // consejo federal: anillo de asientos
-  const cx = 500, cy = 140, R = 70; let k = 0;
-  s.append(sv('circle', { cx, cy, r: R + 22, fill: '#111820', stroke: '#2a3540' }), txt(cx, cy - 4, 'Consejo', { 'text-anchor': 'middle', 'font-weight': 600, fill: '#e6ecf0', 'font-size': 15 }), txt(cx, cy + 14, 'federal', { 'text-anchor': 'middle', 'font-weight': 600, fill: '#e6ecf0', 'font-size': 15 }), mono(cx, cy + 32, `${nCons} vocerías · mensual`, { 'text-anchor': 'middle' }));
-  CONSEJO.forEach(([n, m, c]) => { for (let i = 0; i < m; i++) { const a = -Math.PI / 2 + (k++ / nCons) * Math.PI * 2; s.append(sv('circle', { cx: cx + Math.cos(a) * (R + 8), cy: cy + Math.sin(a) * (R + 8), r: 6.5, fill: c, stroke: '#0b1015', 'stroke-width': 1.5 })); } });
-  CONSEJO.forEach(([n, m, c], i) => s.append(sv('circle', { cx: 700, cy: 70 + i * 22, r: 6, fill: c }), txt(714, 74 + i * 22, `${n} · ${m}`, { 'font-size': 12 })));
-  // comisiones
-  const COM = ['Huertas y semillas', 'Residuos y compost', 'Mercado y cocina', 'Bosque y especies', 'Cuidados', 'Trabajo y finanzas'];
-  COM.forEach((n, i) => { const x = 40, y = 70 + i * 30; s.append(sv('rect', { x, y, width: 190, height: 22, rx: 11, fill: '#18241a', stroke: '#4f8a3c' }), txt(x + 12, y + 15, n, { 'font-size': 11.5 })); s.append(sv('path', { d: `M232,${y + 11}C330,${y + 11} 360,${cy} ${cx - R - 26},${cy}`, stroke: '#4f8a3c', fill: 'none', opacity: 0.5 })); });
-  mono && s.append(mono(40, 60, 'COMISIONES ABIERTAS · MENSUAL', { fill: '#8fc46a' }));
-  // asambleas de sector
-  const ys = 330; for (let i = 0; i < NSECT; i++) { const x = 70 + i * (760 / (NSECT - 1)); s.append(sv('path', { d: `M${x},${ys - 26}C${x},${ys - 90} ${cx},${cy + 140} ${cx},${cy + R + 24}`, stroke: COL_SECT[i], fill: 'none', 'stroke-width': 1.6, opacity: 0.6 }), sv('circle', { cx: x, cy: ys, r: 26, fill: '#111820', stroke: COL_SECT[i], 'stroke-width': 2 }), txt(x, ys + 5, 'S' + (i + 1), { 'text-anchor': 'middle', 'font-weight': 600, fill: '#e6ecf0', 'font-size': 14 }));
-    const nn = Math.round(C.nucleos / NSECT); for (let j = 0; j < nn; j++) { const a = Math.PI * (0.15 + 0.7 * j / Math.max(1, nn - 1)); s.append(sv('circle', { cx: x + Math.cos(a) * 56 * (j % 2 ? 0.75 : 1), cy: ys + 38 + Math.sin(a) * 52 * (j % 2 ? 0.75 : 1), r: 3.5, fill: COL_SECT[i], opacity: 0.85 })); } }
-  s.append(mono(70, ys - 50, `ASAMBLEAS DE SECTOR · ${NSECT} · MENSUAL`, { fill: '#e3a64a' }), mono(70, 486, `NÚCLEOS DE HUERTA · ${C.nucleos} · MENSUAL · COORDINACIÓN ROTATIVA CADA 3 MESES`, { fill: '#8fc46a' }));
-  s.append(sv('path', { d: 'M965,470L965,190m-6,8l6,-8l6,8', stroke: '#e3a64a', fill: 'none', 'stroke-width': 1.5 }), mono(958, 300, 'mandato', { 'text-anchor': 'end', fill: '#e3a64a' }), sv('path', { d: 'M935,190L935,470m-6,-8l6,8l6,-8', stroke: '#8b9aa7', fill: 'none', 'stroke-width': 1.5 }), mono(928, 400, 'rinde cuentas', { 'text-anchor': 'end' }));
-  s.append(mono(28, 530, 'Quien lleva la vocería no decide sola ni solo: lleva el mandato de su asamblea, vuelve a rendir cuentas y puede ser revocada.', { 'font-size': 11 })); }
+{ const ancho = 1000, alto = 640, s = lienzo('#g-federacion', ancho, alto);
+  // Marco envolvente
+  s.append(sv('rect', { x: 10, y: 10, width: ancho - 20, height: alto - 20, rx: 16, fill: '#0b1015', stroke: '#3a4550', 'stroke-dasharray': '5 5' }));
+  s.append(mono(28, 32, 'RED DE FEDERACIÓN DE ASAMBLEAS · ESTRUCTURA DEMOCRÁTICA Y ARTICULACIÓN TERRITORIAL', { fill: '#8b9aa7', 'letter-spacing': '0.12em' }));
+
+  // 1. CINCO ORGANIZACIONES PARTICIPANTES (arriba)
+  const BASES = [
+    {
+      tit: 'ORGANIZACIONES BARRIALES',
+      sub: 'Huertas en viviendas · JAC · Promotores',
+      desc: 'Discusión en asambleas barriales; producción familiar, sustitución y venta de excedentes.',
+      c: '#8fc46a', x: 25, y: 48, w: 180, h: 96
+    },
+    {
+      tit: 'COLECTIVO SALVEMOS EL BOSQUE',
+      sub: 'Guardián del bosque · Veeduría',
+      desc: 'Defensa contra la tala de 14.000 árboles; consensos comunitarios sobre pasajes y actividades.',
+      c: '#4f8a3c', x: 215, y: 48, w: 180, h: 96
+    },
+    {
+      tit: 'COMERCIANTES Y MERCADOS',
+      sub: 'Mercados barriales · Corabastos',
+      desc: 'Puntos de abastecimiento barrial; Corabastos como un mercado más de la red distribuida.',
+      c: '#e3a64a', x: 405, y: 48, w: 185, h: 96
+    },
+    {
+      tit: 'UNIVERSIDADES Y CLÚSTER NBIC',
+      sub: 'Distrito de Tecnologías Convergentes',
+      desc: 'Nanoempaques para conservar alimentos, bio (hidroponía y hongos), TIC y ciencias cognitivas.',
+      c: '#a98bd6', x: 600, y: 48, w: 180, h: 96
+    },
+    {
+      tit: 'PRODUCTORES REGIONALES',
+      sub: 'Boyacá · Meta · Sumapaz–Usme',
+      desc: 'Ventaquemada, Villavicencio y Usme rural: abastecimiento directo sin monopolio ni fletes inflados.',
+      c: '#5fb3d9', x: 790, y: 48, w: 185, h: 96
+    }
+  ];
+
+  const cx = 500, cy = 285; // centro de la asamblea de la federación
+
+  BASES.forEach(b => {
+    // Tarjeta
+    s.append(sv('rect', { x: b.x, y: b.y, width: b.w, height: b.h, rx: 8, fill: '#111820', stroke: b.c, 'stroke-width': 1.6 }));
+    s.append(txt(b.x + 10, b.y + 18, b.tit, { 'font-size': 10, 'font-weight': 700, fill: b.c }));
+    s.append(mono(b.x + 10, b.y + 34, b.sub, { 'font-size': 9, fill: '#e6ecf0' }));
+    s.append(multi(b.x + 10, b.y + 50, b.desc, 28, { 'font-size': 9.5, fill: '#8b9aa7' }, 13));
+
+    // Flecha de Mandato hacia la asamblea central
+    const bxMid = b.x + b.w / 2, byBot = b.y + b.h;
+    s.append(sv('path', { d: `M${bxMid},${byBot} C${bxMid},${byBot + 45} ${cx},${cy - 80} ${cx},${cy - 50}`, stroke: b.c, fill: 'none', 'stroke-width': 1.6, opacity: 0.7 }));
+  });
+
+  // Indicadores de dinámica federal (mandato, rendición de cuentas, vocería rotativa)
+  s.append(sv('rect', { x: 240, y: 165, width: 520, height: 24, rx: 12, fill: '#1a232c', stroke: '#e3a64a', 'stroke-width': 1.2 }));
+  s.append(mono(500, 181, 'CADA ORGANIZACIÓN DISCUTE SUS PROPUESTAS · 1 PERSONA LLEVA SUS ACUERDOS (MANDATO)', { 'text-anchor': 'middle', fill: '#ffd166', 'font-size': 9.5, 'font-weight': 600 }));
+
+  s.append(sv('rect', { x: 190, y: 200, width: 620, height: 26, rx: 13, fill: '#142018', stroke: '#8fc46a', 'stroke-width': 1.4 }));
+  s.append(txt(500, 217, 'VOCERÍA ROTATIVA: ROTA PERIÓDICAMENTE PARA QUE TODAS LAS PERSONAS REPRESENTEN A SU ORGANIZACIÓN', { 'text-anchor': 'middle', fill: '#8fc46a', 'font-size': 10.5, 'font-weight': 600 }));
+
+  // 2. NODO CENTRAL: ASAMBLEA DE LA FEDERACIÓN
+  const R = 68;
+  s.append(sv('circle', { cx, cy, r: R + 22, fill: '#141d26', stroke: '#e3a64a', 'stroke-width': 2.2 }));
+  s.append(txt(cx, cy - 14, 'ASAMBLEA DE LA', { 'text-anchor': 'middle', 'font-weight': 700, fill: '#ffd166', 'font-size': 14 }));
+  s.append(txt(cx, cy + 6, 'FEDERACIÓN', { 'text-anchor': 'middle', 'font-weight': 700, fill: '#ffd166', 'font-size': 16 }));
+  s.append(mono(cx, cy + 24, 'Órgano común de decisión', { 'text-anchor': 'middle', fill: '#c9d3da', 'font-size': 10 }));
+  s.append(mono(cx, cy + 38, 'Mandatos colectivos vinculantes', { 'text-anchor': 'middle', fill: '#8b9aa7', 'font-size': 9 }));
+
+  // Asientos rotativos
+  const nPuntos = 16;
+  for (let i = 0; i < nPuntos; i++) {
+    const a = (i / nPuntos) * Math.PI * 2;
+    const px = cx + Math.cos(a) * (R + 10), py = cy + Math.sin(a) * (R + 10);
+    const colP = BASES[i % BASES.length].c;
+    s.append(sv('circle', { cx: px, cy: py, r: 5, fill: colP, stroke: '#0b1015', 'stroke-width': 1.5 }));
+  }
+
+  // 3. TRES DECISIONES COMUNES (abajo)
+  const DECISIONES = [
+    {
+      tit: '01 · CUIDADO DEL BOSQUE',
+      sub: 'Conservación estricta y biodiversidad',
+      puntos: [
+        'Conservación de las 14.000 copas frente a la tala.',
+        'Decisión comunitaria de bordes y pasajes.',
+        'Aves rapaces, polinizadores y humedales.'
+      ],
+      c: '#8fc46a', x: 30, y: 425, w: 295, h: 145
+    },
+    {
+      tit: '02 · USO DE LOS ESPACIOS',
+      sub: 'Naves recuperadas y clúster NBIC',
+      puntos: [
+        'Recuperación de la cervecería sin demoler.',
+        'Distrito de Tecnologías Convergentes (NBIC).',
+        'Módulos demostrativos, huertas y talleres.'
+      ],
+      c: '#ffd166', x: 352, y: 425, w: 295, h: 145
+    },
+    {
+      tit: '03 · ABASTECIMIENTO DE ALIMENTOS',
+      sub: 'Red barrial descentralizada',
+      puntos: [
+        'Productores llegan directo a mercados barriales.',
+        'Corabastos como un mercado más de la red.',
+        'Sustitución en viviendas y venta de excedentes.'
+      ],
+      c: '#e0664f', x: 675, y: 425, w: 295, h: 145
+    }
+  ];
+
+  DECISIONES.forEach(d => {
+    // Flecha desde la asamblea hacia cada decisión
+    const dxMid = d.x + d.w / 2;
+    s.append(sv('path', { d: `M${cx},${cy + 55} C${cx},${cy + 90} ${dxMid},${d.y - 35} ${dxMid},${d.y}`, stroke: d.c, fill: 'none', 'stroke-width': 1.8 }));
+
+    // Tarjeta
+    s.append(sv('rect', { x: d.x, y: d.y, width: d.w, height: d.h, rx: 8, fill: '#111820', stroke: d.c, 'stroke-width': 1.6 }));
+    s.append(txt(d.x + 14, d.y + 24, d.tit, { 'font-size': 11.5, 'font-weight': 700, fill: d.c }));
+    s.append(mono(d.x + 14, d.y + 42, d.sub, { 'font-size': 9.5, fill: '#e6ecf0' }));
+    d.puntos.forEach((p, idx) => {
+      s.append(sv('circle', { cx: d.x + 18, cy: d.y + 66 + idx * 24, r: 3, fill: d.c }));
+      s.append(txt(d.x + 28, d.y + 70 + idx * 24, p, { 'font-size': 10.5, fill: '#c9d3da' }));
+    });
+  });
+
+  s.append(mono(500, 615, '«Cada organización discute sus propuestas y una persona lleva sus acuerdos a la asamblea de la federación donde se toman las decisiones comunes.»', { 'text-anchor': 'middle', fill: '#8b9aa7', 'font-style': 'italic', 'font-size': 10 }));
+}
 $('#t-reuniones').innerHTML = '<thead><tr><th>Instancia</th><th>Cuántas</th><th>Frecuencia</th><th>Al año</th></tr></thead><tbody>' + [
   ['Núcleos de huerta', C.nucleos, 'mensual', C.nucleos * 12], ['Asambleas de sector', NSECT, 'mensual', NSECT * 12], ['Comisiones', 6, 'mensual', 72], ['Consejo federal', 1, 'mensual', 12], ['Asamblea general', 1, 'semestral', 2],
 ].map(r => `<tr><td>${r[0]}</td><td class="n">${fmt(r[1])}</td><td>${r[2]}</td><td class="n">${fmt(r[3])}</td></tr>`).join('') + `<tr><td><b>Total</b></td><td></td><td></td><td class="n"><b>${fmt(C.nucleos * 12 + NSECT * 12 + 72 + 14)}</b></td></tr></tbody>`;
