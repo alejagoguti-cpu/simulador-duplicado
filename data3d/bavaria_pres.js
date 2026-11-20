@@ -387,6 +387,42 @@ const abastoMats = [];
 const redAbasto = new THREE.Group();
 scene.add(redAbasto);
 
+// Textura de punto brillante aditivo tipo red-de-problemas
+const dotTex = (() => {
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const x = c.getContext('2d'), g = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+  g.addColorStop(0, '#ffffff');
+  g.addColorStop(0.25, '#ffffffee');
+  g.addColorStop(0.7, '#ffffff55');
+  g.addColorStop(1, '#ffffff00');
+  x.fillStyle = g;
+  x.fillRect(0, 0, 64, 64);
+  return new THREE.CanvasTexture(c);
+})();
+
+// Generador de ondas concéntricas pulsantes (ripples)
+function mkRipple(color, baseR = 120) {
+  const c = document.createElement('canvas');
+  c.width = c.height = 256;
+  const x = c.getContext('2d');
+  x.strokeStyle = color;
+  x.lineWidth = 6;
+  x.beginPath();
+  x.arc(128, 128, 114, 0, Math.PI * 2);
+  x.stroke();
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: new THREE.CanvasTexture(c),
+    transparent: true,
+    depthWrite: false,
+    depthTest: false,
+    blending: THREE.AdditiveBlending,
+    opacity: 0
+  }));
+  sp.userData = { baseR };
+  return sp;
+}
+
 const rutasAbasto = [
   { a: ORIGENES_ALIMENTOS[0].p, b: MERCADOS_RED[0].p, c: '#8fc46a' },
   { a: ORIGENES_ALIMENTOS[0].p, b: MERCADOS_RED[2].p, c: '#8fc46a' },
@@ -412,12 +448,21 @@ rutasAbasto.forEach(r => {
   redAbasto.add(new THREE.Mesh(new THREE.TubeGeometry(cur, 48, MOVIL ? 5 : 4, 6), mat));
 });
 
+const abastoRipples = [];
+
 ORIGENES_ALIMENTOS.forEach(o => {
   const mat = new THREE.MeshBasicMaterial({ color: o.c, transparent: true, opacity: 0 });
   abastoMats.push(mat);
   const d = new THREE.Mesh(new THREE.CylinderGeometry(140, 140, 3, 32), mat);
   d.position.set(o.p[0], 2, o.p[2]);
   redAbasto.add(d);
+
+  // Anillos concéntricos pulsantes estilo red-de-problemas
+  const rp = mkRipple(o.c, 340);
+  rp.position.set(o.p[0], 22, o.p[2]);
+  rp.renderOrder = 14;
+  redAbasto.add(rp);
+  abastoRipples.push(rp);
 });
 
 MERCADOS_RED.forEach(m => {
@@ -426,9 +471,15 @@ MERCADOS_RED.forEach(m => {
   const d = new THREE.Mesh(new THREE.CylinderGeometry(m.r || 60, m.r || 60, 3, 32), mat);
   d.position.set(m.p[0], 2, m.p[2]);
   redAbasto.add(d);
+
+  const rp = mkRipple(m.c, (m.r || 60) * 2.6);
+  rp.position.set(m.p[0], 18, m.p[2]);
+  rp.renderOrder = 14;
+  redAbasto.add(rp);
+  abastoRipples.push(rp);
 });
 
-const NPA = MOVIL ? 4 : 6;
+const NPA = MOVIL ? 5 : 8;
 const abastoFlujoGeo = new THREE.BufferGeometry();
 const fposA = new Float32Array(rutasAbasto.length * NPA * 3);
 const fcolA = new Float32Array(rutasAbasto.length * NPA * 3);
@@ -438,10 +489,20 @@ rutasAbasto.forEach((r, i) => {
 });
 abastoFlujoGeo.setAttribute('position', new THREE.BufferAttribute(fposA, 3));
 abastoFlujoGeo.setAttribute('color', new THREE.BufferAttribute(fcolA, 3));
-const abastoFlujoMat = new THREE.PointsMaterial({ size: MOVIL ? 4.5 : 6, sizeAttenuation: false, vertexColors: true, transparent: true, opacity: 0, depthTest: false });
+const abastoFlujoMat = new THREE.PointsMaterial({
+  size: MOVIL ? 12 : 16,
+  sizeAttenuation: false,
+  map: dotTex,
+  vertexColors: true,
+  transparent: true,
+  opacity: 0,
+  depthTest: false,
+  depthWrite: false,
+  blending: THREE.AdditiveBlending
+});
 abastoMats.push(abastoFlujoMat);
 const abastoFlujos = new THREE.Points(abastoFlujoGeo, abastoFlujoMat);
-abastoFlujos.renderOrder = 12;
+abastoFlujos.renderOrder = 15;
 redAbasto.add(abastoFlujos);
 
 ORIGENES_ALIMENTOS.forEach(o => {
@@ -619,6 +680,14 @@ function cuadro() {
       }
     });
     abastoFlujoGeo.attributes.position.needsUpdate = true;
+    abastoRipples.forEach((rp, i) => {
+      const ph = ((t * 1000 + i * 240) % 2000) / 2000;
+      const s = rp.userData.baseR * (1 + 0.75 * ph);
+      rp.scale.set(s, s, 1);
+      rp.material.opacity = est.abasto * 0.75 * Math.pow(1 - ph, 2);
+    });
+  } else {
+    abastoRipples.forEach(rp => { rp.material.opacity = 0; });
   }
   guiasMat.opacity = est.expl * 0.5; guias.visible = est.expl > 0.02;
   for (const k in capas) capas[k].position.y = OFF[k] * est.expl;
@@ -815,6 +884,32 @@ datos('#fed-datos', [
   [String(nCons), 'vocerías en el consejo federal; todas rotan cada seis meses', `${fmt(nCons * 10)} personas habrán llevado la voz en cinco años`, 'propuesta'],
 ]);
 { const ancho = 1000, alto = 640, s = lienzo('#g-federacion', ancho, alto);
+  // Estilos y animaciones idénticos a red-de-problemas (.flujo, ripples, badges)
+  const defs = sv('defs');
+  defs.innerHTML = `
+    <style>
+      @keyframes fluyeFed { to { stroke-dashoffset: -24px; } }
+      @keyframes fluyeRev { to { stroke-dashoffset: 24px; } }
+      @keyframes rippleCentral { 0% { r: 86px; opacity: 0.7; } 100% { r: 118px; opacity: 0; } }
+      @keyframes rippleCentral2 { 0% { r: 96px; opacity: 0.5; } 100% { r: 132px; opacity: 0; } }
+      @keyframes dotPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.35); } }
+      .flujo { stroke-dasharray: 6 6; animation: fluyeFed 1.25s linear infinite; }
+      .flujo-rev { stroke-dasharray: 6 6; animation: fluyeRev 1.25s linear infinite; }
+      .flujo-fast { stroke-dasharray: 5 5; animation: fluyeFed 0.85s linear infinite; }
+    </style>
+    <filter id="glowCentral" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  `;
+  ['#8fc46a', '#4f8a3c', '#e3a64a', '#a98bd6', '#5fb3d9', '#ffd166', '#e0664f'].forEach(col => {
+    const id = 'arr-' + col.replace('#', '');
+    const m = sv('marker', { id, viewBox: '0 0 10 10', refX: '7', refY: '5', markerWidth: '6', markerHeight: '6', orient: 'auto-start-reverse' });
+    m.append(sv('path', { d: 'M0,1 L8,5 L0,9 z', fill: col }));
+    defs.append(m);
+  });
+  s.append(defs);
+
   // Marco envolvente
   s.append(sv('rect', { x: 10, y: 10, width: ancho - 20, height: alto - 20, rx: 16, fill: '#0b1015', stroke: '#3a4550', 'stroke-dasharray': '5 5' }));
   s.append(mono(28, 32, 'RED DE FEDERACIÓN DE ASAMBLEAS · ESTRUCTURA DEMOCRÁTICA Y ARTICULACIÓN TERRITORIAL', { fill: '#8b9aa7', 'letter-spacing': '0.12em' }));
@@ -825,31 +920,31 @@ datos('#fed-datos', [
       tit: 'ORGANIZACIONES BARRIALES',
       sub: 'Huertas en viviendas · JAC · Promotores',
       desc: 'Discusión en asambleas barriales; producción familiar, sustitución y venta de excedentes.',
-      c: '#8fc46a', x: 25, y: 48, w: 180, h: 96
+      c: '#8fc46a', x: 25, y: 48, w: 180, h: 96, n: '1'
     },
     {
       tit: 'COLECTIVO SALVEMOS EL BOSQUE',
       sub: 'Guardián del bosque · Veeduría',
       desc: 'Defensa contra la tala de 14.000 árboles; consensos comunitarios sobre pasajes y actividades.',
-      c: '#4f8a3c', x: 215, y: 48, w: 180, h: 96
+      c: '#4f8a3c', x: 215, y: 48, w: 180, h: 96, n: '2'
     },
     {
       tit: 'COMERCIANTES Y MERCADOS',
       sub: 'Mercados barriales · Corabastos',
       desc: 'Puntos de abastecimiento barrial; Corabastos como un mercado más de la red distribuida.',
-      c: '#e3a64a', x: 405, y: 48, w: 185, h: 96
+      c: '#e3a64a', x: 405, y: 48, w: 185, h: 96, n: '3'
     },
     {
       tit: 'UNIVERSIDADES Y CLÚSTER NBIC',
       sub: 'Distrito de Tecnologías Convergentes',
       desc: 'Nanoempaques para conservar alimentos, bio (hidroponía y hongos), TIC y ciencias cognitivas.',
-      c: '#a98bd6', x: 600, y: 48, w: 180, h: 96
+      c: '#a98bd6', x: 600, y: 48, w: 180, h: 96, n: '4'
     },
     {
       tit: 'PRODUCTORES REGIONALES',
       sub: 'Boyacá · Meta · Sumapaz–Usme',
       desc: 'Ventaquemada, Villavicencio y Usme rural: abastecimiento directo sin monopolio ni fletes inflados.',
-      c: '#5fb3d9', x: 790, y: 48, w: 185, h: 96
+      c: '#5fb3d9', x: 790, y: 48, w: 185, h: 96, n: '5'
     }
   ];
 
@@ -862,9 +957,18 @@ datos('#fed-datos', [
     s.append(mono(b.x + 10, b.y + 34, b.sub, { 'font-size': 9, fill: '#e6ecf0' }));
     s.append(multi(b.x + 10, b.y + 50, b.desc, 28, { 'font-size': 9.5, fill: '#8b9aa7' }, 13));
 
-    // Flecha de Mandato hacia la asamblea central
+    // Badge circular de orden/conexión estilo red-de-problemas
+    s.append(sv('circle', { cx: b.x + b.w - 14, cy: b.y + 14, r: 8, fill: '#1a232c', stroke: b.c, 'stroke-width': 1.2 }));
+    s.append(mono(b.x + b.w - 14, b.y + 17, b.n, { 'text-anchor': 'middle', 'font-size': 9, fill: b.c, 'font-weight': 700 }));
+
+    // Flechas de Mandato animadas (.flujo) hacia la asamblea central
     const bxMid = b.x + b.w / 2, byBot = b.y + b.h;
-    s.append(sv('path', { d: `M${bxMid},${byBot} C${bxMid},${byBot + 45} ${cx},${cy - 80} ${cx},${cy - 50}`, stroke: b.c, fill: 'none', 'stroke-width': 1.6, opacity: 0.7 }));
+    const pathD = `M${bxMid},${byBot} C${bxMid},${byBot + 45} ${cx},${cy - 85} ${cx},${cy - 52}`;
+    // Guía atenuada
+    s.append(sv('path', { d: pathD, stroke: b.c, fill: 'none', 'stroke-width': 1.2, opacity: 0.25 }));
+    // Flujo animado
+    const mId = 'url(#arr-' + b.c.replace('#', '') + ')';
+    s.append(sv('path', { d: pathD, stroke: b.c, fill: 'none', 'stroke-width': 2, class: 'flujo', 'marker-end': mId, opacity: 0.85 }));
   });
 
   // Indicadores de dinámica federal (mandato, rendición de cuentas, vocería rotativa)
@@ -874,15 +978,21 @@ datos('#fed-datos', [
   s.append(sv('rect', { x: 190, y: 200, width: 620, height: 26, rx: 13, fill: '#142018', stroke: '#8fc46a', 'stroke-width': 1.4 }));
   s.append(txt(500, 217, 'VOCERÍA ROTATIVA: ROTA PERIÓDICAMENTE PARA QUE TODAS LAS PERSONAS REPRESENTEN A SU ORGANIZACIÓN', { 'text-anchor': 'middle', fill: '#8fc46a', 'font-size': 10.5, 'font-weight': 600 }));
 
-  // 2. NODO CENTRAL: ASAMBLEA DE LA FEDERACIÓN
+  // 2. NODO CENTRAL: ASAMBLEA DE LA FEDERACIÓN CON ONDAS EXPANSIVAS (RIPPLES)
   const R = 68;
-  s.append(sv('circle', { cx, cy, r: R + 22, fill: '#141d26', stroke: '#e3a64a', 'stroke-width': 2.2 }));
+
+  // Ondas concéntricas animadas estilo red-de-problemas
+  s.append(sv('circle', { cx, cy, r: 86, fill: 'none', stroke: '#e3a64a', 'stroke-width': 1.5, style: 'animation: rippleCentral 2.4s ease-out infinite; transform-origin: 500px 285px;' }));
+  s.append(sv('circle', { cx, cy, r: 96, fill: 'none', stroke: '#ffd166', 'stroke-width': 1.2, style: 'animation: rippleCentral2 2.4s ease-out 0.8s infinite; transform-origin: 500px 285px;' }));
+  s.append(sv('circle', { cx, cy, r: R + 22, fill: 'none', stroke: '#ffd166', 'stroke-width': 1.2, class: 'flujo-fast', opacity: 0.45 }));
+
+  s.append(sv('circle', { cx, cy, r: R + 20, fill: '#141d26', stroke: '#e3a64a', 'stroke-width': 2.4, filter: 'url(#glowCentral)' }));
   s.append(txt(cx, cy - 14, 'ASAMBLEA DE LA', { 'text-anchor': 'middle', 'font-weight': 700, fill: '#ffd166', 'font-size': 14 }));
   s.append(txt(cx, cy + 6, 'FEDERACIÓN', { 'text-anchor': 'middle', 'font-weight': 700, fill: '#ffd166', 'font-size': 16 }));
   s.append(mono(cx, cy + 24, 'Órgano común de decisión', { 'text-anchor': 'middle', fill: '#c9d3da', 'font-size': 10 }));
   s.append(mono(cx, cy + 38, 'Mandatos colectivos vinculantes', { 'text-anchor': 'middle', fill: '#8b9aa7', 'font-size': 9 }));
 
-  // Asientos rotativos
+  // Asientos rotativos con pequeños pulsos
   const nPuntos = 16;
   for (let i = 0; i < nPuntos; i++) {
     const a = (i / nPuntos) * Math.PI * 2;
@@ -926,9 +1036,14 @@ datos('#fed-datos', [
   ];
 
   DECISIONES.forEach(d => {
-    // Flecha desde la asamblea hacia cada decisión
+    // Flecha animada (.flujo) desde la asamblea hacia cada decisión
     const dxMid = d.x + d.w / 2;
-    s.append(sv('path', { d: `M${cx},${cy + 55} C${cx},${cy + 90} ${dxMid},${d.y - 35} ${dxMid},${d.y}`, stroke: d.c, fill: 'none', 'stroke-width': 1.8 }));
+    const pathD = `M${cx},${cy + 55} C${cx},${cy + 92} ${dxMid},${d.y - 35} ${dxMid},${d.y - 4}`;
+    // Línea base atenuada
+    s.append(sv('path', { d: pathD, stroke: d.c, fill: 'none', 'stroke-width': 1.2, opacity: 0.25 }));
+    // Flujo animado
+    const mId = 'url(#arr-' + d.c.replace('#', '') + ')';
+    s.append(sv('path', { d: pathD, stroke: d.c, fill: 'none', 'stroke-width': 2.2, class: 'flujo', 'marker-end': mId, opacity: 0.9 }));
 
     // Tarjeta
     s.append(sv('rect', { x: d.x, y: d.y, width: d.w, height: d.h, rx: 8, fill: '#111820', stroke: d.c, 'stroke-width': 1.6 }));
@@ -938,6 +1053,10 @@ datos('#fed-datos', [
       s.append(sv('circle', { cx: d.x + 18, cy: d.y + 66 + idx * 24, r: 3, fill: d.c }));
       s.append(txt(d.x + 28, d.y + 70 + idx * 24, p, { 'font-size': 10.5, fill: '#c9d3da' }));
     });
+
+    // Badge de acuerdo vinculante
+    s.append(sv('rect', { x: d.x + d.w - 95, y: d.y + 12, width: 85, height: 16, rx: 8, fill: '#1a232c', stroke: d.c, 'stroke-width': 1 }));
+    s.append(mono(d.x + d.w - 52, d.y + 23, 'VINCULANTE', { 'text-anchor': 'middle', 'font-size': 8.5, fill: d.c, 'font-weight': 700 }));
   });
 
   s.append(mono(500, 615, '«Cada organización discute sus propuestas y una persona lleva sus acuerdos a la asamblea de la federación donde se toman las decisiones comunes.»', { 'text-anchor': 'middle', fill: '#8b9aa7', 'font-style': 'italic', 'font-size': 10 }));
