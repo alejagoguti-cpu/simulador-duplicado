@@ -103,17 +103,34 @@ body #bt-pan .bt-e{background:var(--ui-bg2)!important; border:1px solid var(--ui
 body #bt-pan .bt-e svg, body #bt-pan .bt-e img{filter:grayscale(1) brightness(1.15) opacity(.75)}
 body #bt-pan .bt-nota{color:var(--ui-tx3)!important}
 
-/* ============ VIDRIO OSCURO (todos los paneles): negro translúcido con desenfoque fuerte, brillo en el borde superior ============ */
-:root{ --ui-bg:linear-gradient(165deg,rgba(34,38,44,.52),rgba(8,10,13,.6)); --ui-glass-bd:rgba(255,255,255,.1);
-  --ui-glass-sh:0 18px 44px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.09),inset 0 0 0 1px rgba(255,255,255,.02); }
-body .gs-pan, body #bt-pan, body #cvMarca, body #cvMini, body #dock, body #usos-panel, body #ruido-panel, body #cierre-panel, body #toast, body #cvAyuda, body #esc, body #tb, body #cr, body #tp{
-  background:linear-gradient(165deg,rgba(26,29,34,.7),rgba(6,8,10,.78))!important; border:1px solid var(--ui-glass-bd)!important;
-  box-shadow:var(--ui-glass-sh)!important; -webkit-backdrop-filter:blur(28px) saturate(1.5) brightness(.8)!important; backdrop-filter:blur(28px) saturate(1.5) brightness(.8)!important;
-  border-radius:16px!important}
-body #dock .dk-body > *{background:transparent!important; box-shadow:none!important; border:0!important}
+/* ============ VIDRIO OSCURO tipo iPhone (todos los paneles): negro translúcido que deja ver el fondo desenfocado y con color,
+   brillo especular arriba a la izquierda, borde de luz fino y sombra suave ============ */
+:root{ --ui-bg:linear-gradient(160deg,rgba(38,42,50,.33),rgba(8,10,14,.43));
+  --ui-glass:radial-gradient(130% 70% at 12% 0%,rgba(255,255,255,.11),rgba(255,255,255,0) 55%),linear-gradient(160deg,rgba(38,42,50,.33),rgba(8,10,14,.45));
+  --ui-glass-bd:rgba(255,255,255,.16);
+  --ui-glass-sh:0 22px 50px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.24),inset 0 -1px 0 rgba(255,255,255,.05),inset 1px 0 0 rgba(255,255,255,.06),inset -1px 0 0 rgba(255,255,255,.03);
+  --ui-glass-fx:blur(24px) saturate(1.9) brightness(.88);
+  --ui-tx2:#c3cace; --ui-tx3:#949da3; } /* textos secundarios más claros: se leen sobre el vidrio aunque detrás haya cielo */
+body .gs-pan, body #bt-pan, body #cvMarca, body #cvMini, body #dock, body #usos-panel, body #ruido-panel, body #cierre-panel, body #toast, body #cvAyuda,
+body #esc, body #tb, body #cr, body #tp, body #bd, body #hud-c, body #gs-tog, body #bt-tog, body #alivio-et{
+  background:var(--ui-glass)!important; border:1px solid var(--ui-glass-bd)!important; box-shadow:var(--ui-glass-sh)!important;
+  -webkit-backdrop-filter:var(--ui-glass-fx)!important; backdrop-filter:var(--ui-glass-fx)!important; border-radius:18px!important}
+body #hud-c, body #gs-tog, body #bt-tog{border-radius:16px!important}
+body #alivio-et{border-radius:11px!important}
+/* el texto sobre el vidrio: una sombra mínima para que se lea con cualquier fondo */
+body .gs-pan, body #dock, body #esc, body #tb, body #cr, body #bd{text-shadow:0 1px 2px rgba(0,0,0,.35)}
+/* elementos internos que tenían fondo propio: más sutiles para que se lea el vidrio */
+body #esc .sw, body #tb .esc{background:rgba(0,0,0,.18)!important}
+body .gs-pan button:not(.on){background:rgba(255,255,255,.05)!important; border-color:rgba(255,255,255,.1)!important}
+@media(prefers-reduced-transparency:reduce){body .gs-pan, body #dock, body #esc, body #tb, body #cr, body #bd, body #tp, body #hud-c{background:rgba(12,14,17,.94)!important}}body #dock .dk-body > *{background:transparent!important; box-shadow:none!important; border:0!important}
 /* marca sin el logo del cubo */
 body #cvMarca svg{display:none!important}
 body #cvMarca{padding-left:16px!important}
 
 /* tablero: sin la lista de tipos encima del diagrama (las gráficas son las mismas en los dos escenarios) */
 body #tb #tb-chips{display:none!important}
+
+/* panel de Bavaria Común: los enlaces del pie iguales a los botones */
+body #bd .pie a.sec2{flex:1;height:34px;border-radius:8px;font:500 12px var(--ui-sans)!important;color:#cfd5d9!important;white-space:nowrap;padding:0 8px}
+body #bd .pie a.sec2:hover{background:rgba(255,255,255,.1)}
+body #bd .pie button{white-space:nowrap}

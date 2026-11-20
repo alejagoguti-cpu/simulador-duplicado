@@ -91,7 +91,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
   const [BV, BA, CO] = await Promise.all(['data3d/bavaria.json?v=2', 'data3d/bavaria_arboles.json?v=2', 'data3d/corabastos.json?v=3'].map(u => (window.cargarJSON || ((u) => fetch(u).then(r => r.json())))(u).catch(() => null))); // Bavaria y Corabastos: también son hábitat
   const rnd = Math.random, gauss = () => { let u = 0, v = 0; while (!u) u = rnd(); while (!v) v = rnd(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(6.283 * v); };
   const TIPOS = B.tipos, COLT = TIPOS.map(t => new THREE.Color(t.c));
-  const GY = Y0; // suelo y lámina de agua en el marco de la maqueta (el mismo de las personas de la simulación)
+  const GY = (T3.sueloY != null && T3.sueloY > 0) ? T3.sueloY + 0.02 : Y0; // con la foto real (sueloY 0,3) los animales pisan la foto, no flotan 1,7 m // suelo y lámina de agua en el marco de la maqueta (el mismo de las personas de la simulación)
   // actividad de cada especie a la hora del reloj de la simulación (T3.reloj): al terminar cada pausa, el animal sigue en reposo con probabilidad 1 - actividad
   const AC = {}, horaSim = () => { const r = T3.reloj; return r && r.t >= 0 ? (r.t / 60) % 24 : 9; };
   const actualizarAC = () => { const h = horaSim(); for (const k of Object.keys(ESP)) AC[k] = actividad(k, h); }; actualizarAC();
@@ -132,11 +132,11 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
   for (const p of PAR) p.k = Math.max(0.35, Math.min(2.2, Math.sqrt(p.area) / 110));
   // huertas en lotes baldíos (P4 de la simulación): colmenas, lombrices y las aves que atrae la huerta
   // sitios de huerta: los de las estrategias E1 y E2 (cfg.huertas, ya en el mundo) o, sin estrategias, las huertas de giro_sim.json
-  const fuenteH = huertas ? huertas.map(h => ({ n: h.id + ' · ' + h.n, poly: h.poly })) : (D.huertas || []).map(h => ({ n: h.n, poly: h.poly.map(p => [p[0] + OX, p[1] + OZ]) }));
+  const fuenteH = huertas ? huertas.map(h => ({ n: h.id + ' · ' + h.n, poly: h.poly, cnt: h.cnt })) : (D.huertas || []).map(h => ({ n: h.n, poly: h.poly.map(p => [p[0] + OX, p[1] + OZ]) }));
   const HUE = fuenteH.filter(h => h.poly.length >= 3).map(h => {
     const poly = h.poly; let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9, cx = 0, cz = 0; for (const p of poly) { x0 = Math.min(x0, p[0]); x1 = Math.max(x1, p[0]); z0 = Math.min(z0, p[1]); z1 = Math.max(z1, p[1]); cx += p[0]; cz += p[1]; }
     const borde = poly.concat([poly[0]]);
-    return { n: h.n, tipo: 'huerta', poly, borde, x0, x1, z0, z1, cx: cx / poly.length, cz: cz / poly.length, ag: {}, k: 1 };
+    return { n: h.n, tipo: 'huerta', poly, borde, x0, x1, z0, z1, cx: cx / poly.length, cz: cz / poly.length, ag: {}, k: 1, cnt: h.cnt };
   });
   // bosque de la antigua fábrica de Bavaria y predio de Corabastos: hábitats con sus propias especies
   const POR_BOSQUE = { copeton: 10, mirla: 8, torcaza: 8, chamon: 4, cucarachero: 6, colibri: 4, abeja: 6, lombriz: 5, curi: 6, comadreja: 2, rata: 5, lagartija: 5, culebra: 2, caracol: 6, cernicalo: 1, buho: 1 };
@@ -144,8 +144,25 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
   const habitat = (n, polyModelo, cnt) => { const poly = polyModelo.map(p => lw(p[0], p[1])); let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const p of poly) { x0 = Math.min(x0, p[0]); x1 = Math.max(x1, p[0]); z0 = Math.min(z0, p[1]); z1 = Math.max(z1, p[1]); } return { n, tipo: 'parque', poly, borde: poly.concat([poly[0]]), x0, x1, z0, z1, cx: (x0 + x1) / 2, cz: (z0 + z1) / 2, ag: {}, k: 1, cnt }; };
   const EXTRA = []; if (BV && BV.sitio) EXTRA.push(habitat('Bosque de la antigua fábrica de Bavaria', BV.sitio, POR_BOSQUE));
   // con la propuesta: las ~6 ha de huertas del distrito Bavaria Común con sus módulos de fauna (apiario, nidos, perchas, refugios): solo existen en «proyecto»
-  if (BV && BV.sitio) { const h = habitat('Huertas del distrito Bavaria Común', BV.sitio, { abeja: 40, colibri: 8, copeton: 8, mirla: 6, cucarachero: 6, torcaza: 4, lombriz: 14, cernicalo: 1, buho: 1 }); h.tipo = 'huerta'; EXTRA.push(h); } if (CO && CO.poly) EXTRA.push(habitat('Corabastos', CO.poly, POR_CORA));
-  const HAB = HUM.concat(PAR, HUE, EXTRA);
+  if (BV && BV.sitio) { const h = habitat('Huertas del distrito Bavaria Común', BV.sitio, { abeja: 40, colibri: 8, copeton: 8, mirla: 6, cucarachero: 6, torcaza: 4, lombriz: 14 } /* solo fauna buena para las huertas: polinizadores, insectívoras y suelo (sin rapaces ni búhos) */); h.tipo = 'huerta'; EXTRA.push(h); } if (CO && CO.poly) EXTRA.push(habitat('Corabastos', CO.poly, POR_CORA));
+  /* KENNEDY HOY: más ratas donde se acumulan basura y residuos de alimentos (Corabastos, bordes de humedales y canales). Con la propuesta no existen:
+     el centro de aprovechamiento de orgánicos y la recolección por barrio les quitan la comida (soloHoy: el bucle las esconde en «proyecto") [SUP] */
+  if (CO && CO.poly) { const h = habitat('Basuras y residuos de Corabastos', CO.poly, { rata: 34 }); h.soloHoy = true; EXTRA.push(h); }
+  for (const hu of HUM) EXTRA.push({ ...hu, n: hu.n + ' · basuras del borde', ag: {}, cnt: { rata: 8 }, soloHoy: true });
+  /* CON LA PROPUESTA: parque humedal de Corabastos (data3d/corabastos_parque.js) donde se desmontan las bodegas junto al humedal La Vaca */
+  if (CO && CO.naves) { const Q = CO.naves.filter(n => n.dh < 120), pts = [];
+    for (const n of Q) { const ca = Math.cos(n.a), sa = Math.sin(n.a); for (const [u, v] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) { const du = u * (n.L / 2 + 8), dv = v * (n.W / 2 + 8); pts.push([n.c[0] + du * ca - dv * sa, n.c[1] + du * sa + dv * ca]); } }
+    if (pts.length >= 3) { const P = pts.sort((a, b) => a[0] - b[0] || a[1] - b[1]), cr = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]), lo = [], hi = [];
+      for (const p of P) { while (lo.length >= 2 && cr(lo[lo.length - 2], lo[lo.length - 1], p) <= 0) lo.pop(); lo.push(p); } for (const p of P.slice().reverse()) { while (hi.length >= 2 && cr(hi[hi.length - 2], hi[hi.length - 1], p) <= 0) hi.pop(); hi.push(p); }
+      const h = habitat('Parque humedal de Corabastos', lo.slice(0, -1).concat(hi.slice(0, -1)), { garza: 3, tingua: 4, pato: 4, monjita: 3, copeton: 6, mirla: 4, colibri: 4, torcaza: 3, cucarachero: 3, abeja: 8, rana: 8, lagartija: 3, caracol: 4 }); h.pro = true; EXTRA.push(h); } }
+  // con la propuesta: PARCHES DE ÁRBOLES NATIVOS en parques y alrededor de las huertas de parque (data3d/parches_arboles.js):
+  // caucho sabanero, aliso, sauco, chicalá, arrayán y arbustos de flor; cada parche es un hábitat nuevo con su fauna, solo en «proyecto»
+  let PAT = [], FAUNA_PARCHE = {}, ESP_PARCHE = {};
+  try { const [PM, HBj] = await Promise.all([import('./parches_arboles.js?v=4'), (window.cargarJSON || ((u) => fetch(u).then(r => r.json())))('data3d/huertas_barrio.json?v=3')]);
+    PAT = PM.calcularParches(HBj, PQ, lw, movil); FAUNA_PARCHE = PM.FAUNA_PARCHE; ESP_PARCHE = PM.ESPECIES; } catch (e) { console.warn('parches de árboles:', e); }
+  const PCH = PAT.map(p => ({ n: p.n, tipo: 'parche', pro: true, poly: p.poly, borde: p.poly.concat([p.poly[0]]), x0: p.x0, x1: p.x1, z0: p.z0, z1: p.z1, cx: p.c[0], cz: p.c[1], ag: {}, k: 1, cnt: FAUNA_PARCHE }));
+  for (const h of HUE) h.pro = true; for (const h of EXTRA) if (h.tipo === 'huerta') h.pro = true;
+  const HAB = HUM.concat(PAR, HUE, EXTRA, PCH);
   // árboles reales (censo SIGAU) en toda la zona, en un índice espacial único
   const CEL = 20, GRID = new Map(), gk = (i, j) => i * 100003 + j;
   for (const t of TR.t) {
@@ -162,7 +179,14 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
       const g = gk(Math.floor(x / CEL), Math.floor(z / CEL)); if (!GRID.has(g)) GRID.set(g, []); GRID.get(g).push(a);
     });
   }
-  const arbolesCerca = (h, x, z, r) => { const L = [], c0 = Math.floor((x - r) / CEL), c1 = Math.floor((x + r) / CEL), r0 = Math.floor((z - r) / CEL), r1 = Math.floor((z + r) / CEL); for (let i = c0; i <= c1; i++) for (let j = r0; j <= r1; j++) { const g = GRID.get(gk(i, j)); if (g) for (const a of g) if (Math.hypot(a.x - x, a.z - z) < r) L.push(a); } return L; };
+  // árboles de los parches (solo existen con la propuesta: VER_PRO lo pone el bucle según el escenario)
+  for (const p of PAT) for (const t of p.arboles) { const E = ESP_PARCHE[t.sp], a = { x: t.x, z: t.z, h: t.h, y: GY + t.h * 0.82, sp: -1, fl: E.fl, n: E.n, pro: true };
+    const g = gk(Math.floor(t.x / CEL), Math.floor(t.z / CEL)); if (!GRID.has(g)) GRID.set(g, []); GRID.get(g).push(a); }
+  let VER_PRO = true;
+  // cuántos árboles hay hoy y cuántos nativos nuevos trae la propuesta (panel Agentes, data3d/giro_sim.js)
+  const ARBOLES = { hoy: 0, nuevos: 0, porEsp: {} };
+  for (const g of GRID.values()) for (const a of g) { if (a.pro) { ARBOLES.nuevos++; ARBOLES.porEsp[a.n] = (ARBOLES.porEsp[a.n] || 0) + 1; } else ARBOLES.hoy++; }
+  const arbolesCerca = (h, x, z, r) => { const L = [], c0 = Math.floor((x - r) / CEL), c1 = Math.floor((x + r) / CEL), r0 = Math.floor((z - r) / CEL), r1 = Math.floor((z + r) / CEL); for (let i = c0; i <= c1; i++) for (let j = r0; j <= r1; j++) { const g = GRID.get(gk(i, j)); if (g) for (const a of g) if ((VER_PRO || !a.pro) && Math.hypot(a.x - x, a.z - z) < r) L.push(a); } return L; };
   const puntoEn = (h) => { for (let k = 0; k < 200; k++) { const x = h.x0 + rnd() * (h.x1 - h.x0), z = h.z0 + rnd() * (h.z1 - h.z0); if (dentro(x, z, h.poly)) return [x, z]; } return [h.cx, h.cz]; };
   const puntoBorde = (h, off = 0) => { const b = h.borde, i = Math.floor(rnd() * (b.length - 1)), f = rnd(), p = [b[i][0] + (b[i + 1][0] - b[i][0]) * f, b[i][1] + (b[i + 1][1] - b[i][1]) * f]; return off ? [p[0] + gauss() * off, p[1] + gauss() * off] : p; };
   const bordeCercano = (h, x, z) => { let best = null, bd = 1e18; const b = h.borde; for (let i = 0; i < b.length - 1; i++) { const ax = b[i][0], az = b[i][1], dx = b[i + 1][0] - ax, dz = b[i + 1][1] - az, l = dx * dx + dz * dz || 1, f = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / l)), px = ax + dx * f, pz = az + dz * f, d = (px - x) ** 2 + (pz - z) ** 2; if (d < bd) { bd = d; best = [px, pz]; } } return [best, Math.sqrt(bd)]; };
@@ -511,7 +535,7 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
     if (pulso && np < MAXL) { const u = ((tiempo * (0.5 + 30 / (d + 30)) * 0.5 + C.n * 0.137) % 1), o = np * 3, oc = np * 4; pt(u, Q); pp[o] = Q[0]; pp[o + 1] = Q[1]; pp[o + 2] = Q[2]; pc[oc] = Math.min(1, c.r * 1.25 + 0.12); pc[oc + 1] = Math.min(1, c.g * 1.25 + 0.12); pc[oc + 2] = Math.min(1, c.b * 1.25 + 0.12); pc[oc + 3] = 1; np++; }
     C.n++;
   }
-  function dibujarRed(tiempo) {
+  function dibujarRed(tiempo, sinSubir) { // sinSubir: solo recuenta (CUENTA/ENC que leen los paneles), sin buffers ni marcas
     FUERTE.n = TENUE.n = 0; np = 0; CUENTA.fill(0); ENC.fill(0);
     const sel = ESTADO.sel;
     if (ESTADO.on) for (const L of LINKS.values()) {
@@ -525,7 +549,15 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
     }
     // red potencial del agente elegido: hasta el individuo o árbol más cercano de cada especie con la que tiene relación
     if (sel && ESTADO.pot) for (const p of ESTADO.pot) pintar(FUERTE, sel, p.b, p.t, true, tiempo);
-    for (const C of [FUERTE, TENUE]) { C.g.instanceCount = C.n * SEG; C.p.needsUpdate = true; C.c.needsUpdate = true; }
+    for (const C of [FUERTE, TENUE]) {
+      C.g.instanceCount = C.n * SEG;
+      if (sinSubir) { C.nAnt = MAXL; continue; } // al volver a verse se sube el búfer completo una vez
+      if (C.n === 0 && C.nAnt === 0) continue; // oculto o vacío: no se sube nada a la GPU
+      // solo se sube el tramo usado (antes el búfer entero de MAXL*SEG*6 floats en cada cuadro); si bajó el número, también el tramo que se vació
+      const len = Math.max(C.n, C.nAnt || 0) * SEG * 6; C.nAnt = C.n;
+      for (const b of [C.p, C.c]) { b.clearUpdateRanges(); b.addUpdateRange(0, len); b.needsUpdate = true; }
+    }
+    if (sinSubir) return;
     pg.setDrawRange(0, np); pg.attributes.position.needsUpdate = true; pg.attributes.color.needsUpdate = true;
     const cam = T3.camera; cam.updateMatrixWorld();
     AG.forEach((a, i) => {
@@ -630,10 +662,27 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
     <div class="bt-cuerpo">
       <div class="bt-sub">TIPOS DE RELACIÓN <span>conexiones ahora</span></div>
       ${TIPOS.map(t => `<button class="bt-tipo" data-t="${t.id}"><i style="background:${t.c}"></i>${icono(t.id, t.c)}<span>${t.n}</span><b id="bt-c-${t.id}">0</b></button>`).join('')}
-      <div class="bt-sub">AGENTES NO HUMANOS <span>${AG.length} individuos · ${HUM.length} humedales y ${PAR.length} zonas verdes</span></div>
-      ${cats.map(c => `<div class="bt-cat" style="color:${CAT[c].c}">${CAT[c].n.toUpperCase()}</div><div class="bt-esp">${Object.keys(MAL).filter(k => ESP[k].cat === c).map(k => `<button class="bt-e" data-k="${k}" title="${ESP[k].sci}"><img src="${IMG[k]}" alt="">${ESP[k].n}<small>${POR[k].length}</small></button>`).join('')}</div>`).join('')}
+      <div class="bt-sub">AGENTES NO HUMANOS <span id="bt-tot">${AG.length} individuos · ${HUM.length} humedales y ${PAR.length} zonas verdes</span></div><div class="bt-pro" id="bt-pro"></div>
+      ${cats.map(c => `<div class="bt-cat" style="color:${CAT[c].c}">${CAT[c].n.toUpperCase()}</div><div class="bt-esp">${Object.keys(MAL).filter(k => ESP[k].cat === c).map(k => `<button class="bt-e" data-k="${k}" title="${ESP[k].sci}"><img src="${IMG[k]}" alt="">${ESP[k].n}<small data-n="${k}">${POR[k].length}</small></button>`).join('')}</div>`).join('')}
       <div class="bt-nota">Red: Red de Interacciones Bióticas de Kennedy (${B.enlaces.length} relaciones entre estas ${Object.keys(MAL).length} especies y ${Object.keys(B.flora).length} especies de árboles del censo SIGAU). Cada animal se conecta con el individuo más cercano de cada especie con la que tiene relación en la red (hasta 220 m) y con los árboles relacionados (hasta 90 m); las líneas se mueven con ellos. Línea fuerte con pulso: encuentro (la interacción está ocurriendo); tenue: conexión a distancia. Movimiento: bandadas y zonas de Couzin, forrajeo floral de lugar central, balsas de aves acuáticas, caminata correlacionada con ámbito hogareño, persecución y huida.</div>
     </div>`;
+  /* la red biótica cambia con el escenario: con la propuesta llegan la fauna de las huertas (techos, lotes, parques-huerta y Bavaria) */
+  { const st = document.createElement('style'); st.textContent = `#bt-pan .bt-pro{display:none;margin:2px 0 8px;padding:9px 10px;border-radius:10px;background:rgba(226,165,91,.1);border:1px solid rgba(226,165,91,.3);font:400 11px/1.45 var(--ui-sans,Inter,sans-serif);color:#e9ebec}
+#bt-pan .bt-pro.on{display:block}#bt-pan .bt-pro b{color:#f2c995;font-weight:600}#bt-pan .bt-e small em{font-style:normal;color:#f2c995;margin-left:3px}#bt-pan .bt-e.nuevo{border-color:rgba(226,165,91,.45)}`; document.head.appendChild(st); }
+  const deHuerta = (a) => a.h && a.h.pro; // huertas y parches de árboles: solo con la propuesta
+  const NHUE = HAB.filter(h => h.tipo === 'huerta').length;
+  let ultEsc = null;
+  function pintarEscenario() {
+    const pro = ESTADO.escenario === 'proyecto'; if (pro === ultEsc) return; ultEsc = pro;
+    let tot = 0, extra = 0; const suma = {};
+    for (const k of Object.keys(MAL)) { const L = POR[k] || [], n = L.filter(a => pro || !deHuerta(a)).length, x = L.filter(deHuerta).length; tot += n; if (pro && x) { extra += x; suma[k] = x; }
+      const s = pan.querySelector(`small[data-n="${k}"]`); if (s) s.innerHTML = pro && x ? `${n}<em>+${x}</em>` : String(n); const b = s && s.closest('.bt-e'); if (b) b.classList.toggle('nuevo', pro && x > 0); }
+    const tt = pan.querySelector('#bt-tot'); if (tt) tt.textContent = `${tot.toLocaleString('es-CO')} individuos · ${HUM.length} humedales, ${PAR.length} zonas verdes${pro ? `, ${NHUE} huertas y ${PCH.length} parches de árboles nativos` : ''}`;
+    const bp = pan.querySelector('#bt-pro'); if (bp) { bp.classList.toggle('on', pro);
+      const top = Object.entries(suma).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([k, x]) => `${ESP[k].n.toLowerCase()} +${x}`).join(', ');
+      bp.innerHTML = pro ? `<b>Con la propuesta llegan +${extra.toLocaleString('es-CO')} animales</b> a ${NHUE} huertas y ${PCH.length} parches de árboles nativos (lotes baldíos, parques de barrio y el distrito Bavaria Común): ${top}. Son polinizadores, aves que comen plagas y lombrices del suelo; las relaciones nuevas se ven arriba en «conexiones ahora».` : ''; }
+  }
+  addEventListener('escenario', () => setTimeout(pintarEscenario, 50)); setInterval(pintarEscenario, 1500);
   const ficha = document.createElement('div'); ficha.id = 'bt-ficha';
   const tog = document.createElement('button'); tog.id = 'bt-tog'; tog.textContent = 'RED BIÓTICA';
   document.body.append(pan, ficha, tog);
@@ -794,18 +843,33 @@ export async function iniciarBiotica({ THREE, T3, lw, OX, OZ, Y0 = 2.0, movil = 
     cancelAnimationFrame(animRed); animRed = requestAnimationFrame(cuadro);
   }
 
-  /* ---------- bucle ---------- */  let ult = performance.now(), tUI = 0, tPot = 0, nCuadro = 0, tAC = 0;
+  /* ---------- bucle ---------- */  let ult = performance.now(), tUI = 0, tPot = 0, nCuadro = 0, tAC = 0, tOc = 0, dtI = 0;
   function cuadro() {
     const ahora = performance.now(), dt = Math.min(0.1, (ahora - ult) / 1000); ult = ahora;
-    if ((tAC -= dt) <= 0) { tAC = 1; actualizarAC(); }
+    // red biótica oculta (grupo apagado, o sin líneas ni agentes): no se simula ni se suben buffers; solo se recuenta cada ~1 s para los paneles
+    if (!grupo.visible || (!ESTADO.on && ESTADO.agentes === false)) {
+      requestAnimationFrame(cuadro);
+      if ((tOc += dt) >= 1) { tOc = 0; actualizarRed(0.1); dibujarRed(ahora / 1000, true); TIPOS.forEach(t => { const el = document.getElementById('bt-c-' + t.id); if (el) el.textContent = CUENTA[t.id]; }); }
+      return;
+    }
+    tOc = 0;
+    if ((tAC -= dt) <= 0) { tAC = 1; actualizarAC(); } VER_PRO = ESTADO.escenario !== 'hoy';
     for (const a of AG) { // escenario "hoy" (ESTADO.escenario, lo cambia el tablero): las huertas del proyecto no existen y su fauna tampoco
-      if (a.h.tipo === 'huerta') { if (ESTADO.escenario === 'hoy') { if (!a._fuera) { a._fuera = true; a.vis = false; a.duerme = true; } continue; } if (a._fuera) { a._fuera = false; a.vis = a.e !== 'abeja'; a.duerme = false; } }
+      if (a.h.soloHoy) { if (ESTADO.escenario !== 'hoy') { if (!a._fuera) { a._fuera = true; a.vis = false; a.duerme = true; } continue; } if (a._fuera) { a._fuera = false; a.vis = true; a.duerme = false; } } // ratas de las basuras: solo hoy
+      if (a.h.pro) { if (ESTADO.escenario === 'hoy' || (a._rp ?? (a._rp = Math.random())) > (ESTADO.proFrac ?? 1)) { /* la fauna de las huertas llega año a año (proFrac: data3d/escenarios_sim.js) */ if (!a._fuera) { a._fuera = true; a.vis = false; a.duerme = true; } continue; } if (a._fuera) { a._fuera = false; a.vis = a.e !== 'abeja'; a.duerme = false; } }
+      // escenarios (data3d/escenarios_sim.js · SIM-03): ESTADO.fauna = fracción de las aves que hay; las que «no están» se esconden
+      if (ESTADO.fauna != null && ESP[a.e].ave && !a.h.pro) { const r = a._r ?? (a._r = Math.random()), fuera = r > ESTADO.fauna;
+        if (fuera) { if (!a._sim) { a._sim = true; a.vis = false; a.duerme = true; } continue; } if (a._sim) { a._sim = false; a.vis = true; a.duerme = false; } }
       if (a.huye && (a.huye.t -= dt) <= 0) a.huye = null; MOV[ESP[a.e].mov](a, dt); }
-    actualizarRed(dt); instancias(dt); if ((nCuadro = (nCuadro + 1) % 2) === 0) dibujarRed(ahora / 1000); // líneas y marcas cada dos cuadros: alivia la subida a la tarjeta gráfica
+    actualizarRed(dt); dtI += dt; nCuadro = (nCuadro + 1) % 2;
+    // matrices de los animales cada dos cuadros si la cámara está lejos (a esa distancia no se nota); dtI acumula el tiempo para el aleteo
+    const lejosCam = T3.orbit && T3.camera.position.distanceTo(T3.orbit.target) > 700;
+    if (!lejosCam || nCuadro === 1) { instancias(dtI); dtI = 0; }
+    if (nCuadro === 0) dibujarRed(ahora / 1000); // líneas y marcas cada dos cuadros: alivia la subida a la tarjeta gráfica
     if ((tUI -= dt) <= 0) { tUI = 0.5; TIPOS.forEach(t => { const el = document.getElementById('bt-c-' + t.id); if (el) el.textContent = CUENTA[t.id]; }); if (ESTADO.sel) pintarFicha(); }
     if (ESTADO.sel && (tPot -= dt) <= 0) { tPot = 1.5; ESTADO.pot = redPotencial(ESTADO.sel); }
     requestAnimationFrame(cuadro);
   }
   requestAnimationFrame(cuadro);
-  return { AG, ESP, LINKS, ESTADO, TIPOS, CAT, CUENTA, ENC, HAB, AC, CERCA, flora: B.flora, actividad, horaSim, verRed: abrirRed, seleccionar };
+  return { ARBOLES, AG, ESP, LINKS, ESTADO, TIPOS, CAT, CUENTA, ENC, HAB, AC, CERCA, PARCHES: PCH, flora: B.flora, actividad, horaSim, verRed: abrirRed, seleccionar };
 }

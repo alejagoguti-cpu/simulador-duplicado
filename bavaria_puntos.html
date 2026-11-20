@@ -4,230 +4,268 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Bavaria Común en puntos</title>
-<meta name="description" content="El campo experimental del distrito Bavaria Común en puntos: huertas, árboles existentes y las especies e interacciones que fomenta.">
+<meta name="description" content="Las huertas de enseñanza de Bavaria Común en puntos: con el scroll se encuadran las especies que llegan a la huerta y lo que hacen en ella.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#050807;--tx:#eef1ee;--tx2:#a9b3ad;--tx3:#6c766f;--acc:#ff5a3c;--mono:'JetBrains Mono',ui-monospace,monospace;--sans:Inter,system-ui,sans-serif;--cond:'Barlow Condensed',Inter,sans-serif}
-*{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--bg);color:var(--tx);font-family:var(--sans);overflow:hidden}
-canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}canvas#c:active{cursor:grabbing}
-.top{position:fixed;left:0;right:0;top:0;z-index:5;display:flex;justify-content:space-between;align-items:center;padding:14px 22px;font-size:12px;color:var(--tx2);
-  background:linear-gradient(rgba(5,8,7,.75),transparent);pointer-events:none}
-.top a{pointer-events:auto;color:var(--tx2);text-decoration:none;display:inline-flex;align-items:center;gap:8px}.top a:hover{color:var(--tx)}
-.top .ix{font-family:var(--mono);font-size:11px;letter-spacing:.06em}.top .ix b{color:var(--acc);font-weight:500}
-.hero{position:fixed;left:34px;top:15%;z-index:4;max-width:400px;pointer-events:none;transition:opacity .5s}
-.hero .ey{font:500 11px var(--mono);letter-spacing:.18em;color:var(--acc);text-transform:uppercase}
-.hero h1{margin:12px 0 14px;font:300 48px/1.02 var(--cond);letter-spacing:.01em;text-transform:uppercase}
-.hero p{margin:0;font-size:14px;line-height:1.6;color:#d6ddd8;text-shadow:0 1px 8px rgba(0,0,0,.8)}
-.hero .ir{pointer-events:auto;display:inline-flex;gap:8px;align-items:center;margin-top:18px;font:500 11px var(--mono);letter-spacing:.16em;color:var(--tx2);background:none;border:0;cursor:pointer;padding:0}
-.hero .ir:hover{color:var(--tx)}
-.lb{position:fixed;left:0;top:0;z-index:3;display:none;flex-direction:column;align-items:center;pointer-events:auto;cursor:pointer;transform:translate(-50%,-100%);text-align:center;white-space:nowrap}
-.lb b{font:600 11px var(--sans);letter-spacing:.08em;text-transform:uppercase;text-shadow:0 1px 4px #000,0 0 10px rgba(0,0,0,.8)}
-.lb i{font:italic 400 11px var(--sans);color:var(--tx2);text-shadow:0 1px 4px #000}
-.lb s{display:block;width:1px;height:26px;margin-top:4px;background:linear-gradient(rgba(255,255,255,.6),rgba(255,255,255,.15))}
-.lb u{display:block;width:7px;height:7px;border-radius:50%;background:var(--c,var(--acc));box-shadow:0 0 0 3px rgba(0,0,0,.35),0 0 10px var(--c,var(--acc))}
-.lb.g-cultivo b,.lb.g-flor b{color:#e8f5c8}.lb.g-arbol b{color:#c9e7b0}
-.lb:hover b,.lb.sel b{color:#fff}.lb.sel u{transform:scale(1.4)}.lb.dim{opacity:.28}
-.lb:focus-visible{outline:1px solid var(--acc);outline-offset:4px}
-#marco{position:fixed;z-index:5;display:none;pointer-events:none;width:132px;height:132px;transform:translate(-50%,-50%)}
-#marco::before,#marco::after,#marco i::before,#marco i::after{content:'';position:absolute;width:16px;height:16px;border:1.5px solid var(--acc)}
-#marco::before{left:0;top:0;border-right:0;border-bottom:0}#marco::after{right:0;top:0;border-left:0;border-bottom:0}
-#marco i::before{left:0;bottom:0;border-right:0;border-top:0}#marco i::after{right:0;bottom:0;border-left:0;border-top:0}
-#marco em{position:absolute;left:0;top:calc(100% + 6px);font:500 9.5px var(--mono);letter-spacing:.12em;color:var(--acc);font-style:normal;white-space:nowrap}
-#lupa{position:fixed;right:22px;top:64px;z-index:6;width:340px;max-height:calc(100vh - 160px);overflow:auto;display:none;border-radius:16px;padding:0 0 14px;
-  background:linear-gradient(165deg,rgba(26,30,28,.72),rgba(5,8,7,.82));border:1px solid rgba(255,255,255,.1);box-shadow:0 20px 50px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.07);
-  -webkit-backdrop-filter:blur(22px) saturate(1.4);backdrop-filter:blur(22px) saturate(1.4);scrollbar-width:thin}
-#lupa.on{display:block;animation:lin .35s cubic-bezier(.2,.8,.2,1)}@keyframes lin{from{opacity:0;transform:translateX(10px)}to{opacity:1;transform:none}}
-#lupa .vis{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:2px;height:170px;border-radius:16px 16px 0 0;overflow:hidden;background:#000}
-#lupa .vis canvas,#lupa .vis img{width:100%;height:100%;object-fit:cover;display:block}
-#lupa .vis span{position:absolute;bottom:6px;font:500 9px var(--mono);letter-spacing:.12em;color:#fff;background:rgba(0,0,0,.55);padding:2px 6px;border-radius:4px;text-transform:uppercase}
-#lupa .vis span.a{left:6px}#lupa .vis span.b{left:calc(50% + 7px)}
-#lupa .x{position:absolute;right:8px;top:8px;z-index:2;width:28px;height:28px;border-radius:8px;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.5);color:#fff;font:300 18px/1 var(--sans);cursor:pointer}
-#lupa .cab{padding:14px 16px 4px}#lupa .cab small{font:500 9.5px var(--mono);letter-spacing:.16em;color:var(--acc);text-transform:uppercase}
-#lupa h2{margin:4px 0 0;font:400 26px/1.05 var(--cond);text-transform:uppercase;letter-spacing:.02em}#lupa h2 + i{display:block;color:var(--tx2);font-size:12.5px;margin-top:2px}
-#lupa dl{margin:10px 16px 0;display:grid;gap:9px}#lupa dt{font:500 9.5px var(--mono);letter-spacing:.14em;color:var(--tx3);text-transform:uppercase}#lupa dd{margin:2px 0 0;font-size:12.5px;line-height:1.5;color:#d6ddd8}
-#lupa .rel{margin:12px 16px 0;display:flex;flex-wrap:wrap;gap:5px}#lupa .rel button{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:13px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:var(--tx2);font:500 11px var(--sans);cursor:pointer}
-#lupa .rel button:hover{color:#fff;border-color:rgba(255,255,255,.25)}#lupa .rel button i{width:7px;height:7px;border-radius:50%}
-#lupa .atr{margin:12px 16px 0;font-size:9.5px;line-height:1.4;color:var(--tx3)}
-.ctl{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:6;display:flex;gap:2px;padding:4px;border-radius:12px;
-  background:rgba(8,11,10,.72);border:1px solid rgba(255,255,255,.1);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
-.ctl button{height:34px;padding:0 16px;border:0;border-radius:8px;background:none;color:var(--tx2);font:500 11px var(--mono);letter-spacing:.14em;cursor:pointer;text-transform:uppercase}
-.ctl button:hover{color:#fff;background:rgba(255,255,255,.06)}.ctl button.on{color:#fff;background:rgba(255,90,60,.16)}
-.ctl button:focus-visible{outline:1px solid var(--acc)}
-body.lupa .hero{opacity:.18}.ley{padding:7px 12px;border-radius:10px;background:rgba(5,8,7,.66);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}.ley{position:fixed;left:34px;bottom:calc(24px + env(safe-area-inset-bottom));z-index:5;display:flex;flex-wrap:wrap;gap:6px 14px;max-width:440px;font:500 10px var(--mono);letter-spacing:.06em;color:var(--tx2)}
-.ley span{display:inline-flex;align-items:center;gap:6px;cursor:pointer}.ley span.off{opacity:.35}.ley i{width:14px;height:2px;border-radius:1px}
-.carga{position:fixed;inset:0;z-index:9;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;background:var(--bg);font:500 11px var(--mono);letter-spacing:.16em;color:var(--tx2);transition:opacity .8s}
+:root{--bg:#04070a;--tx:#eef2f1;--tx2:#a9b6b3;--tx3:#6c7a77;--acc:#7fe0c4;--mono:'JetBrains Mono',ui-monospace,monospace;--sans:Inter,system-ui,sans-serif;--cond:'Barlow Condensed',Inter,sans-serif}
+*{box-sizing:border-box}html{scroll-behavior:auto}body{margin:0;background:var(--bg);color:var(--tx);font-family:var(--sans)}
+canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:0}
+.top{position:fixed;left:0;right:0;top:0;z-index:10;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:16px 28px;font-size:12px;color:var(--tx2);background:linear-gradient(rgba(4,7,10,.8),transparent)}
+.top a{color:var(--tx2);text-decoration:none}.top a:hover{color:var(--tx)}.top .ix{font-family:var(--mono);font-size:11px;letter-spacing:.06em}
+.top nav{display:flex;gap:4px}.top nav a{padding:4px 9px;border-radius:6px;font-size:12px}.top nav a.on{color:var(--tx);box-shadow:inset 0 -1.5px 0 var(--acc)}
+#marcoG{position:fixed;inset:56px 22px 22px;z-index:1;pointer-events:none;border:1px solid rgba(255,255,255,.06)}
+/* recuadro grande con la especie en puntos */
+#inset{position:fixed;z-index:4;width:var(--s);height:var(--s);--s:min(46vh,36vw);left:52%;top:50%;transform:translateY(-55%);pointer-events:none;opacity:0;transition:opacity .5s,left .6s cubic-bezier(.2,.8,.2,1)}
+#inset.on{opacity:1}
+#inset canvas{display:none}#inset{border:1px solid rgba(255,255,255,.35);box-shadow:0 0 0 1px rgba(0,0,0,.4),0 20px 50px rgba(0,0,0,.45)}#inset::after{content:'EN VIVO · 3D';position:absolute;left:8px;top:6px;font:500 9.5px var(--mono);letter-spacing:.14em;color:var(--acc)}
+#inset .n{position:absolute;right:8px;top:6px;font:500 10px var(--mono);color:var(--tx2)}
+#inset .cap{position:absolute;left:0;top:calc(100% + 8px);font:500 11px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--tx)}
+#inset .cap i{display:block;font:italic 400 11px var(--sans);letter-spacing:0;text-transform:none;color:var(--tx2);margin-top:3px}
+/* encuadre en la escena: dónde está el animal a lo lejos */
+#enc{position:fixed;z-index:3;left:0;top:0;width:60px;height:60px;pointer-events:none;opacity:0;transition:opacity .4s}
+#enc.on{opacity:1}#enc::before,#enc::after,#enc b::before,#enc b::after{content:'';position:absolute;width:12px;height:12px;border:1.5px solid var(--acc)}
+#enc::before{left:0;top:0;border-right:0;border-bottom:0}#enc::after{right:0;top:0;border-left:0;border-bottom:0}#enc b::before{left:0;bottom:0;border-right:0;border-top:0}#enc b::after{right:0;bottom:0;border-left:0;border-top:0}
+#enc em{position:absolute;left:0;top:calc(100% + 5px);font:500 9.5px var(--mono);letter-spacing:.14em;color:var(--acc);font-style:normal;white-space:nowrap;text-transform:uppercase}
+svg#hilo{position:fixed;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}
+/* textos que suben con el scroll */
+main{position:relative;z-index:5;pointer-events:none}
+section{height:100vh;display:flex;align-items:flex-end;padding:0 0 9vh 6vw}
+section.hero{align-items:center}
+.tx{max-width:420px;pointer-events:auto}
+.tx .ey{font:500 11px var(--mono);letter-spacing:.18em;color:var(--acc);text-transform:uppercase}
+.tx h1,.tx h2{margin:10px 0 12px;font:300 clamp(40px,6vw,78px)/.95 var(--cond);letter-spacing:.01em;text-transform:uppercase}
+.tx h2{font-size:clamp(34px,4.6vw,60px)}
+.tx p{margin:0;font-size:14.5px;line-height:1.6;color:#d6dfdc;text-shadow:0 1px 10px rgba(0,0,0,.9)}
+.tx .rel{display:inline-flex;align-items:center;gap:8px;margin-top:14px;padding:6px 11px;border:1px solid rgba(255,255,255,.18);font:500 10.5px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--tx)}
+.tx .rel i{width:8px;height:8px;border-radius:50%}
+.tx .baja{display:inline-flex;gap:10px;align-items:center;margin-top:24px;padding:12px 18px;border:1px solid rgba(255,255,255,.3);font:500 11px var(--mono);letter-spacing:.18em;color:var(--tx);text-decoration:none;text-transform:uppercase}
+.tx .baja:hover{background:rgba(255,255,255,.06)}
+.tx .fin{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+.tx .fin .rec{all:unset;cursor:pointer;padding:11px 16px;background:var(--acc);color:#04201a;font:600 11px var(--mono);letter-spacing:.14em;text-transform:uppercase}
+#guiaRec{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:12;display:none;gap:10px;align-items:center;padding:10px 14px;border:1px solid rgba(255,255,255,.18);background:rgba(4,7,10,.72);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);font:500 11px var(--mono);letter-spacing:.08em;color:var(--tx2)}
+#guiaRec button{all:unset;cursor:pointer;color:var(--tx);padding:6px 10px;border:1px solid rgba(255,255,255,.25)}
+body.libre main,body.libre .prog,body.libre #inset,body.libre #enc,body.libre #hilo{display:none!important}body.libre{overflow:hidden}body.libre #guiaRec{display:flex}body.libre canvas#c{cursor:grab}
+.tx .fin a{padding:11px 16px;border:1px solid rgba(255,255,255,.28);font:500 11px var(--mono);letter-spacing:.14em;color:var(--tx);text-decoration:none;text-transform:uppercase}.tx .fin a:hover{background:rgba(255,255,255,.07)}
+.pie{position:fixed;right:28px;bottom:24px;z-index:6;display:flex;gap:18px;align-items:center;font-size:10.5px;color:var(--tx3)}
+.pie .modos{display:flex;gap:2px;padding:3px;border:1px solid rgba(255,255,255,.16);background:rgba(4,7,10,.6)}.pie .modos{flex-wrap:wrap}
+body[data-vision=realista] main::before,body[data-vision=maqueta] main::before{content:'';position:fixed;inset:0;background:linear-gradient(90deg,rgba(4,7,10,.72),rgba(4,7,10,.25) 40%,transparent 60%);pointer-events:none;z-index:-1}.pie .modos button{padding:5px 9px;font:500 10.5px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--tx2)}.pie .modos button[aria-pressed=true]{background:var(--acc);color:#04201a}
+.pie button{all:unset;cursor:pointer;color:var(--tx2);font-size:11.5px}.pie button:hover{color:var(--tx)}.pie span{max-width:520px;text-align:right}
+.prog{position:fixed;right:14px;top:50%;transform:translateY(-50%);z-index:6;display:flex;flex-direction:column;gap:8px}
+.prog a{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.22);display:block}.prog a.on{background:var(--acc);box-shadow:0 0 8px var(--acc)}
+.carga{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;background:var(--bg);font:500 11px var(--mono);letter-spacing:.16em;color:var(--tx2);transition:opacity .8s}
 .carga i{width:180px;height:2px;background:rgba(255,255,255,.08);position:relative;overflow:hidden}.carga i b{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--acc);transition:width .2s}
-.nota{position:fixed;right:22px;bottom:calc(24px + env(safe-area-inset-bottom));z-index:4;max-width:300px;font-size:10px;line-height:1.45;color:var(--tx3);text-align:right}
+a:focus-visible,button:focus-visible{outline:1px solid var(--acc);outline-offset:3px}
 @media(max-width:760px){
-  .hero{left:16px;right:16px;top:72px;max-width:none}.hero h1{font-size:34px;margin:8px 0}.hero p{font-size:12.5px}
-  .top{padding:10px 14px}.top .ix span{display:none}
-  .ctl{bottom:calc(12px + env(safe-area-inset-bottom));width:calc(100vw - 16px);justify-content:space-between}.ctl button{padding:0 8px;font-size:10px;letter-spacing:.08em}
-  .ley{left:12px;right:12px;bottom:calc(64px + env(safe-area-inset-bottom));max-width:none;font-size:9.5px}
-  #lupa{left:8px;right:8px;top:auto;bottom:calc(64px + env(safe-area-inset-bottom));width:auto;max-height:62vh}
-  .nota{display:none}.lb b{font-size:9.5px}.lb i{display:none}.lb s{height:16px}
-  body.lupa .hero{opacity:0}.ley{background:rgba(5,8,7,.7);padding:6px 10px;border-radius:8px}
+  .top{padding:10px 14px}.top nav,.top .ix span{display:none}
+  #marcoG{inset:48px 8px 8px}
+  #inset{--s:52vw;left:auto!important;right:14px;top:70px;transform:none}
+  section{padding:0 18px 12vh}.tx h1{font-size:44px}.tx h2{font-size:36px}.tx p{font-size:13px}
+  .pie span{display:none}.pie{right:16px;bottom:14px}.prog{right:6px}
 }
-@media(prefers-reduced-motion:reduce){#lupa.on{animation:none}}
+@media(prefers-reduced-motion:reduce){#inset,#enc{transition:none}}
 </style>
 </head>
 <body>
-<canvas id="c" aria-label="Campo experimental de Bavaria Común en puntos"></canvas>
-<div class="top"><a href="index.html" aria-label="Volver al simulador">← Simulador · Kennedy</a><a href="bavaria_interior.html?e=bio" class="ix" id="dentro">Entrar a los edificios →</a><span class="ix"><b>BC</b> / <span>Bavaria Común · </span>en puntos</span></div>
-<section class="hero" id="hero">
-  <div class="ey">La trama del campo experimental</div>
-  <h1 id="tit">Relaciones<br>entre especies</h1>
-  <p>Las huertas del distrito Bavaria Común junto a los árboles que ya existen. Cada etiqueta es una especie que el campo trae o que ya vive aquí; tócala para verla de cerca y con quién se relaciona.</p>
-  <button class="ir" id="ir">ESPECIES ↓</button>
-</section>
-<div id="marco"><i></i><em></em></div>
-<aside id="lupa" aria-live="polite"></aside>
-<div class="ley" id="ley"></div>
-<nav class="ctl" aria-label="Recorrido"><button id="b-rec">Recorrer</button><button id="b-atr">↓ Atrás</button><button id="b-ava">↑ Avanzar</button><button id="b-cen">Centrar</button></nav>
-<div class="nota" id="nota"></div>
+<canvas id="c" aria-label="Huertas de enseñanza de Bavaria Común en puntos, con las especies que llegan a ellas"></canvas>
+<div id="marcoG"></div>
+<div class="top"><a href="index.html" aria-label="Volver al simulador">← Simulador · Kennedy</a>
+  <nav aria-label="Secciones" id="nav"></nav>
+  <a href="bavaria_interior.html?e=bio" class="ix">Entrar a los edificios →</a></div>
+<svg id="hilo" aria-hidden="true"><line id="hl" x1="0" y1="0" x2="0" y2="0" stroke="rgba(127,224,196,.55)" stroke-width="1" stroke-dasharray="3 4"/></svg>
+<div id="enc"><b></b><em></em></div>
+<div id="inset" aria-hidden="true"><canvas id="ic" width="512" height="512"></canvas><span class="n"></span><div class="cap"></div></div>
+<main id="secs"></main>
+<div class="prog" id="prog" aria-hidden="true"></div>
+<div class="pie"><div class="modos" role="group" aria-label="Tipo de visión"><button type="button" data-m="puntos" aria-pressed="true">Puntos</button><button type="button" data-m="realista" aria-pressed="false">Realista</button><button type="button" data-m="maqueta" aria-pressed="false">Maqueta</button><button type="button" data-m="rayos" aria-pressed="false">Rayos X</button><button type="button" data-m="alambre" aria-pressed="false">Alambre</button><button type="button" data-m="termica" aria-pressed="false">Térmica</button></div><button id="pausa" type="button">Pausar movimiento</button><span id="nota"></span></div>
+<div id="guiaRec"><span>Arrastra para mirar · W A S D o flechas para caminar · rueda para avanzar</span><button type="button" id="b-salir">Salir</button></div>
 <div class="carga" id="carga"><span>CARGANDO PUNTOS</span><i><b id="cb"></b></i></div>
-<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}</script>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <script type="module">
 import * as THREE from 'three';
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const RMQ = matchMedia('(prefers-reduced-motion: reduce)').matches, MOV = innerWidth <= 760;
-const M = await fetch('data3d/puntos/bavaria_campo.json?v=2').then(r => r.json());
-// ---------- puntos (con barra de carga) ----------
-const resp = await fetch('data3d/puntos/bavaria_campo.bin?v=2'), tot = +resp.headers.get('content-length') || M.n * 9, rd = resp.body.getReader(), partes = []; let lle = 0;
-for (;;) { const { done, value } = await rd.read(); if (done) break; partes.push(value); lle += value.length; $('cb').style.width = Math.min(100, lle / tot * 100) + '%'; }
-const raw = new Uint8Array(lle); { let o = 0; for (const p of partes) { raw.set(p, o); o += p.length; } }
-const N = M.n, I16 = new Int16Array(raw.buffer, 0, N * 3), COL = raw.subarray(N * 6, N * 9);
-const paso = MOV ? 2 : 1, n = Math.floor(N / paso), pos = new Float32Array(n * 3), col = new Float32Array(n * 3), rnd = new Float32Array(n);
-for (let i = 0, j = 0; j < n; i += paso, j++) {
-  pos[j * 3] = I16[i * 3] * M.esc; pos[j * 3 + 1] = I16[i * 3 + 1] * M.esc; pos[j * 3 + 2] = I16[i * 3 + 2] * M.esc;
-  col[j * 3] = COL[i * 3] / 255; col[j * 3 + 1] = COL[i * 3 + 1] / 255; col[j * 3 + 2] = COL[i * 3 + 2] / 255; rnd[j] = Math.random();
-}
-const cv = $('c'), R = new THREE.WebGLRenderer({ canvas: cv, antialias: false, powerPreference: 'high-performance' });
-R.setPixelRatio(Math.min(2, devicePixelRatio || 1)); R.setClearColor(0x050807, 1);
-const S = new THREE.Scene(), cam = new THREE.PerspectiveCamera(M.fov, innerWidth / innerHeight, 0.1, 3000);
+let RMQ = matchMedia('(prefers-reduced-motion: reduce)').matches; const MOV = innerWidth <= 760;
+const M = await fetch('data3d/puntos/bavaria_campo.json?v=9').then(r => r.json());
+const ESP = M.especies, porK = Object.fromEntries(ESP.map(e => [e.k, e]));
+{ const NOM = { cilantro: 'Lavanda', lechuga: 'Lechuga', tomate: 'Tomate', acelga: 'Brócoli', zanahoria: 'Remolacha', eucalipto: 'Árboles existentes' }; for (const k in NOM) if (porK[k]) porK[k].n = NOM[k]; }
+
+/* ---------- las interacciones que se encuadran con el scroll ---------- */
+const SEC = [
+  ['colibri', 'cilantro', 'Polinización', 'Colibrí', 'Flota frente a las flores de lavanda y toma su néctar; el polen se le pega al pico y lo lleva a la siguiente flor.'],
+  ['abeja', 'cilantro', 'Polinización', 'Abeja de miel', 'Viene del apiario del distrito y recorre las hileras de lavanda: poliniza la huerta y produce miel para el mercado.'],
+  ['mariposa', 'cilantro', 'Polinización', 'Mariposa', 'Toma néctar de la lavanda. Que llegue es señal de una huerta sin venenos.'],
+  ['mariquita', 'lechuga', 'Cuidado de los cultivos', 'Mariquita', 'Recorre las hojas de la lechuga y las mantiene sanas: con ella la huerta no necesita químicos.'],
+  ['abejorro', 'tomate', 'Polinización', 'Abejorro', 'El abejorro nativo hace vibrar las flores del tomate para soltar su polen: así hay más tomates.'],
+  ['copeton', 'acelga', 'Cuidado de los cultivos', 'Copetón', 'Salta por el sendero de madera entre las hileras, cuidando las plantas y dispersando semillas; anida en los árboles que se conservan.'],
+  ['mirla', 'lombriz', 'Depredación', 'Mirla patiamarilla', 'Busca en la tierra húmeda junto a las hileras y saca lombrices e insectos.'],
+  ['lombriz', 'zanahoria', 'Suelo vivo', 'Lombriz roja', 'Convierte el compost del distrito en tierra fértil para todos los bancales.'],
+  ['murcielago', 'eucalipto', 'Refugio', 'Murciélago', 'Al anochecer sale de los refugios de los árboles y poliniza flores nocturnas.']
+].filter(s => porK[s[0]]);
+$('secs').innerHTML = `<section class="hero" id="s0"><div class="tx"><div class="ey">Bavaria Común desde arriba · huertas de enseñanza</div><h1>Tramas de vida en la huerta</h1>
+<p>El predio real de Bavaria Común visto desde arriba (sus edificios, el bosque del censo y los pasajes nuevos) con las huertas de enseñanza en los claros: hileras de cultivos, el sendero de madera, el pabellón de la escuela y el invernadero. Baja con el scroll para descender a la huerta: cada parada encuadra una especie y lo que hace; al final puedes recorrerla.</p>
+<a class="baja" href="#s1">Desliza ↓</a></div></section>` +
+  SEC.map(([k, b, t, n, d], i) => `<section id="s${i + 1}"><div class="tx"><div class="ey">${String(i + 1).padStart(2, '0')} · ${esc(t)}</div><h2>${esc(n)}</h2><p>${esc(d)}</p>
+  <span class="rel"><i style="background:${M.tipos[t] || '#fff'}"></i>${esc(n)} → ${esc((porK[b] || {}).n || '')}</span></div></section>`).join('') +
+  `<section id="s${SEC.length + 1}"><div class="tx"><div class="ey">La trama completa</div><h2>${M.rel.length} relaciones entre ${ESP.length} especies</h2>
+  <p>Polinizadores, aves que cuidan los cultivos y el suelo vivo trabajan para la huerta; los árboles existentes les dan refugio. Así se enseña a cultivar en Bavaria Común.</p>
+  <div class="fin"><button type="button" id="b-rec" class="rec">Recorrer la huerta</button><a href="index.html">Volver al simulador</a><a href="bavaria_interior.html?e=bio">Entrar a los edificios</a></div></div></section>`;
+$('prog').innerHTML = Array.from({ length: SEC.length + 2 }, (_, i) => `<a href="#s${i}" aria-label="Sección ${i}"></a>`).join('');
+$('nav').innerHTML = [['s0', 'Inicio'], ['s1', 'Polinización'], [`s${SEC.findIndex(s => s[2] === 'Cuidado de los cultivos') + 1}`, 'Cuidado'], [`s${SEC.findIndex(s => s[2] === 'Depredación') + 1}`, 'Suelo y aves'], [`s${SEC.length + 1}`, 'La trama']].map(([h, n]) => `<a href="#${h}">${n}</a>`).join('');
+
+/* ---------- escena de huertas en puntos: se arma en el navegador (data3d/puntos/escena_huerta.js) ---------- */
+const { crearEscenaHuerta } = await import('./data3d/puntos/escena_huerta.js?v=13');
+const ESC = await crearEscenaHuerta({ THREE, MOV, progreso: (f) => { $('cb').style.width = Math.round(f * 100) + '%'; } });
+const OJO = 1.6, n = ESC.n, pos = ESC.pos, col = ESC.col, rnd = new Float32Array(n).map(() => Math.random());
+for (let j = 1; j < pos.length; j += 3) pos[j] -= OJO; // el ojo queda en el origen
+M.eye = [0, 0, 0]; M.look = [0, -0.1, 1]; M.fov = 56; M.W = 16; M.H = 9;
+// las especies, sobre sus plantas de esta escena
+const RENOMBRA = { cilantro: ['Lavanda', 'Lavandula angustifolia', 'flor'], lechuga: ['Lechuga', 'Lactuca sativa', 'cultivo'], tomate: ['Tomate', 'Solanum lycopersicum', 'cultivo'], acelga: ['Brócoli', 'Brassica oleracea var. italica', 'cultivo'], zanahoria: ['Remolacha', 'Beta vulgaris', 'cultivo'], eucalipto: ['Árboles existentes', 'bosque de Bavaria', 'arbol'] };
+for (const e of ESP) { const a = ESC.anc[e.k]; if (a) e.p = [a[0], a[1] - OJO, a[2]]; const r = RENOMBRA[e.k]; if (r) { e.n = r[0]; e.sci = r[1]; e.g = r[2]; } }
+const cv = $('c'), R = new THREE.WebGLRenderer({ canvas: cv, antialias: true, powerPreference: 'high-performance' });
+R.setPixelRatio(Math.min(2, devicePixelRatio || 1)); R.setClearColor(0x04070a, 1);
+const S = new THREE.Scene(), cam = new THREE.PerspectiveCamera(M.fov, innerWidth / innerHeight, 0.05, 6000);
+const U = { uT: { value: 0 }, uPx: { value: R.getPixelRatio() * innerHeight }, uIn: { value: 0 }, uZ: { value: 1 }, uModo: { value: 0 } };
 const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3)); g.setAttribute('r', new THREE.BufferAttribute(rnd, 1));
-const U = { uT: { value: 0 }, uPx: { value: R.getPixelRatio() * innerHeight }, uIn: { value: 0 } };
-const mat = new THREE.ShaderMaterial({ uniforms: U, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.NormalBlending,
-  vertexShader: `attribute float r; varying vec3 vC; varying float vA; uniform float uT, uPx, uIn;
-    void main(){
-      vec3 p = position;
-      float h = fract(r * 91.7);
-      p += (vec3(fract(r*13.1), fract(r*7.3), fract(r*3.7)) - 0.5) * 0.0042 * length(position); // punteado: cada punto se corre un poco
-      if (p.y > 1.2) p.x += sin(uT * 1.3 + p.y * 0.4 + r * 6.0) * 0.015 * (p.y - 1.2); // las copas se mecen
+// puntos finos, con un velo frío en la distancia (como la referencia) y brillo en los bordes de las hojas
+const mat = new THREE.ShaderMaterial({ uniforms: U, vertexColors: true, transparent: true, depthWrite: false,
+  vertexShader: `attribute float r; varying vec3 vC; varying float vA; uniform float uT, uPx, uIn, uZ, uModo;
+    void main(){ vec3 p = position; float h = fract(r * 91.7);
+      p += (vec3(fract(r*13.1), fract(r*7.3), fract(r*3.7)) - 0.5) * 0.002 * length(position);
+      if (p.y > 2.0) p.x += sin(uT * 1.1 + p.y * 0.5 + r * 6.0) * 0.012 * (p.y - 2.0); // copas que se mecen
       float rise = smoothstep(r * 0.6, r * 0.6 + 0.4, uIn); p.y -= (1.0 - rise) * (2.0 + r * 6.0);
-      vec4 mv = modelViewMatrix * vec4(p, 1.0); gl_Position = projectionMatrix * mv;
-      float d = -mv.z; gl_PointSize = clamp(uPx * 0.0030 * (0.75 + h * 0.6) / max(d, 0.1) * 6.0, 1.0, 4.2);
-      float niebla = smoothstep(260.0, 30.0, d);
-      vC = color * (0.86 + h * 0.28) * mix(0.35, 1.0, niebla); vA = rise * mix(0.55, 1.0, niebla);
-    }`,
-  fragmentShader: `varying vec3 vC; varying float vA; void main(){ vec2 q = gl_PointCoord - 0.5; float d = dot(q, q); if (d > 0.25) discard; gl_FragColor = vec4(vC, vA * smoothstep(0.25, 0.12, d));
+      vec4 mv = modelViewMatrix * vec4(p, 1.0); gl_Position = projectionMatrix * mv; float d = -mv.z;
+      gl_PointSize = clamp(uPx * 0.0021 * uZ * (0.8 + h * 0.5) / max(d, 0.1) * 6.0, 1.2, 6.0 * uZ);
+      float lejos = smoothstep(45.0, 900.0, d); vec3 c = color * (0.84 + h * 0.3);
+      c = mix(c, vec3(0.5, 0.72, 0.7) * (0.55 + dot(color, vec3(.33))), lejos * 0.28); // velo frío a lo lejos
+      vC = c * mix(1.0, 0.7, smoothstep(200.0, 1200.0, d)); vA = rise * mix(1.0, 0.6, lejos);
+      float lum = dot(color, vec3(0.3, 0.55, 0.15)), vivo = clamp((color.g - max(color.r, color.b)) * 4.0 + 0.2, 0.0, 1.0);
+      if (uModo > 0.5 && uModo < 1.5) { gl_PointSize *= 2.6; vA = rise; vC = color * (0.92 + h * 0.16) * mix(1.0, 0.8, smoothstep(200.0, 1200.0, d)); }
+      if (uModo > 1.5 && uModo < 2.5) { float t = clamp(d / 260.0, 0.0, 1.0); vec3 c1 = vec3(1.0, 0.55, 0.18), c2 = vec3(0.2, 0.85, 0.75), c3 = vec3(0.15, 0.25, 0.75);
+        vC = (t < 0.35 ? mix(c1, c2, t / 0.35) : mix(c2, c3, (t - 0.35) / 0.65)) * (0.55 + 0.45 * lum) * (0.8 + 0.4 * step(0.985, fract(d * 0.25))); vA = rise; }
+      if (uModo > 2.5 && uModo < 3.5) { vC = vec3(0.55, 0.78, 1.0) * (0.35 + 0.65 * lum); vA = rise * 0.16; }
+      if (uModo > 3.5 && uModo < 4.5) { float k = clamp(vivo * 0.75 + lum * 0.35 + h * 0.08, 0.0, 1.0);
+        vC = k < 0.33 ? mix(vec3(0.03, 0.0, 0.12), vec3(0.55, 0.0, 0.6), k / 0.33) : k < 0.66 ? mix(vec3(0.55, 0.0, 0.6), vec3(1.0, 0.35, 0.0), (k - 0.33) / 0.33) : mix(vec3(1.0, 0.35, 0.0), vec3(1.0, 0.95, 0.55), (k - 0.66) / 0.34); gl_PointSize *= 1.6; vA = rise; }
+      if (uModo > 4.5) { float g2 = (0.25 + 1.1 * lum) * (0.85 + 0.3 * fract(sin(dot(position.xz, vec2(12.9, 78.2)) + uT * 30.0) * 43758.5)); vC = vec3(0.25, 1.0, 0.35) * g2; gl_PointSize *= 1.5; vA = rise; } }`,
+  fragmentShader: `varying vec3 vC; varying float vA; void main(){ vec2 q = gl_PointCoord - 0.5; float d = dot(q, q); if (d > 0.25) discard; gl_FragColor = vec4(vC, vA * smoothstep(0.25, 0.1, d));
     #include <colorspace_fragment>
   }` });
-S.add(new THREE.Points(g, mat));
-// ---------- cámara: mirada desde el ojo de la captura; se avanza/retrocede y se gira poco (la vista es de un solo punto) ----------
+const NUBEP = new THREE.Points(g, mat); S.add(NUBEP);
+/* ---------- la misma escena en MALLAS 3D para las otras visiones (data3d/puntos/escena_mallas.js) ---------- */
+R.shadowMap.enabled = !MOV; R.shadowMap.type = THREE.PCFSoftShadowMap; R.toneMapping = THREE.ACESFilmicToneMapping; R.toneMappingExposure = 1.05;
+const { crearEscenaMallas } = await import('./data3d/puntos/escena_mallas.js?v=7');
+const MAL = await crearEscenaMallas({ THREE, geo: ESC.geo, sombras: !MOV, movil: MOV }); MAL.grupo.position.y = -OJO; MAL.grupo.visible = false; S.add(MAL.grupo);
+
+/* ---------- especies en PUNTOS desde fotografías (tools/puntos/especies_puntos.py) ---------- */
+const EI = await fetch('data3d/puntos/esp/esp.json?v=1').then(r => r.json()).catch(() => ({}));
+const NUBE = {}; await Promise.all(Object.keys(EI).map(async k => { const b = new Uint8Array(await fetch(`data3d/puntos/esp/${k}.bin?v=1`).then(r => r.arrayBuffer())); NUBE[k] = { n: EI[k].n, q: new Int16Array(b.buffer, 0, EI[k].n * 3), c: b.subarray(EI[k].n * 6) }; }));
+const matEsp = (uPx, tam) => new THREE.ShaderMaterial({ uniforms: { uPx, uTam: { value: tam } }, vertexColors: true,
+  vertexShader: 'uniform float uPx, uTam; varying vec3 vC; void main(){ vC = color; vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_Position = projectionMatrix * mv; gl_PointSize = clamp(uTam * uPx / max(-mv.z, 0.02), 1.2, 9.0); }',
+  fragmentShader: 'varying vec3 vC; void main(){ vec2 q = gl_PointCoord - 0.5; if (dot(q,q) > 0.25) discard; gl_FragColor = vec4(vC, 1.0);\n#include <colorspace_fragment>\n}' });
+const geoEsp = (k, max) => { const E = NUBE[k], st = Math.max(1, Math.floor(E.n / max)), m = Math.floor(E.n / st), P = new Float32Array(m * 3), C = new Float32Array(m * 3);
+  for (let i = 0, j = 0; j < m; i += st, j++) { for (let a = 0; a < 3; a++) { P[j * 3 + a] = E.q[i * 3 + a] / 1000; C[j * 3 + a] = Math.pow(E.c[i * 3 + a] / 255, 2.2); } } // los colores de la foto vienen en sRGB
+  const gg = new THREE.BufferGeometry(); gg.setAttribute('position', new THREE.BufferAttribute(P, 3)); gg.setAttribute('color', new THREE.BufferAttribute(C, 3)); return gg; };
+// tamaño en la escena (m): real × aumento para que se lea a la distancia de la vista
+const TAM = { colibri: 0.12 * 1.6, abeja: 0.02 * 4, abejorro: 0.028 * 3.5, mariposa: 0.08 * 2, mariquita: 0.009 * 5, mirla: 0.27 * 1.2, copeton: 0.15 * 1.3, lombriz: 0.12 * 1.2, murcielago: 0.1 * 2.2 };
+const SUELO = { mirla: 1, copeton: 1, lombriz: 1, mariquita: 1 }, BILL = [];
+const FZ = await import('./data3d/puntos/fauna_puntos.js?v=2'); await FZ.cargarFauna(THREE);
+const MATF = []; // materiales de la fauna 3D (su reloj de aleteo)
+const modelo = (k) => { if (FZ.tieneFauna(k)) { const w = new THREE.Group(), s = TAM[k] || 0.2, p = FZ.puntosFauna(THREE, k, U.uPx, 0.012 * s, MOV ? 9000 : 40000); p.scale.multiplyScalar(s); w.add(p); MATF.push(p.material); return w; }
+  if (!NUBE[k]) return null; const w = new THREE.Group(), s = TAM[k] || 0.2, pts = new THREE.Points(geoEsp(k, MOV ? 2500 : 6000), matEsp(U.uPx, 0.0016 * s * 6));
+  pts.scale.setScalar(s); if (SUELO[k]) pts.position.y = s * 0.5; w.add(pts); BILL.push(pts); return w; }; // (la fauna 3D no entra a BILL)
+const { crearFauna3D } = await import('./data3d/puntos/fauna3d.js?v=9');
+const FAUNA = crearFauna3D({ THREE, S, M, RMQ, modelo });
+
+// sensores de la huerta (suelo, riego, polinizadores): puntos que titilan sobre las camas
+{ const SP = []; for (let j = 0; j < n && SP.length < (MOV ? 30 : 60); j += 97) { const x = pos[j * 3], y = pos[j * 3 + 1], z = pos[j * 3 + 2], gC = col[j * 3 + 1];
+    if (y > -1.35 && y < -0.85 && Math.hypot(x, z) < 30 && gC > col[j * 3] * 1.15) SP.push(x, y + 0.35, z); }
+  const gs = new THREE.BufferGeometry(); gs.setAttribute('position', new THREE.Float32BufferAttribute(SP, 3)); const ph = new Float32Array(SP.length / 3).map(() => Math.random() * 6.28); gs.setAttribute('ph', new THREE.BufferAttribute(ph, 1));
+  S.add(new THREE.Points(gs, new THREE.ShaderMaterial({ uniforms: U, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    vertexShader: 'attribute float ph; uniform float uT, uPx; varying float vA; void main(){ vec4 mv = modelViewMatrix * vec4(position,1.0); gl_Position = projectionMatrix * mv; vA = 0.25 + 0.75 * pow(0.5 + 0.5 * sin(uT * 2.0 + ph), 4.0); gl_PointSize = clamp(uPx * 0.006 / max(-mv.z, 0.5) * 6.0, 2.0, 9.0); }',
+    fragmentShader: 'varying float vA; void main(){ vec2 q = gl_PointCoord - 0.5; float d = dot(q,q); if (d > 0.25) discard; gl_FragColor = vec4(0.5, 1.0, 0.86, vA * smoothstep(0.25, 0.0, d));\n#include <colorspace_fragment>\n}' }))); }
+
+/* ---------- recuadro grande: la especie en puntos, girando despacio ---------- */
+const camZ = new THREE.PerspectiveCamera(32, 1, 0.01, 400); const zoomV = new THREE.Vector3(); let zA = 0; // cámara del recuadro
+const SI = new THREE.Scene(), camI = new THREE.PerspectiveCamera(30, 1, 0.01, 50); camI.position.set(0, 0, 2.3); const uPxI = { value: 512 * Math.min(2, devicePixelRatio || 1) };
+const INS = {}; for (const [k] of SEC) if (false && NUBE[k]) { const p = new THREE.Points(geoEsp(k, 90000), matEsp(uPxI, 0.0032)); p.visible = false; SI.add(p); INS[k] = p; }
+
+/* ---------- cámara guiada por el scroll ---------- */
 const L0 = new THREE.Vector3(M.look[0] - M.eye[0], M.look[1] - M.eye[1], M.look[2] - M.eye[2]).normalize();
-const st = { d: 0, dObj: 0, yaw: 0, pitch: 0, yObj: 0, pObj: 0, rec: false };
-const base = new THREE.Vector3(0, 0, 0), yaw0 = Math.atan2(L0.x, L0.z), pitch0 = Math.asin(L0.y);
-function camara() {
-  const y = yaw0 + st.yaw, p = pitch0 + st.pitch, f = new THREE.Vector3(Math.sin(y) * Math.cos(p), Math.sin(p), Math.cos(y) * Math.cos(p));
-  const fl = new THREE.Vector3(L0.x, 0, L0.z).normalize(); cam.position.copy(base).addScaledVector(fl, st.d); cam.lookAt(cam.position.clone().add(f));
-}
-// ---------- fauna animada: enjambres de puntos alrededor de cada animal ----------
-const ESP = M.especies, porK = Object.fromEntries(ESP.map(e => [e.k, e]));
-const BICH = { abeja: [40, 2.2, '#facc15', 2.4], abejorro: [14, 1.6, '#eab308', 1.6], mariposa: [12, 3.0, '#fb923c', 0.9], colibri: [5, 2.4, '#22d3ee', 3.2], mariquita: [16, 0.8, '#dc2626', 0.3],
-  copeton: [6, 3.0, '#d6d3d1', 1.4], mirla: [4, 3.0, '#57534e', 1.0], murcielago: [6, 6.0, '#c4b5fd', 2.2], cernicalo: [1, 9.0, '#f97316', 0.5] };
-const FB = []; for (const [k, [cnt, rad, c, vel]] of Object.entries(BICH)) { const e = porK[k]; if (!e) continue; for (let i = 0; i < cnt; i++) FB.push({ e, rad: rad * (0.4 + Math.random() * 0.8), vel: vel * (0.6 + Math.random() * 0.8), f: Math.random() * 6.28, h: (Math.random() - 0.3) * rad * 0.5, c: new THREE.Color(c), tam: k === 'abeja' || k === 'mariquita' ? 5 : 8 }); }
-const fg = new THREE.BufferGeometry(), fp = new Float32Array(FB.length * 3), fc = new Float32Array(FB.length * 3), fs = new Float32Array(FB.length);
-FB.forEach((b, i) => { fc.set([b.c.r, b.c.g, b.c.b], i * 3); fs[i] = b.tam; });
-fg.setAttribute('position', new THREE.BufferAttribute(fp, 3)); fg.setAttribute('color', new THREE.BufferAttribute(fc, 3)); fg.setAttribute('s', new THREE.BufferAttribute(fs, 1));
-const fmat = new THREE.ShaderMaterial({ uniforms: { uPx: U.uPx }, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
-  vertexShader: 'attribute float s; varying vec3 vC; uniform float uPx; void main(){ vC = color; vec4 mv = modelViewMatrix * vec4(position,1.0); gl_Position = projectionMatrix * mv; gl_PointSize = clamp(s * uPx * 0.0011 / max(-mv.z, 0.5) * 6.0, 2.0, 14.0); }',
-  fragmentShader: 'varying vec3 vC; void main(){ vec2 q = gl_PointCoord - 0.5; float d = dot(q,q); if (d > 0.25) discard; gl_FragColor = vec4(vC * 1.4, smoothstep(0.25, 0.0, d));\n#include <colorspace_fragment>\n}', vertexColors: true });
-S.add(new THREE.Points(fg, fmat));
-// luciérnagas (luz ambiente, como en la referencia)
-const NL = 220, lg = new THREE.BufferGeometry(), lp = new Float32Array(NL * 3), lph = new Float32Array(NL); for (let i = 0; i < NL; i++) { const a = (Math.random() - 0.5) * 1.6 + yaw0, d = 4 + Math.random() * 70; lp.set([Math.sin(a) * d, -1.5 + Math.random() * 8, Math.cos(a) * d], i * 3); lph[i] = Math.random() * 6.28; }
-lg.setAttribute('position', new THREE.BufferAttribute(lp, 3)); lg.setAttribute('ph', new THREE.BufferAttribute(lph, 1));
-const lmat = new THREE.ShaderMaterial({ uniforms: { uT: U.uT, uPx: U.uPx }, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
-  vertexShader: 'attribute float ph; uniform float uT, uPx; varying float vA; void main(){ vec3 p = position + vec3(sin(uT*0.3+ph)*0.8, sin(uT*0.5+ph*2.0)*0.5, cos(uT*0.27+ph)*0.8); vec4 mv = modelViewMatrix*vec4(p,1.0); gl_Position = projectionMatrix*mv; vA = 0.25 + 0.75*pow(0.5+0.5*sin(uT*1.7+ph*3.0), 3.0); gl_PointSize = clamp(uPx*0.006/max(-mv.z,0.5)*6.0, 1.5, 6.0); }',
-  fragmentShader: 'varying float vA; void main(){ vec2 q = gl_PointCoord-0.5; float d = dot(q,q); if (d>0.25) discard; gl_FragColor = vec4(vec3(1.0,0.92,0.55), vA*smoothstep(0.25,0.0,d));\n#include <colorspace_fragment>\n}' });
-S.add(new THREE.Points(lg, lmat));
-// ---------- relaciones: arcos de puntos entre especies (color por tipo) ----------
-const TIP = M.tipos, tiposOn = new Set(Object.keys(TIP)), RL = [];
-for (const [a, b, t] of M.rel) { const A = porK[a], B = porK[b]; if (!A || !B) continue; const pa = new THREE.Vector3(...A.p), pb = new THREE.Vector3(...B.p), m = pa.clone().add(pb).multiplyScalar(0.5); m.y += Math.max(1.5, pa.distanceTo(pb) * 0.22);
-  const cu = new THREE.QuadraticBezierCurve3(pa, m, pb), k = Math.max(20, Math.round(pa.distanceTo(pb) * 3)), P = cu.getPoints(k), arr = new Float32Array(P.length * 3), uu = new Float32Array(P.length); P.forEach((p, i) => { arr.set([p.x, p.y, p.z], i * 3); uu[i] = i / (P.length - 1); });
-  const gg = new THREE.BufferGeometry(); gg.setAttribute('position', new THREE.BufferAttribute(arr, 3)); gg.setAttribute('u', new THREE.BufferAttribute(uu, 1));
-  const mm = new THREE.ShaderMaterial({ uniforms: { uT: U.uT, uC: { value: new THREE.Color(TIP[t]) }, uA: { value: 0.35 }, uPx: U.uPx }, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
-    vertexShader: 'attribute float u; uniform float uT, uPx; varying float vU; void main(){ vU = u; vec4 mv = modelViewMatrix*vec4(position,1.0); gl_Position = projectionMatrix*mv; gl_PointSize = clamp(uPx*0.004/max(-mv.z,0.5)*6.0, 1.5, 5.0); }',
-    fragmentShader: 'uniform float uT, uA; uniform vec3 uC; varying float vU; void main(){ vec2 q = gl_PointCoord-0.5; if (dot(q,q)>0.25) discard; float pulso = smoothstep(0.86, 1.0, fract(vU*2.0 - uT*0.35)); gl_FragColor = vec4(uC*(0.6+pulso*1.6), uA*(0.45+pulso));\n#include <colorspace_fragment>\n}' });
-  const o = new THREE.Points(gg, mm); S.add(o); RL.push({ a, b, t, o, mm }); }
-$('ley').innerHTML = Object.entries(TIP).map(([t, c]) => `<span data-t="${esc(t)}"><i style="background:${c}"></i>${esc(t)}</span>`).join('');
-$('ley').onclick = (e) => { const s = e.target.closest('[data-t]'); if (!s) return; const t = s.dataset.t; tiposOn.has(t) ? tiposOn.delete(t) : tiposOn.add(t); s.classList.toggle('off', !tiposOn.has(t)); pintarRel(); };
-$('tit').innerHTML = `${M.rel.length} relaciones<br>entre ${ESP.length} especies`;
-$('nota').textContent = 'Puntos: color y profundidad del modelo 3D del simulador (huertas del distrito, invernaderos y árboles existentes del censo). Fotos: iNaturalist y red biótica del Humedal El Burro.';
-// ---------- etiquetas ----------
-const LB = ESP.map(e => { const d = document.createElement('div'); d.className = 'lb g-' + e.g; d.style.setProperty('--c', e.c); d.tabIndex = 0; d.setAttribute('role', 'button'); d.setAttribute('aria-label', `${e.n}, ${e.sci}`);
-  d.innerHTML = `<b>${esc(e.n)}</b><i>${esc(e.sci)}</i><s></s><u></u>`; document.body.appendChild(d);
-  d.onclick = () => abrir(e.k); d.onkeydown = (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); abrir(e.k); } };
-  d.onmouseenter = () => { if (!sel) foco(e.k); }; d.onmouseleave = () => { if (!sel) foco(null); };
-  return { e, d, v: new THREE.Vector3(...e.p) }; });
-let sel = null, focoK = null;
-function foco(k) { focoK = k; pintarRel(); LB.forEach(l => l.d.classList.toggle('dim', !!k && l.e.k !== k && !M.rel.some(([a, b]) => (a === k && b === l.e.k) || (b === k && a === l.e.k)))); }
-function pintarRel() { const k = sel || focoK; RL.forEach(r => { const on = tiposOn.has(r.t), act = k && (r.a === k || r.b === k); r.o.visible = on && (!k || act); r.mm.uniforms.uA.value = act ? 0.95 : 0.3; }); }
-pintarRel();
-// ---------- lupa: el cuadro sobre la especie + vista ampliada (los mismos puntos, de cerca) + foto + qué hace ----------
-const RZ = new THREE.WebGLRenderer({ antialias: false }); RZ.setPixelRatio(1); RZ.setClearColor(0x050807, 1); const camZ = new THREE.PerspectiveCamera(8, 1, 0.1, 3000);
-const uPxZ = { value: 170 * 3 };
-function abrir(k) {
-  sel = k; const e = porK[k]; document.body.classList.add('lupa'); LB.forEach(l => l.d.classList.toggle('sel', l.e.k === k)); foco(k);
-  const rels = M.rel.filter(([a, b]) => a === k || b === k).map(([a, b, t]) => ({ o: porK[a === k ? b : a], t, dir: a === k ? 'con' : 'de' }));
-  $('lupa').innerHTML = `<div class="vis"><canvas id="zc" width="170" height="170" aria-label="Vista ampliada de ${esc(e.n)}"></canvas>${e.foto ? `<img src="${esc(e.foto.url)}" alt="${esc(e.n)} (${esc(e.sci)})" loading="lazy" referrerpolicy="no-referrer">` : '<div></div>'}<span class="a">en el campo</span>${e.foto ? '<span class="b">foto real</span>' : ''}<button class="x" aria-label="Cerrar">×</button></div>
-    <div class="cab"><small>${{ cultivo: 'Para comer', flor: 'Flor para polinizadores', fauna: 'Fauna que llega', arbol: 'Árbol existente' }[e.g] || ''}</small><h2>${esc(e.n)}</h2><i>${esc(e.sci)}</i></div>
-    <dl><dt>Qué hace aquí</dt><dd>${esc(e.hace)}</dd><dt>Qué la atrae</dt><dd>${esc(e.atrae)}</dd><dt>Qué prospera</dt><dd>${esc(e.prospera)}</dd></dl>
-    <div class="rel">${rels.map(r => `<button data-k="${r.o.k}"><i style="background:${TIP[r.t]}"></i>${esc(r.t)} · ${esc(r.o.n)}</button>`).join('')}</div>
-    ${e.foto ? `<div class="atr">Foto: ${esc(e.foto.atr)}${e.foto.lic ? ' (' + esc(e.foto.lic.toUpperCase()) + ')' : ''}</div>` : ''}`;
-  $('lupa').classList.add('on');
-  $('lupa').querySelector('.x').onclick = cerrar; $('lupa').querySelectorAll('.rel button').forEach(b => b.onclick = () => abrir(b.dataset.k));
-  const zc = $('zc'); RZ.setSize(170, 170, false); zcCtx = zc.getContext('2d'); zoomK = k;
-  $('marco').querySelector('em').textContent = e.n.toUpperCase();
-}
-let zcCtx = null, zoomK = null;
-function cerrar() { sel = null; zoomK = null; document.body.classList.remove('lupa'); $('lupa').classList.remove('on'); $('marco').style.display = 'none'; LB.forEach(l => l.d.classList.remove('sel')); foco(null); }
-addEventListener('keydown', (e) => { if (e.key === 'Escape') cerrar(); if (e.key === 'ArrowUp') mover(8); if (e.key === 'ArrowDown') mover(-8); });
-// ---------- controles ----------
-const DMIN = -6, DMAX = 60;
-function mover(dx) { st.dObj = Math.max(DMIN, Math.min(DMAX, st.dObj + dx)); }
-$('b-ava').onclick = () => mover(8); $('b-atr').onclick = () => mover(-8);
-$('b-cen').onclick = () => { st.dObj = 0; st.yObj = 0; st.pObj = 0; st.rec = false; $('b-rec').classList.remove('on'); cerrar(); };
-$('b-rec').onclick = () => { st.rec = !st.rec; $('b-rec').classList.toggle('on', st.rec); };
-$('ir').onclick = () => { const l = LB.find(x => x.e.g === 'fauna'); if (l) abrir(l.e.k); };
-let drag = null; cv.addEventListener('pointerdown', (e) => { drag = { x: e.clientX, y: e.clientY, y0: st.yObj, p0: st.pObj }; cv.setPointerCapture(e.pointerId); });
-cv.addEventListener('pointermove', (e) => { if (!drag) return; st.yObj = Math.max(-0.45, Math.min(0.45, drag.y0 - (e.clientX - drag.x) * 0.0025)); st.pObj = Math.max(-0.25, Math.min(0.3, drag.p0 + (e.clientY - drag.y) * 0.0022)); });
-cv.addEventListener('pointerup', () => { drag = null; });
-cv.addEventListener('wheel', (e) => { e.preventDefault(); mover(-Math.sign(e.deltaY) * 3); }, { passive: false });
-function tam() { R.setSize(innerWidth, innerHeight, false); cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix(); U.uPx.value = R.getPixelRatio() * innerHeight; }
+const lookBase = L0.clone().multiplyScalar(10), look = lookBase.clone(), tmp = new THREE.Vector3();
+// la foto es 4:3: en pantallas más anchas se cierra el campo vertical para que la foto llene el ancho
+const FOV0 = () => { const a = innerWidth / innerHeight, ap = (M.W || 4) / (M.H || 3); return a > ap ? 2 * Math.atan(Math.tan(M.fov * Math.PI / 360) * ap / a) * 180 / Math.PI : M.fov; };
+let s = 0, sObj = 0, fov = FOV0();
+const agenteDe = (k) => { const c = FAUNA.agentes.filter(a => a.k === k); return c.find(a => a.espera > 0) || c[0]; };
+const SEL = {}; SEC.forEach(([k]) => { SEL[k] = agenteDe(k); });
+const cam0 = new THREE.PerspectiveCamera(M.fov, innerWidth / innerHeight, 0.05, 3000); cam0.lookAt(L0); cam0.updateMatrixWorld(); const vN = new THREE.Vector3();
+// la cámara no mira fuera de lo que se capturó (abajo y a los lados no hay puntos)
+const dentroCaptura = (v) => v; const _dc = (v) => { vN.copy(v).project(cam0); vN.x = Math.max(-0.38, Math.min(0.38, vN.x)); vN.y = Math.max(-0.4, Math.min(0.45, vN.y)); return v.copy(vN.unproject(cam0)); };
+const CTX = ESC.ctx, AER = CTX ? new THREE.Vector3(CTX.c[0] - CTX.R * 0.18, CTX.R * 0.62, CTX.c[1] - CTX.R * 0.55) : new THREE.Vector3(-34, 118, -48), AERL = CTX ? new THREE.Vector3(CTX.c[0], -1.6, CTX.c[1]) : new THREE.Vector3(0, -1.6, 58), camPos = new THREE.Vector3(); // Bavaria real desde arriba
+const objetivo = (i) => { if (i <= 0 || i > SEC.length) return lookBase; const a = SEL[SEC[i - 1][0]]; return a ? a.obj.position : lookBase; };
+function leerScroll() { sObj = scrollY / innerHeight; }
+addEventListener('scroll', leerScroll, { passive: true });
+function tam() { R.setSize(innerWidth, innerHeight, false); cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix(); U.uPx.value = R.getPixelRatio() * innerHeight; leerScroll(); }
 addEventListener('resize', tam); tam();
-// ---------- cuadro ----------
-const V = new THREE.Vector3(); let t0 = performance.now(), tPrev = t0;
+let FONDO = 0x04070a;
+const FONDOS = { puntos: 0x04070a, realista: 0xbfd4e2, maqueta: 0xebe8e2, rayos: 0x020611, alambre: 0x071a2e, termica: 0x05010a };
+document.querySelector('.pie .modos').onclick = (e) => { const b = e.target.closest('[data-m]'); if (!b) return; const v = b.dataset.m;
+  NUBEP.visible = v === 'puntos'; MAL.grupo.visible = v !== 'puntos'; if (v !== 'puntos') MAL.vision(v);
+  FONDO = FONDOS[v]; R.setClearColor(FONDO, 1); S.fog = v === 'realista' ? new THREE.Fog(0xbfd4e2, 900, 4000) : v === 'maqueta' ? new THREE.Fog(0xebe8e2, 1100, 4500) : null;
+  document.body.dataset.vision = v; document.querySelectorAll('.pie .modos button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); };
+$('pausa').onclick = () => { RMQ = !RMQ; $('pausa').textContent = RMQ ? 'Reanudar movimiento' : 'Pausar movimiento'; };
+$('nota').textContent = 'Escena de la propuesta en puntos: árboles y plantas muestreados de modelos 3D reales; especies reconstruidas con puntos desde fotografías (iNaturalist, CC) y una profundidad estimada. Representación, no un levantamiento. Animales aumentados para que se vean. ' + FZ.FAUNA_FUENTES;
+
+/* ---------- RECORRER: caminar libre por la huerta ---------- */
+const lib = { on: false, x: 0, z: 0, yaw: 0, pitch: -0.1, k: {}, drag: null };
+const entrar = () => { lib.on = true; lib.x = cam.position.x; lib.z = cam.position.z; const d = new THREE.Vector3(); cam.getWorldDirection(d); lib.yaw = Math.atan2(d.x, d.z); lib.pitch = Math.asin(d.y); document.body.classList.add('libre'); scrollTo(0, 0); };
+const salir = () => { lib.on = false; document.body.classList.remove('libre'); fov = FOV0(); };
+$('b-rec').onclick = entrar; $('b-salir').onclick = salir;
+addEventListener('keydown', (e) => { lib.k[e.key.toLowerCase()] = true; if (e.key === 'Escape' && lib.on) salir(); });
+addEventListener('keyup', (e) => { lib.k[e.key.toLowerCase()] = false; });
+cv.addEventListener('pointerdown', (e) => { if (!lib.on) return; lib.drag = { x: e.clientX, y: e.clientY, yaw: lib.yaw, p: lib.pitch }; cv.setPointerCapture(e.pointerId); });
+cv.addEventListener('pointermove', (e) => { if (!lib.drag) return; lib.yaw = lib.drag.yaw - (e.clientX - lib.drag.x) * 0.004; lib.pitch = Math.max(-0.9, Math.min(0.6, lib.drag.p - (e.clientY - lib.drag.y) * 0.004)); });
+cv.addEventListener('pointerup', () => { lib.drag = null; });
+addEventListener('wheel', (e) => { if (!lib.on) return; e.preventDefault(); lib.x += Math.sin(lib.yaw) * -Math.sign(e.deltaY) * 1.2; lib.z += Math.cos(lib.yaw) * -Math.sign(e.deltaY) * 1.2; }, { passive: false });
+function caminar(dt) { const k = lib.k, v = (k.shift ? 9 : 3.5) * dt; let f = 0, l = 0; if (k.w || k.arrowup) f++; if (k.s || k.arrowdown) f--; if (k.a || k.arrowleft) l++; if (k.d || k.arrowright) l--;
+  lib.x += (Math.sin(lib.yaw) * f + Math.cos(lib.yaw) * l) * v; lib.z += (Math.cos(lib.yaw) * f - Math.sin(lib.yaw) * l) * v; lib.x = Math.max(-80, Math.min(80, lib.x)); lib.z = Math.max(-5, Math.min(70, lib.z));
+  fov += (FOV0() - fov) * 0.1; cam.fov = fov; cam.updateProjectionMatrix(); cam.position.set(lib.x, 0, lib.z); cam.lookAt(lib.x + Math.sin(lib.yaw) * Math.cos(lib.pitch), Math.sin(lib.pitch), lib.z + Math.cos(lib.yaw) * Math.cos(lib.pitch)); U.uZ.value = 1; }
+/* ---------- cuadro ---------- */
+const V = new THREE.Vector3(), V2 = new THREE.Vector3(); let t0 = performance.now(), tPrev = t0, secAct = -1;
 $('carga').style.opacity = 0; setTimeout(() => $('carga').remove(), 900);
 function cuadro(t) {
   requestAnimationFrame(cuadro); const dt = Math.min(0.05, (t - tPrev) / 1000); tPrev = t; const tt = (t - t0) / 1000;
-  U.uT.value = RMQ ? 0 : tt; U.uIn.value = RMQ ? 1 : Math.min(1, tt / 2.2);
-  if (st.rec) { st.dObj = 22 + Math.sin(tt * 0.12) * 22; st.yObj = Math.sin(tt * 0.09) * 0.28; }
-  const k = 1 - Math.exp(-dt * 3); st.d += (st.dObj - st.d) * k; st.yaw += (st.yObj - st.yaw) * k; st.pitch += (st.pObj - st.pitch) * k; camara();
-  // fauna
-  FB.forEach((b, i) => { const a = b.f + tt * b.vel / Math.max(0.3, b.rad), p = b.e.p; fp[i * 3] = p[0] + Math.cos(a) * b.rad + Math.sin(a * 2.3) * 0.3; fp[i * 3 + 1] = p[1] + b.h + Math.sin(a * 1.7 + b.f) * b.rad * 0.25; fp[i * 3 + 2] = p[2] + Math.sin(a) * b.rad; });
-  fg.attributes.position.needsUpdate = true;
+  U.uT.value = RMQ ? 0 : tt; U.uIn.value = Math.min(1, tt / 2.2);
+  if (!RMQ) FAUNA.paso(dt, tt); for (const m of MATF) m.uniforms.uT.value = RMQ ? 0 : tt;
+  if (lib.on) { caminar(dt); for (const p of BILL) { p.getWorldPosition(V); p.lookAt(V2.copy(cam.position)); } R.render(S, cam); return; }
+  s += (sObj - s) * (1 - Math.exp(-dt * 4)); const i0 = Math.floor(s), f = s - i0, k = f * f * (3 - 2 * f);
+  // mira hacia la especie de la parada (y entre paradas, mezcla las dos); se acerca con el zoom
+  const A = i0 <= 0 ? AERL : objetivo(i0), B = objetivo(i0 + 1); const kA = i0 <= 0 ? k : 1; camPos.copy(AER).lerp(V2.set(0, 0, 0), kA); tmp.copy(A).lerp(B, k); dentroCaptura(tmp); look.lerp(tmp, 1 - Math.exp(-dt * 5));
+  const zIn = (i) => (i <= 0 || i > SEC.length ? FOV0() : Math.max(9, Math.min(FOV0() * 0.75, 2 * Math.atan(1.1 / Math.max(0.5, objetivo(i).length())) * 180 / Math.PI)));
+  const fz = zIn(i0) + (zIn(i0 + 1) - zIn(i0)) * k; fov += (fz - fov) * (1 - Math.exp(-dt * 4));
+  cam.position.copy(camPos); cam.fov = fov; cam.updateProjectionMatrix(); cam.lookAt(look); U.uZ.value = Math.min(3, Math.pow(FOV0() / fov, 0.6)) * (1 + 1.6 * (1 - kA));
+  for (const p of BILL) { p.getWorldPosition(V); p.lookAt(V2.copy(cam.position)); }
   R.render(S, cam);
-  // etiquetas
-  const W = innerWidth, H = innerHeight;
-  for (const l of LB) { V.copy(l.v).project(cam); const ok = V.z < 1 && Math.abs(V.x) < 1.05 && Math.abs(V.y) < 1.05; l.d.style.display = ok ? 'flex' : 'none'; if (ok) l.d.style.transform = `translate(${((V.x + 1) / 2 * W).toFixed(1)}px,${((1 - V.y) / 2 * H).toFixed(1)}px) translate(-50%,-100%)`; }
-  // cuadro de zoom y vista ampliada
-  if (zoomK) { const e = porK[zoomK]; V.set(...e.p).project(cam); const ok = V.z < 1; const m = $('marco'); m.style.display = ok ? 'block' : 'none';
-    if (ok) { m.style.left = ((V.x + 1) / 2 * W) + 'px'; m.style.top = ((1 - V.y) / 2 * H) + 'px'; }
-    const tgt = new THREE.Vector3(...e.p), dist = cam.position.distanceTo(tgt); camZ.position.copy(cam.position); camZ.lookAt(tgt); camZ.fov = Math.max(2.5, Math.min(30, 2 * Math.atan(3.2 / dist) * 180 / Math.PI)); camZ.updateProjectionMatrix();
-    const u0 = U.uPx.value; U.uPx.value = uPxZ.value * 30 / camZ.fov; fmat.uniforms.uPx.value = U.uPx.value; RZ.render(S, camZ); U.uPx.value = u0;
-    if (zcCtx) { zcCtx.drawImage(RZ.domElement, 0, 0, 170, 170); } }
+  // parada actual: recuadro grande, encuadre y su hilo
+  const sec = Math.round(s), dentro = sec >= 1 && sec <= SEC.length && Math.abs(s - sec) < 0.38;
+  if (sec !== secAct) { secAct = sec; document.querySelectorAll('#prog a').forEach((a, j) => a.classList.toggle('on', j === sec));
+    for (const kk in INS) INS[kk].visible = false;
+    if (sec >= 1 && sec <= SEC.length) { const [kk, , , nn] = SEC[sec - 1], e = porK[kk]; if (INS[kk]) INS[kk].visible = true;
+      $('inset').querySelector('.n').textContent = String(sec).padStart(2, '0'); $('inset').querySelector('.cap').innerHTML = `${esc(nn)}<i>${esc(e.sci)}</i>`; $('enc').querySelector('em').textContent = nn;
+      $('inset').style.left = '55%'; } }
+  $('inset').classList.toggle('on', dentro); $('enc').classList.toggle('on', dentro);
+  if (dentro) { const kk = SEC[sec - 1][0], ins = INS[kk];
+    { const ag2 = SEL[kk]; if (ag2) { const r = $('inset').getBoundingClientRect(), dpr = R.getPixelRatio(), s2 = TAM[kk] || 0.2, d = Math.max(0.35, s2 * 4.5);
+        zA += RMQ ? 0 : dt * 0.25; ag2.obj.getWorldPosition(zoomV);
+        camZ.position.set(zoomV.x + Math.sin(zA) * d, zoomV.y + d * 0.35, zoomV.z - Math.cos(zA) * d); camZ.lookAt(zoomV); camZ.aspect = r.width / r.height; camZ.updateProjectionMatrix();
+        const u0 = U.uPx.value, uz = U.uZ.value; U.uPx.value = r.height * dpr * 0.9; U.uZ.value = 1.6;
+        R.setScissorTest(true); const H = innerHeight; R.setViewport(r.left, H - r.bottom, r.width, r.height); R.setScissor(r.left, H - r.bottom, r.width, r.height);
+        R.setClearColor(0x0b100e, 1); R.clear(); R.render(S, camZ); R.setScissorTest(false); R.setViewport(0, 0, innerWidth, innerHeight); R.setClearColor(FONDO, 1); U.uPx.value = u0; U.uZ.value = uz; } }
+    const ag = SEL[kk]; if (ag) { V.copy(ag.obj.position).project(cam); const x = (V.x + 1) / 2 * innerWidth, y = (1 - V.y) / 2 * innerHeight, enc = $('enc');
+      const d = cam.position.distanceTo(ag.obj.position), px = Math.max(34, Math.min(140, (TAM[kk] || 0.2) * 2.4 / (2 * d * Math.tan(fov * Math.PI / 360)) * innerHeight));
+      enc.style.width = enc.style.height = px + 'px'; enc.style.transform = `translate(${x - px / 2}px,${y - px / 2}px)`;
+      const r = $('inset').getBoundingClientRect(), hl = $('hl'), cx = x < r.left ? r.left : r.right, cy = r.top + r.height / 2;
+      hl.setAttribute('x1', x + (cx > x ? px / 2 : -px / 2)); hl.setAttribute('y1', y); hl.setAttribute('x2', cx); hl.setAttribute('y2', Math.max(r.top + 8, Math.min(r.bottom - 8, y))); hl.style.opacity = MOV ? 0 : 1; } }
+  else $('hl').style.opacity = 0;
 }
 requestAnimationFrame(cuadro);
 </script>

@@ -153,6 +153,26 @@ main{position:relative;z-index:3}
 .rot span{text-align:center;font:500 10.5px var(--mono);padding:8px 2px;border-radius:5px;color:#0b1015}
 @media (prefers-reduced-motion:no-preference){.rot span{animation:rot 6s infinite}.rot span:nth-child(2){animation-delay:1.5s}.rot span:nth-child(3){animation-delay:3s}.rot span:nth-child(4){animation-delay:4.5s}}
 @keyframes rot{0%,20%{transform:none;box-shadow:0 0 0 2px #fff}30%,100%{box-shadow:none}}
+/* factores socioculturales */
+.fac{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
+.fac article{position:relative;border:1px solid var(--line);border-top:2px solid var(--c);border-radius:8px;padding:16px 16px 14px;background:var(--bg2);opacity:0;transform:translateY(14px);transition:opacity .6s,transform .8s cubic-bezier(.16,1,.3,1)}
+.fac article.in{opacity:1;transform:none}
+.fac .fn{font:500 11px var(--mono);color:var(--c);letter-spacing:.14em}
+.fac h3{font-size:18px;line-height:1.2;margin:4px 0 12px}
+.fac .fd{display:flex;align-items:baseline;gap:10px;padding:6px 0;border-top:1px solid var(--line)}
+.fac .fd b{font:600 22px/1 var(--sans);color:var(--tx);min-width:96px}.fac .fd span{font-size:12.5px;color:var(--mu)}
+.fac .fr{margin:12px 0 8px;font-size:14px;color:#d3dbe1;padding-left:22px;text-indent:-22px}.fac .fr i{font-style:normal;color:var(--c);margin-right:10px}
+.fac .ff{font:10.5px var(--mono);color:var(--mu2)}
+.red-btns{display:flex;gap:6px;margin-bottom:10px}
+.red-btns button{font:500 11px var(--mono);letter-spacing:.06em;color:var(--tx);background:var(--panel);border:1px solid var(--line2);border-radius:6px;padding:7px 12px;cursor:pointer}
+.red-btns button[aria-pressed="true"]{background:var(--amb);color:#111;border-color:var(--amb)}
+#g-int{display:block;width:100%;height:auto}
+#g-int .ar{fill:none;stroke-linecap:round;transition:opacity .7s,stroke-width .7s}
+#g-int .ar.flu{stroke-dasharray:3 9}
+@media (prefers-reduced-motion:no-preference){#g-int .ar.flu{animation:intflujo 1.1s linear infinite}}
+@keyframes intflujo{to{stroke-dashoffset:-12}}
+#g-int .muro{transition:opacity .7s}
+@media (max-width:760px){.red-int{overflow-x:auto}#g-int{min-width:660px}.red-int figcaption::before{content:'Deslizar → · ';color:var(--mu2)}}
 @media (max-width:760px){.et small{display:none}.et{font-size:10px;padding:2px 6px}}
 .total{display:flex;gap:6px;height:22px;border-radius:4px;overflow:hidden;margin:12px 0 6px}
 .total i{display:block;height:100%}
@@ -286,6 +306,60 @@ main{position:relative;z-index:3}
   </div></div>
 </section>
 
+<section class="lamina" id="l-social">
+  <div class="enc"><div class="k">Por qué aquí · factores socioculturales de Kennedy</div><h2>La propuesta responde a cómo se vive Kennedy</h2>
+    <p>Cada pieza del plan sale de una dinámica concreta de la localidad. A la izquierda el dato, a la derecha lo que hace el plan con él.</p></div>
+  <div class="fac">
+    <article style="--c:#e3a64a"><div class="fn">01</div><h3>Mucha gente, repartida de forma desigual</h3>
+      <div class="fd"><b>1.037.929</b><span>habitantes · 26.933 por km²</span></div><div class="fd"><b>434 ↔ 90</b><span>hab/ha · Patio Bonito ↔ Tintal Norte</span></div>
+      <p class="fr"><i>→</i>Un mercado con <b>entrada barrial propia</b> (Calle 7A) y horario independiente de las aulas: la demanda está en los barrios densos, no dentro de la fábrica.</p>
+      <div class="ff">ASIS Kennedy 2024 · proyecciones 2024 por UPZ</div></article>
+    <article style="--c:#e0664f"><div class="fn">02</div><h3>La comida llega lejos de la casa</h3>
+      <div class="fd"><b>28 %</b><span>tiene una plaza a ≤ 15 min (suroccidente)</span></div><div class="fd"><b>2</b><span>plazas distritales en toda Kennedy</span></div>
+      <p class="fr"><i>→</i><b>12 puestos</b> de mercado de enseñanza y una calle que atraviesa el predio: acercar la compra donde hoy hay un muro.</p>
+      <div class="ff">SDP 2022 · IDECA/IPES 2021</div></article>
+    <article style="--c:#5fb3d9"><div class="fn">03</div><h3>Una economía que vive del abasto</h3>
+      <div class="fd"><b>20–25 mil</b><span>empleos directos en Corabastos</span></div><div class="fd"><b>5.000+</b><span>locales en la central</span></div>
+      <p class="fr"><i>→</i>El instituto forma en lo que ya es oficio del barrio: poscosecha, pesaje, lotes y venta. El <b>módulo D</b> siembra por pedido de un comerciante real.</p>
+      <div class="ff">Alcaldía de Bogotá 2024 · La República</div></article>
+    <article style="--c:#8fc46a"><div class="fn">04</div><h3>Vecinos ya organizados por el bosque</h3>
+      <div class="fd"><b>2017</b><span>nace Salvemos el Bosque Bavaria</span></div><div class="fd"><b>21</b><span>propuestas ciudadanas en el decreto de 2023</span></div>
+      <p class="fr"><i>→</i>El bosque queda <b>entero</b>, con observación desde el borde; el patio de memoria y la jornada barrial le dan al colectivo un lugar dentro del predio.</p>
+      <div class="ff">El Espectador · El Tiempo · Alcaldía 2023</div></article>
+    <article style="--c:#a98bd6"><div class="fn">05</div><h3>Hogares de ingreso medio y bajo</h3>
+      <div class="fd"><b>96 %</b><span>vive en estratos 2 y 3</span></div><div class="fd"><b>31,6 %</b><span>de los hogares se considera pobre</span></div>
+      <p class="fr"><i>→</i>Formación aplicada para <b>96 estudiantes por jornada</b> cerca de casa: el aprendizaje se mide en lo que se vende, no solo en el aula.</p>
+      <div class="ff">Encuesta Multipropósito 2021 · ASIS 2024</div></article>
+    <article style="--c:#e58aa8"><div class="fn">06</div><h3>Poco espacio público para encontrarse</h3>
+      <div class="fd"><b>6,6 m²</b><span>de verde por habitante</span></div><div class="fd"><b>2,78 m²</b><span>en la UPZ Corabastos</span></div>
+      <p class="fr"><i>→</i>Plaza de llegada (D1), patio de intercambio (D2) y calle peatonal: <b>lugares de encuentro</b> abiertos al barrio.</p>
+      <div class="ff">SDS · ACCVSyE Kennedy 2021</div></article>
+    <article style="--c:#b98a57"><div class="fn">07</div><h3>Residuos que se acumulan</h3>
+      <div class="fd"><b>~100 t</b><span>al día en Corabastos, 65 % orgánicos</span></div><div class="fd"><b>+48 h</b><span>acumulados en 2025</span></div>
+      <p class="fr"><i>→</i>Poscosecha con <b>área de orgánicos</b> y salida de servicio propia: el material sale el mismo día.</p>
+      <div class="ff">SDA · informe de gestión Corabastos 2025</div></article>
+  </div>
+
+  <figure class="fig red-int">
+    <div class="tit">Cómo cambian las interacciones</div>
+    <div class="red-btns" role="group" aria-label="Escenario"><button type="button" data-m="hoy" aria-pressed="true">Hoy</button><button type="button" data-m="prop" aria-pressed="false">Con la propuesta</button></div>
+    <svg id="g-int" viewBox="0 0 900 455" role="img" aria-label="Red de actores de Kennedy antes y después de la propuesta"></svg>
+    <figcaption id="int-cap"></figcaption>
+  </figure>
+
+  <div class="tabla-scroll" style="margin-top:22px"><table class="tabla">
+    <thead><tr><th>Quiénes</th><th>Hoy</th><th>Con la propuesta</th></tr></thead>
+    <tbody>
+      <tr><td>Vecinos · predio</td><td>Un muro; se rodea la fábrica</td><td>Se atraviesa de la 71B a la 7A por una calle pública</td></tr>
+      <tr><td>Productores · compradores</td><td>Se encuentran a través de la central mayorista</td><td>Venta directa en 12 puestos y pedidos al módulo D</td></tr>
+      <tr><td>Estudiantes · comerciantes</td><td>Mundos separados</td><td>El mercado es el aula: registran lotes y ven qué se vende</td></tr>
+      <tr><td>Colectivo · bosque</td><td>Defensa desde afuera, por vía judicial</td><td>Observación y registro desde el borde, con lugar en el predio</td></tr>
+      <tr><td>Camiones · peatones</td><td>—</td><td>Separados: servicio por Boyacá, público por 71B y 7A</td></tr>
+      <tr><td>Barrio · instituto</td><td>—</td><td>Jornada barrial: el mercado abre aunque las aulas cierren</td></tr>
+    </tbody></table></div>
+  <p class="nota">Las interacciones de la propuesta son hipótesis de diseño. Se verifican con conteos de paso, registro de ventas por lote y encuentros en el patio D2 después de abrir.</p>
+</section>
+
 <section class="lamina" id="l-programa">
   <div class="enc"><div class="k">Programa · 1.ª etapa</div><h2>2.065 m² programados</h2>
     <p>Las plazas de D1 y D2, la calle peatonal y las áreas de maniobra se miden aparte, sobre sus huellas reales.</p></div>
@@ -324,6 +398,35 @@ main{position:relative;z-index:3}
   </ul>
 </section>
 </main>
+<script>
+/* sobre las láminas se esconden los controles del 3D */
+{ const vis = new Set(), hud = document.getElementById('hud');
+  const io = new IntersectionObserver(es => { es.forEach(e => e.isIntersecting ? vis.add(e.target) : vis.delete(e.target)); hud.style.opacity = vis.size ? 0 : 1; hud.style.visibility = vis.size ? 'hidden' : 'visible'; }, { threshold: .15 });
+  document.querySelectorAll('.lamina').forEach(l => io.observe(l)); }
+/* tarjetas de factores: entran al aparecer */
+{ const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { threshold: .2 });
+  document.querySelectorAll('.fac article').forEach((a, i) => { a.style.transitionDelay = (i % 3) * .1 + 's'; io.observe(a); }); }
+/* red de actores: hoy vs con la propuesta */
+{ const NS = 'http://www.w3.org/2000/svg', s = document.getElementById('g-int'), el = (t, a, p = s) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); p.append(e); return e; };
+  const N = { vec: [110, 90, 'Vecinos', '#e0664f'], est: [110, 340, 'Estudiantes', '#e3a64a'], col: [330, 40, 'Colectivo del bosque', '#8fc46a'], bos: [600, 40, 'Bosque', '#4f8a3c'],
+    mer: [450, 215, 'Mercado · plaza', '#e0664f'], pro: [790, 110, 'Productores', '#5fb3d9'], cor: [790, 330, 'Corabastos', '#b98a57'], com: [560, 390, 'Comerciantes', '#a98bd6'] };
+  // [a, b, hoy (0 no existe, 1 débil), propuesta (0..3 intensidad), flujo]
+  const R = [['vec','mer',0,3,1],['est','mer',0,2,1],['est','com',0,2,0],['pro','mer',0,2,1],['pro','cor',3,2,1],['cor','com',3,2,1],['com','vec',2,2,0],['vec','col',2,3,0],['col','bos',1,3,0],['est','bos',0,1,0],['vec','bos',0,1,0],['pro','est',0,2,0]];
+  const cx = (k) => N[k][0], cy = (k) => N[k][1];
+  const muro = el('g', { class: 'muro' }); el('rect', { x: 365, y: 150, width: 170, height: 130, rx: 10, fill: 'none', stroke: '#8c7d6c', 'stroke-width': 3, 'stroke-dasharray': '2 6' }, muro);
+  el('text', { x: 450, y: 296, 'text-anchor': 'middle', fill: '#8b9aa7', 'font-size': 11, 'font-family': 'JetBrains Mono, monospace' }, muro).textContent = 'MURO · PREDIO CERRADO';
+  const arcos = R.map(([a, b, h, p, f]) => { const mx = (cx(a) + cx(b)) / 2, my = (cy(a) + cy(b)) / 2 - 30; const e = el('path', { class: 'ar' + (f ? ' flu' : ''), d: `M${cx(a)} ${cy(a)} Q${mx} ${my} ${cx(b)} ${cy(b)}`, stroke: N[a][3] }); return { e, h, p }; });
+  Object.entries(N).forEach(([k, [x, y, n, c]]) => { const g = el('g', {}); el('circle', { cx: x, cy: y, r: 26, fill: '#111820', stroke: c, 'stroke-width': 2.5 }, g); el('circle', { cx: x, cy: y, r: 7, fill: c }, g);
+    const t = el('text', { x, y: y + 44, 'text-anchor': 'middle', fill: '#e6ecf0', 'font-size': 13, 'font-family': 'Space Grotesk, sans-serif' }, g); t.textContent = n; });
+  const CAP = { hoy: 'Hoy: el predio es un muro. Productores y comerciantes se encuentran a través de Corabastos; vecinos y colectivo defienden el bosque desde afuera; estudiantes y mercado no se tocan.',
+    prop: 'Con la propuesta: el mercado se vuelve el centro de una red barrial. Vecinos y estudiantes entran; productores venden directo; el colectivo observa el bosque desde adentro; Corabastos sigue, pero ya no es el único puente.' };
+  const pinta = (m) => { arcos.forEach(({ e, h, p }) => { const v = m === 'hoy' ? h : p; e.style.opacity = v ? .25 + v * .25 : 0; e.style.strokeWidth = 1 + v * 1.6; }); muro.style.opacity = m === 'hoy' ? 1 : 0;
+    document.getElementById('int-cap').textContent = CAP[m]; document.querySelectorAll('.red-btns button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.m === m))); };
+  let modo = 'hoy', manual = false; pinta(modo);
+  document.querySelectorAll('.red-btns button').forEach(b => b.onclick = () => { manual = true; modo = b.dataset.m; pinta(modo); });
+  // al entrar en pantalla pasa solo de «hoy» a «con la propuesta»
+  new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting && !manual) setTimeout(() => { if (!manual) { modo = 'prop'; pinta(modo); } }, 1800); }), { threshold: .5 }).observe(s); }
+</script>
 <script type="module" src="data3d/plan_maestro.js?v=1"></script>
 </body>
 </html>

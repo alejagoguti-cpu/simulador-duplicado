@@ -18,7 +18,7 @@ export function crearRedColegios({ T3, lw, COLE = null }) {
     .catch(e => console.warn('red de colegios:', e));
 
   function armar(R, C) {
-    const COL = { red: '#e879f9', hue: '#a3e635', inst: '#60a5fa', lab: '#c084fc', campo: '#4ade80', acc: '#fbbf24' };
+    const COL = { red: '#76b7b2', hue: '#a3e635', inst: '#60a5fa', lab: '#c084fc', campo: '#4ade80', acc: '#fbbf24' };
     const DEST = { inst: { n: 'Instituto de enseñanza', c: COL.inst, f: 'Jornadas mensuales en bus', d: 'Más de 4 km: la visita es larga y poco frecuente; se aprovecha en el aula (módulos del ensayo, datos de su huerta y presentación de resultados).' },
       lab: { n: 'Centro de laboratorios NBIC', c: COL.lab, f: 'Salidas quincenales', d: 'Entre 2,2 y 4 km: traen las muestras y registros de su parque-huerta para analizarlos (suelo, sensores, germinación).' },
       campo: { n: 'Campo experimental', c: COL.campo, f: 'Salidas semanales a pie o en bici', d: 'A menos de 2,2 km: práctica directa de cultivo en las camas docentes y los invernaderos del distrito.' } };
@@ -57,18 +57,27 @@ void main(){ float d=fract((vD-uT*uV)/uS); float f=smoothstep(0.,10.,vD)*smooths
     const CAPAS = {};
     const capa = (k, curvas, col, r0, vel, sep) => { const G = unir(curvas, r0);
       for (const base of [true, false]) { const m = new THREE.Mesh(G, matEnlace(col, vel, sep, r0, base)); m.renderOrder = base ? 12 : 13; m.frustumCulled = false; grupo.add(m); (CAPAS[k] = CAPAS[k] || []).push(m); } };
-    // 1. colegio – colegio
-    capa('red', R.enlaces.map(([i, j, d]) => arco(P[i], P[j], 6 + Math.min(110, d * 0.16))), COL.red, 0.5, 26, 120);
-    // 2. colegio -> parque-huerta (llega al borde del módulo de huerta, no a su centro)
+    /* La red se lee en TRES PASOS, cada grupo con su color (el de su huerta):
+       1. grupos: los colegios que comparten huerta, unidos entre sí solo dentro del grupo (líneas bajas, sin cruzar toda Kennedy)
+       2. a la huerta: de cada colegio, una línea baja de su color hasta su huerta
+       3. a Bavaria: UNA línea gruesa por huerta hasta el edificio de Bavaria Común que le toca (no 74 líneas sueltas) */
+    const PAL = ['#a3e635', '#22d3ee', '#f472b6', '#fbbf24', '#a78bfa', '#34d399', '#fb7185', '#60a5fa', '#f97316', '#76b7b2', '#2dd4bf', '#facc15'];
+    const CG = H.map((_, k) => PAL[k % PAL.length]); // color de cada grupo
     const borde = (h, p) => { const dx = p[0] - h.c[0], dz = p[1] - h.c[1], n = Math.hypot(dx, dz) || 1, t = h.r + 4; return [h.c[0] + dx / n * t, h.c[1] + dz / n * t]; }; // borde de la huerta circular
-    capa('hue', R.asig.map(([h, d], i) => arco(P[i], borde(H[h], P[i]), 6 + Math.min(90, d * 0.12), 5, 2)), COL.hue, 0.45, 30, 90);
-    // 3. colegio -> entrada -> edificio de Bavaria Común
-    for (const k of ['inst', 'lab', 'campo']) {
-      const cv = []; R.bav.forEach(([kk, e, d], i) => { if (kk !== k) return; const E = R.ent[e], D = R.dest[k], a = P[i], hgt = 20 + Math.min(260, d * 0.07);
-        cv.push(new THREE.CatmullRomCurve3([V3(a[0], 5, a[1]), V3(a[0] + (E[0] - a[0]) * 0.5, hgt, a[1] + (E[1] - a[1]) * 0.5), V3(E[0] + (a[0] - E[0]) * 0.06, 24, E[1] + (a[1] - E[1]) * 0.06), V3(E[0], 9, E[1]), V3(D[0], 12, D[1])], false, 'centripetal')); });
-      if (cv.length) capa('bav', cv, COL[k], 0.5, 40, 160);
-    }
-    // anillos en las entradas de Bavaria y en los tres edificios destino
+    H.forEach((h, k) => {
+      const mios = R.asig.map((a, i) => [a, i]).filter(([a]) => a[0] === k).map(([, i]) => i), set = new Set(mios);
+      const en = R.enlaces.filter(([i, j]) => set.has(i) && set.has(j));
+      if (en.length) capa('red', en.map(([i, j, d]) => arco(P[i], P[j], 3 + Math.min(30, d * 0.03), 3, 3)), CG[k], 0.55, 22, 110);
+      if (mios.length) capa('hue', mios.map(i => arco(P[i], borde(h, P[i]), 4 + Math.min(40, dd(P[i], h.c) * 0.05), 3, 2)), CG[k], 0.8, 30, 90);
+    });
+    // 3. huerta -> entrada -> edificio de Bavaria Común (el que le toca a la mayoría de sus colegios)
+    const destH = H.map((h, k) => { const c = { inst: 0, lab: 0, campo: 0 }; R.asig.forEach((a, i) => { if (a[0] === k) c[R.bav[i][0]]++; }); return Object.entries(c).sort((a, b) => b[1] - a[1])[0][0]; });
+    H.forEach((h, k) => { const D = R.dest[destH[k]], e = Object.keys(R.ent).sort((a, b) => (dd(h.c, R.ent[a]) + dd(R.ent[a], D)) - (dd(h.c, R.ent[b]) + dd(R.ent[b], D)))[0], E = R.ent[e], dist = dd(h.c, E);
+      const cv = new THREE.CatmullRomCurve3([V3(h.c[0], 8, h.c[1]), V3(h.c[0] + (E[0] - h.c[0]) * 0.5, 30 + Math.min(180, dist * 0.045), h.c[1] + (E[1] - h.c[1]) * 0.5), V3(E[0], 18, E[1]), V3(D[0], 12, D[1])], false, 'centripetal');
+      capa('bav', [cv], CG[k], 1.2 + nH[k] * 0.12, 40, 140); });
+    // anillo del color del grupo en el piso de cada colegio
+    const anCol = new THREE.RingGeometry(9, 13, 32).rotateX(-Math.PI / 2);
+    R.asig.forEach(([k], i) => { const m = new THREE.Mesh(anCol, new THREE.MeshBasicMaterial({ color: CG[k], transparent: true, opacity: 0.9, depthWrite: false, toneMapped: false, side: THREE.DoubleSide })); m.position.set(P[i][0], 1.4, P[i][1]); m.renderOrder = 11; grupo.add(m); (CAPAS.red = CAPAS.red || []).push(m); });    // anillos en las entradas de Bavaria y en los tres edificios destino
     const anillos = [];
     const anillo = (p, r, col) => { const m = new THREE.Mesh(new THREE.RingGeometry(r * 0.78, r, 48).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.85, depthWrite: false, toneMapped: false, side: THREE.DoubleSide }));
       m.position.set(p[0], 1.2, p[1]); m.renderOrder = 11; grupo.add(m); anillos.push(m); (CAPAS.bav = CAPAS.bav || []).push(m); return m; };
@@ -202,7 +211,7 @@ void main(){ float d=fract((vD-uT*uV)/uS); float f=smoothstep(0.,10.,vD)*smooths
 .cr-lb .pt{position:absolute;left:10px;top:100%;width:1px;height:18px;background:linear-gradient(var(--c),transparent)}
 .cr-lb.act .cj,.cr-lb:hover .cj{border-color:var(--c);box-shadow:0 0 0 1px var(--c),0 8px 22px rgba(0,0,0,.45)}
 .cr-lb.dim{opacity:.4}
-.cr-lb:focus-visible{outline:2px solid #e879f9;outline-offset:2px;border-radius:6px}
+.cr-lb:focus-visible{outline:2px solid #76b7b2;outline-offset:2px;border-radius:6px}
 @media(max-width:760px){.cr-lb small{display:none}.cr-lb b{font-size:10px}.cr-lb .t{padding:3px 6px}.cr-lb.sec{display:none!important}}
 #cr{position:fixed;z-index:32;right:14px;top:14px;width:380px;max-height:calc(100vh - 118px);display:none;flex-direction:column;font-family:Inter,system-ui,sans-serif;color:#e9ebec;
   background:rgba(12,14,17,.84);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.08);border-radius:12px;box-shadow:0 18px 44px rgba(0,0,0,.4);overflow:hidden}
@@ -212,8 +221,8 @@ body.cr-on #dock{display:none!important}
 #cr header,#cr .tabs{flex:none}#cr .cuerpo{flex:1 1 auto;min-height:0}
 #cr header{position:relative;padding:14px 16px 10px;border-bottom:1px solid rgba(255,255,255,.06)}
 #cr .cerrar{position:absolute;right:10px;top:10px;width:28px;height:28px;border-radius:7px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#cfd5d9;font:400 17px/1 Inter,system-ui,sans-serif;cursor:pointer}
-#cr .cerrar:hover{background:rgba(255,255,255,.1);color:#fff}#cr .cerrar:focus-visible{outline:2px solid #e879f9;outline-offset:1px}
-#cr .ey{padding-right:34px;font:500 9.5px 'JetBrains Mono',ui-monospace,monospace;letter-spacing:.16em;text-transform:uppercase;color:#e879f9}
+#cr .cerrar:hover{background:rgba(255,255,255,.1);color:#fff}#cr .cerrar:focus-visible{outline:2px solid #76b7b2;outline-offset:1px}
+#cr .ey{padding-right:34px;font:500 9.5px 'JetBrains Mono',ui-monospace,monospace;letter-spacing:.16em;text-transform:uppercase;color:#76b7b2}
 #cr h2{margin:5px 0 6px;font:600 18px Inter,system-ui,sans-serif;letter-spacing:-.01em}
 #cr .lead{margin:0;font-size:12.5px;line-height:1.5;color:#b9c1c6}
 #cr .kp{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:10px}
@@ -222,12 +231,12 @@ body.cr-on #dock{display:none!important}
 #cr .kp span{font-size:10px;color:#8e979d;line-height:1.25;display:block;margin-top:2px}
 #cr .tabs{display:flex;gap:2px;padding:6px 8px 0;overflow-x:auto;scrollbar-width:none}
 #cr .tabs button{flex:none;border:0;background:none;color:#8e979d;font:500 11.5px Inter,system-ui,sans-serif;padding:7px 9px;border-radius:7px 7px 0 0;cursor:pointer;border-bottom:2px solid transparent}
-#cr .tabs button[aria-selected="true"]{color:#fff;border-bottom-color:#e879f9}
-#cr .tabs button:focus-visible{outline:2px solid #e879f9;outline-offset:-2px}
+#cr .tabs button[aria-selected="true"]{color:#fff;border-bottom-color:#76b7b2}
+#cr .tabs button:focus-visible{outline:2px solid #76b7b2;outline-offset:-2px}
 #cr .cuerpo{overflow:auto;padding:10px 12px 12px;border-top:1px solid rgba(255,255,255,.06);overscroll-behavior:contain}
 #cr .it{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:2px 9px;align-items:start;padding:8px 6px;border-radius:8px;cursor:pointer}
 #cr .it:hover,#cr .it.act{background:rgba(255,255,255,.05)}
-#cr .it:focus-visible{outline:2px solid #e879f9;outline-offset:-2px}
+#cr .it:focus-visible{outline:2px solid #76b7b2;outline-offset:-2px}
 #cr .it i{grid-row:span 2;width:22px;height:22px;border-radius:6px;background:var(--c);display:flex;align-items:center;justify-content:center;font:600 10px 'JetBrains Mono',ui-monospace,monospace;color:#0b0d10;font-style:normal}
 #cr .it b{font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis}
 #cr .it em{font:500 10.5px 'JetBrains Mono',ui-monospace,monospace;color:#cfd5d9;font-style:normal;white-space:nowrap}
@@ -249,13 +258,19 @@ body.cr-on #dock{display:none!important}
 #cr .lg{display:flex;flex-wrap:wrap;gap:4px 12px;font:500 10px 'JetBrains Mono',ui-monospace,monospace;color:#9aa4ab}
 #cr .lg span{display:inline-flex;align-items:center;gap:5px}#cr .lg i{width:8px;height:8px;border-radius:2px}
 #cr .esc{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:5px 6px;border-radius:6px;font-size:11.5px;color:#cfd5d9;cursor:pointer}
-#cr .esc:hover{background:rgba(255,255,255,.05)}#cr .esc:focus-visible{outline:2px solid #e879f9;outline-offset:-2px}
+#cr .esc:hover{background:rgba(255,255,255,.05)}#cr .esc:focus-visible{outline:2px solid #76b7b2;outline-offset:-2px}
 #cr .esc span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #cr .esc .e{font:600 9.5px 'JetBrains Mono',ui-monospace,monospace;color:#0b0d10;background:#fbbf24;border-radius:4px;padding:1px 5px}
 #cr .esc .d{font:500 10.5px 'JetBrains Mono',ui-monospace,monospace;color:#8e979d;min-width:44px;text-align:right}
+#cr .pasos{display:grid;gap:6px;margin:8px 6px 0}
+#cr .paso{display:grid;grid-template-columns:30px minmax(0,1fr);gap:10px;align-items:start;text-align:left;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.035);color:#b9c1c6;font:400 11.5px/1.45 Inter,system-ui,sans-serif;cursor:pointer}
+#cr .paso span{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:600 13px 'JetBrains Mono',monospace;color:#0b0d10;background:linear-gradient(135deg,#a3e635,#22d3ee)}
+#cr .paso b{display:block;color:#fff;font-size:12.5px;font-weight:600;margin-bottom:2px}
+#cr .paso:hover{border-color:rgba(255,255,255,.2)}#cr .paso.on{border-color:#a3e635;background:rgba(163,230,53,.1)}
+#cr .paso:focus-visible{outline:2px solid #76b7b2;outline-offset:1px}
 #cr .pie{flex:none;display:flex;gap:6px;padding:10px 12px;border-top:1px solid rgba(255,255,255,.06)}
 #cr .pie button{flex:1;height:34px;border-radius:8px;cursor:pointer;font:500 12px Inter,system-ui,sans-serif;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#cfd5d9}
-#cr .pie button:hover{background:rgba(255,255,255,.1);color:#fff}#cr .pie button:focus-visible{outline:2px solid #e879f9;outline-offset:1px}
+#cr .pie button:hover{background:rgba(255,255,255,.1);color:#fff}#cr .pie button:focus-visible{outline:2px solid #76b7b2;outline-offset:1px}
 @media(max-width:760px){
   #cr{left:8px;right:8px;width:auto;top:auto;bottom:calc(max(8px,env(safe-area-inset-bottom)) + 66px);max-height:56vh}
   #cr.min .cuerpo,#cr.min .tabs,#cr.min .kp,#cr.min .lead,#cr.min .pie{display:none}
@@ -270,7 +285,7 @@ body.cr-on #dock{display:none!important}
       d.innerHTML = `<div class="cj"><span class="k">${num}</span><span class="t"><b>${n}</b>${sub ? `<small>${sub}</small>` : ''}</span></div><i class="pt"></i>`;
       if (fn) { d.setAttribute('role', 'button'); d.tabIndex = 0; d.setAttribute('aria-label', n); d.onclick = fn; d.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fn(); } }; }
       document.body.appendChild(d); const o = { d, pos }; ETQ.push(o); return o; };
-    const LBH = H.map((h, k) => etiqueta(h.n, `huerta circular Ø${Math.round(h.r * 2)} m · ${nH[k]} colegios`, COL.hue, [h.c[0], 9, h.c[1]], 'hue', () => enfocarHuerta(k), 'H' + (k + 1)));
+    const LBH = H.map((h, k) => etiqueta(h.n, `grupo ${k + 1} · ${nH[k]} colegios`, CG[k], [h.c[0], 9, h.c[1]], 'hue', () => enfocarHuerta(k), String(k + 1)));
     const nDest = { inst: 0, lab: 0, campo: 0 }, nEnt = { A: 0, B: 0, C: 0 }; R.bav.forEach(b => { nDest[b[0]]++; nEnt[b[1]]++; });
     // Bavaria: de lejos una sola etiqueta; de cerca los tres edificios y (más cerca) las tres entradas
     const LBB = Object.entries(R.dest).map(([k, p]) => Object.assign(etiqueta(DEST[k].n, `${nDest[k]} colegios`, COL[k], [p[0], 45, p[1]], 'bav', () => volarA(p, 260), k === 'inst' ? 'I' : k === 'lab' ? 'L' : 'C'), { max: 2600 }));
@@ -286,13 +301,15 @@ body.cr-on #dock{display:none!important}
     const fila = (num, col, n, a, d, data) => `<div class="it" ${data || ''} tabindex="0" role="button" style="--c:${col}"><i>${num}</i><b>${n}</b><em>${a || ''}</em><p>${d}</p></div>`;
     const ley = (col, n, d) => `<div class="ley" style="--c:${col}"><i></i><div><b>${n}</b><br>${d}</div></div>`;
     const TABS = {
-      red: () => `<div class="ind" style="margin-top:0">Cada colegio se une con sus vecinos para compartir docentes, semillas, herramientas y datos de cultivo. Base: <b>árbol de expansión mínima</b> (la red más corta que no deja ningún colegio suelto) más el vecino más cercano de cada uno; se descartan los enlaces de más de <b>1,5 km</b> y los que se cruzan.</div>
-        <div class="sub">Lo que se ve</div>` +
-        ley(COL.red, `Colegio – colegio · ${R.enlaces.length} enlaces`, `${fmt(kmRed, 1)} km en total; enlace medio de ${fmt(medRed)} m (10–20 min a pie). ${nComp > 1 ? `Quedan ${nComp} subredes: entre ellas hay más de 1,5 km.` : ''}`) +
-        ley(COL.hue, `Colegio → parque-huerta · ${N} recorridos`, `Cada colegio va al parque-huerta más cercano; distancia media ${fmt(medHue)} m.`) +
-        ley(COL.lab, `Colegio → Bavaria Común · ${N} recorridos`, `Por la entrada más corta hasta el edificio que le corresponde (color del edificio).`) +
-        `<p class="nota">Los pulsos avanzan en el sentido del viaje: del colegio a la huerta y a Bavaria. Fuente: OpenStreetMap (colegios con edificio en el 3D) y parques del IDRD.</p>`,
-      hue: () => `<div class="ind" style="margin-top:0">${H.length} <b>huertas efímeras circulares</b> (como la de la Biblioteca El Tintal: cubiertas de membrana sobre columnas-árbol, bancales y composteras; ${fmt(haH)} m² en total), una por cada 4 colegios o menos, en los parques del IDRD que cubren más colegios a menos de 1 km. Se arman sobre el claro más amplio de cada parque, sin tocar árboles, canchas ni edificios, y se pueden desmontar.</div>
+      red: () => `<div class="ind" style="margin-top:0">Así se conectan los <b>${N} colegios</b>: se agrupan alrededor de una huerta, caminan hasta ella y cada huerta va al distrito Bavaria Común. Toca un paso para verlo solo.</div>
+        <div class="pasos">
+          <button type="button" class="paso" data-p="red"><span>1</span><div><b>Grupos de colegios</b>Los colegios cercanos forman un grupo (un color). Comparten docentes, semillas y herramientas.</div></button>
+          <button type="button" class="paso" data-p="hue"><span>2</span><div><b>Caminan a su huerta</b>Cada colegio va a pie a la huerta de su grupo: en promedio ${fmt(medHue)} m (10–15 min).</div></button>
+          <button type="button" class="paso" data-p="bav"><span>3</span><div><b>La huerta va a Bavaria</b>Una ruta por grupo hasta el edificio que le toca: campo, laboratorios o instituto.</div></button>
+        </div>
+        <div class="sub">Los ${H.length} grupos</div>` +
+        H.map((h, k) => `<div class="it" data-h="${k}" tabindex="0" role="button" style="--c:${CG[k]}"><i>${k + 1}</i><b>${h.n}</b><em>${nH[k]} colegios</em><p>Huerta circular · va a ${DEST[destH[k]].n.toLowerCase()}</p></div>`).join('') +
+        `<p class="nota">Fuente: OpenStreetMap (colegios con edificio en el 3D) y parques del IDRD. Los pulsos avanzan en el sentido del viaje.</p>`,      hue: () => `<div class="ind" style="margin-top:0">${H.length} <b>huertas efímeras circulares</b> (como la de la Biblioteca El Tintal: cubiertas de membrana sobre columnas-árbol, bancales y composteras; ${fmt(haH)} m² en total), una por cada 4 colegios o menos, en los parques del IDRD que cubren más colegios a menos de 1 km. Se arman sobre el claro más amplio de cada parque, sin tocar árboles, canchas ni edificios, y se pueden desmontar.</div>
         <div class="pisos">
           <div class="piso"><div class="n">Arriba<span>6 – 9 m</span></div><ul><li><b>Cubiertas efímeras</b> de membrana traslúcida con costillas blancas, sobre <b>columnas-árbol</b> que recogen el agua lluvia.</li><li>Sobre las cubiertas, <b>jardineras con flores</b> para abejas, colibríes y mariposas: los animales se alimentan arriba, no de la cosecha.</li></ul></div>
           <div class="piso"><div class="n">Abajo<span>±0 m</span></div><ul><li><b>Bancales orgánicos</b> de concreto claro sembrados (plantas medicinales y de hoja) sobre un prado circular.</li><li><b>Composteras</b> de madera y bancas curvas en el anillo exterior. Se arma y se desmonta.</li></ul></div>
@@ -307,8 +324,8 @@ body.cr-on #dock{display:none!important}
           R.bav.map((b, i) => [b, i]).filter(([b]) => b[0] === k).sort((a, b) => a[0][2] - b[0][2]).map(([b, i]) => `<div class="esc" data-c="${i}" tabindex="0" role="button"><span>${C[i].n}</span><span class="e">${b[1]}</span><span class="d">${fmt(b[2] / 1000, 1)} km</span></div>`).join('')).join('')
     };
     pan.innerHTML = `<header><button type="button" class="cerrar" aria-label="Cerrar la red de colegios">&#215;</button><div class="ey">Colegios · red educativa</div><h2>Conectografía escolar</h2>
-      <p class="lead">Los colegios de Kennedy se enlazan entre sí, con una huerta efímera en el parque grande más cercano y con el distrito Bavaria Común.</p>
-      <div class="kp"><div><b>${N}</b><span>colegios con edificio</span></div><div><b>${R.enlaces.length}</b><span>enlaces entre colegios</span></div><div><b>${H.length}</b><span>huertas efímeras en parques</span></div></div></header>
+      <p class="lead">Tres pasos: los colegios se agrupan, caminan a su huerta y cada huerta va a Bavaria Común.</p>
+      <div class="kp"><div><b>${N}</b><span>colegios con edificio</span></div><div><b>${H.length}</b><span>grupos (uno por huerta)</span></div><div><b>${H.length}</b><span>huertas efímeras en parques</span></div></div></header>
       <nav class="tabs" role="tablist">${[['red', 'Red'], ['hue', 'Parques-huerta'], ['bav', 'Bavaria Común']].map(([k, n]) => `<button type="button" role="tab" data-t="${k}" aria-selected="false">${n}</button>`).join('')}</nav>
       <div class="cuerpo" role="tabpanel"></div>
       <div class="pie"><button type="button" id="cr-ver">Vista general</button></div>`;
@@ -321,7 +338,8 @@ body.cr-on #dock{display:none!important}
     };
     const pintar = () => { cuerpo.innerHTML = TABS[tab](); pan.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.t === tab))); cuerpo.scrollTop = 0; enfasis(tab === 'red' ? null : tab); };
     pan.querySelector('.tabs').onclick = (e) => { const b = e.target.closest('[data-t]'); if (!b) return; tab = b.dataset.t; pintar(); if (tab === 'bav') volarA([3990, 230], 900, 700); else if (tab === 'red') general(); };
-    const clic = (e) => { const it = e.target.closest('.it,.esc'); if (!it) return;
+    const clic = (e) => { const ps = e.target.closest('.paso'); if (ps) { const ya = ps.classList.contains('on'); cuerpo.querySelectorAll('.paso').forEach(x => x.classList.toggle('on', !ya && x === ps)); enfasis(ya ? null : ps.dataset.p); if (ps.dataset.p === 'bav' && !ya) volarA([2600, 700], 3600, 3200); else general(); return; }
+      const it = e.target.closest('.it,.esc'); if (!it) return;
       cuerpo.querySelectorAll('.it.act').forEach(x => x !== it && x.classList.remove('act')); it.classList.toggle('act');
       if (it.dataset.h !== undefined) enfocarHuerta(+it.dataset.h, true); else if (it.dataset.d) volarA(R.dest[it.dataset.d], 260); else if (it.dataset.c !== undefined) volarA(P[+it.dataset.c], 320); };
     cuerpo.addEventListener('click', clic); cuerpo.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); clic(e); } });
@@ -376,13 +394,13 @@ body.cr-on #dock{display:none!important}
         if (v) { pan.classList.toggle('min', innerWidth < 760); tab = 'red'; pintar(); ult = performance.now(); if (!raf) cuadro(); }
         else { cancelAnimationFrame(raf); raf = 0; cancelAnimationFrame(vuelo); ETQ.forEach(e => { e.d.style.display = 'none'; }); }
       },
-      general, enfocarHuerta, huertas: H
+      general, enfocarHuerta, huertas: H, colorDe: (i) => CG[R.asig[i][0]]
     };
   }
 
   return {
     ver(v) { v = !!v; if (v === on) return; on = v; if (listo) API.mostrar(v); },
     get on() { return on; }, grupo, listo: pDatos,
-    general() { if (API) API.general(); }, huerta(k) { if (API) API.enfocarHuerta(k); }
+    general() { if (API) API.general(); }, huerta(k) { if (API) API.enfocarHuerta(k); }, colorDe(i) { return API ? API.colorDe(i) : null; }
   };
 }

@@ -94,61 +94,82 @@ nave = max(BV['edif'], key=lambda e: Polygon(e['p']).area)['p']
 lado = max(((nave[i], nave[(i + 1) % len(nave)]) for i in range(len(nave))), key=lambda l: math.dist(*l))
 ang = math.atan2(lado[1][1] - lado[0][1], lado[1][0] - lado[0][0])
 ux, uy = math.cos(ang), math.sin(ang)
-RES = 3.0
-minx, miny, maxx, maxy = LOTE.buffer(60).bounds
-NX, NY = int((maxx - minx) / RES) + 1, int((maxy - miny) / RES) + 1
-from shapely import contains_xy
-gx, gy = np.meshgrid(minx + np.arange(NX) * RES, miny + np.arange(NY) * RES)
-fx, fy = gx.ravel(), gy.ravel()
-costo = np.full(fx.size, np.inf)
-dentro_l = contains_xy(LOTE.buffer(2), fx, fy); cerca_l = contains_xy(LOTE.buffer(55), fx, fy)
-costo[cerca_l] = 6.0                 # franja exterior (solo para llegar desde la puerta)
-costo[dentro_l] = 1.0
-costo[dentro_l & contains_xy(BOSQUE_POL, fx, fy)] = 5.0
-costo[contains_xy(OBST, fx, fy)] = np.inf
-ok = np.isfinite(costo)
-idx = np.arange(fx.size).reshape(NY, NX)
-filas, cols, pesos = [], [], []
-for dy, dx in ((0, 1), (1, 0), (1, 1), (1, -1)):
-    a = idx[max(0, -dy):NY - max(0, dy), max(0, -dx):NX - max(0, dx)] if dx >= 0 else idx[0:NY - dy, 1:NX]
-    b = idx[max(0, dy):NY, max(0, dx):NX] if dx >= 0 else idx[dy:NY, 0:NX - 1]
-    a, b = a.ravel(), b.ravel(); m = ok[a] & ok[b]
-    w = (costo[a[m]] + costo[b[m]]) / 2 * RES * (math.sqrt(2) if dx and dy else 1)
-    filas += [a[m], b[m]]; cols += [b[m], a[m]]; pesos += [w, w]
-GR = coo_matrix((np.concatenate(pesos), (np.concatenate(filas), np.concatenate(cols))), shape=(fx.size, fx.size)).tocsr()
-def celda(p):
-    i = int(round((p[1] - miny) / RES)); j = int(round((p[0] - minx) / RES))
-    best, bd = None, 1e9
-    for di in range(-6, 7):
-        for dj in range(-6, 7):
-            ii, jj = i + di, j + dj
-            if 0 <= ii < NY and 0 <= jj < NX and ok[idx[ii, jj]]:
-                d = math.hypot(di, dj)
-                if d < bd: bd, best = d, idx[ii, jj]
-    return best
-# plaza central: el punto libre más cercano al centro del conjunto de naves
-cen = EDIF_POL.centroid
-libre_c = [k for k in np.where(ok & dentro_l & ~contains_xy(BOSQUE_POL, fx, fy))[0]]
-hub = min(libre_c, key=lambda k: (fx[k] - cen.x) ** 2 + (fy[k] - cen.y) ** 2)
-from scipy.sparse.csgraph import dijkstra as _dij
-dist, pred = _dij(GR, directed=False, indices=hub, return_predecessors=True)
-caminos = []
-for nid, p in entradas:
-    c = celda(p)
-    if c is None or not np.isfinite(dist[c]): print('  puerta sin camino', p); continue
-    ruta = [c]
-    while ruta[-1] != hub and pred[ruta[-1]] >= 0: ruta.append(pred[ruta[-1]])
-    pts = [(p[0], p[1])] + [(fx[k], fy[k]) for k in ruta]
-    caminos.append(LineString(pts))
-from shapely.ops import linemerge
-red0 = linemerge(unary_union(caminos))
-def suavizar(g):
-    for tol in (5, 3, 1.5, 0.6):
-        s = g.simplify(tol)
-        if not s.intersects(EDIF_POL.buffer(3)): return s
-    return g
-red_nueva = unary_union([suavizar(g) for g in (red0.geoms if red0.geom_type == 'MultiLineString' else [red0])])
-lineas = list(red_nueva.geoms) if red_nueva.geom_type == 'MultiLineString' else [red_nueva]
+# MALLA REGULAR de pasajes (no caminos de menor costo, que salían en formas raras): cada calle que llega al borde del predio sigue
+# DERECHO hacia adentro, alineada con la retícula de la fábrica (eje de las naves u, y su perpendicular v); las líneas se cruzan y
+# forman manzanas. No pasan por edificios (7 m de aire), tanques ni bosque denso; cada edificio queda a menos de 14 m de un pasaje
+# (si no, se le abre un ramal recto). Así los pasajes continúan la malla del barrio y recorren todos los edificios.
+from shapely.ops import linemerge, nearest_points
+vx, vy = -uy, ux
+TRONCOS = unary_union([Point(a[0], a[1]).buffer(1.2) for a in AR])  # se respetan los árboles: el pasaje pasa entre los troncos, no los tala
+LIBRE = LOTE.buffer(-2).difference(OBST).difference(TRONCOS)
+LARGO = 2000
+def linea(p, d): return LineString([(p[0] - d[0] * LARGO, p[1] - d[1] * LARGO), (p[0] + d[0] * LARGO, p[1] + d[1] * LARGO)])
+def piezas(g):
+    if g.is_empty: return []
+    return [x for x in (g.geoms if hasattr(g, 'geoms') else [g]) if x.geom_type == 'LineString' and x.length >= 20]
+def recta(p, eje, cerca_de=None, lim=80):
+    """pieza recta por p (o corrida hasta ±6 m para esquivar troncos) en el eje dado: la más larga cerca del punto"""
+    nx, ny = -eje[1], eje[0]; mejor = None
+    for o in (0, 1.5, -1.5, 3, -3, 4.5, -4.5, 6, -6):
+        q = (p[0] + nx * o, p[1] + ny * o)
+        for g in piezas(linea(q, eje).intersection(LIBRE)):
+            d = g.distance(Point(cerca_de or q))
+            if d > lim: continue
+            sc = g.length - 3 * abs(o) - 2 * d
+            if mejor is None or sc > mejor[0]: mejor = (sc, g)
+    return mejor[1] if mejor else None
+# dirección con la que llega cada calle a su puerta
+llega = {}
+for s in base:
+    for k, i0_, i1_ in (('a', 0, 1), ('b', -1, -2)):
+        llega.setdefault(s[k], (s['p'][i0_][0] - s['p'][i1_][0], s['p'][i0_][1] - s['p'][i1_][1]))
+# CALLES INTERIORES: los corredores rectos más largos y libres entre las filas de edificios, a lo largo (u) y a lo ancho (v) de la
+# retícula de la fábrica, separados al menos 55 m; forman una cuadrícula. Cada puerta se une a la calle más cercana con UN tramo recto.
+TRONCO_U = unary_union([Point(a[0], a[1]).buffer(1.0) for a in AR])
+LIBRE2 = LOTE.buffer(-3).difference(EDIF_POL.buffer(6)).difference(TANQ).difference(TRONCO_U)
+from shapely import affinity as _af
+ANGD = math.degrees(ang); RL = _af.rotate(LIBRE2, -ANGD, origin=C)  # en este marco u = x, v = y
+x0_, y0_, x1_, y1_ = RL.bounds
+def mejor_pieza(g):
+    pz = [x for x in (g.geoms if hasattr(g, 'geoms') else [g]) if x.geom_type == 'LineString']
+    return max(pz, key=lambda x: x.length) if pz else None
+def corredores(horiz, n_max, sep=55, minimo=150):
+    cand = []
+    rng = np.arange(y0_, y1_, 2.0) if horiz else np.arange(x0_, x1_, 2.0)
+    for c in rng:
+        ln = LineString([(x0_ - 10, c), (x1_ + 10, c)]) if horiz else LineString([(c, y0_ - 10), (c, y1_ + 10)])
+        g = mejor_pieza(ln.intersection(RL))
+        if g is not None and g.length >= minimo: cand.append((g.length, c, g))
+    cand.sort(key=lambda z: -z[0]); el = []
+    for Lg, c, g in cand:
+        if all(abs(c - c2) >= sep for _, c2, _ in el): el.append((Lg, c, g))
+        if len(el) >= n_max: break
+    return [g for _, _, g in el]
+CALLES = [_af.rotate(g, ANGD, origin=C) for g in corredores(True, 3) + corredores(False, 4)]
+L_ = list(CALLES)
+for nid, p in entradas:  # cada puerta: un tramo recto hasta la calle interior más cercana (si no cruza edificios ni troncos)
+    M_ = unary_union(L_); q = nearest_points(M_, Point(p))[0]; s = LineString([p, (q.x, q.y)])
+    if s.length < 160 and not s.intersects(EDIF_POL.buffer(3)) and not s.intersects(TRONCO_U): L_.append(s)
+# cada calle interior se prolonga DERECHO hasta el borde del predio y se une a la calle del barrio más cercana (a menos de 50 m)
+nodos_calle = [s['p'][0] for s in base] + [s['p'][-1] for s in base]
+nodos_calle = [q for q in nodos_calle if LOTE.exterior.distance(Point(q)) < 60 and not LOTE.buffer(-5).contains(Point(q))]
+for g in list(CALLES):
+    cs = list(g.coords)
+    for e0, e1 in ((cs[0], cs[1]), (cs[-1], cs[-2])):
+        d = (e0[0] - e1[0], e0[1] - e1[1]); n = math.hypot(*d); d = (d[0] / n, d[1] / n)
+        ray = LineString([e0, (e0[0] + d[0] * 250, e0[1] + d[1] * 250)]); X = ray.intersection(LOTE.exterior)
+        if X.is_empty: continue
+        b = nearest_points(X, Point(e0))[0]; prol = LineString([e0, (b.x, b.y)])
+        if prol.intersects(EDIF_POL.buffer(3)): continue
+        if not nodos_calle: continue
+        q = min(nodos_calle, key=lambda q: math.dist(q, (b.x, b.y)))
+        if math.dist(q, (b.x, b.y)) > 50: continue
+        L_.append(LineString([e0, (b.x, b.y), q]))# solo lo que quedó conectado
+comp = unary_union([g.buffer(0.7) for g in L_]); comp = list(comp.geoms) if comp.geom_type == 'MultiPolygon' else [comp]
+prin = max(comp, key=lambda c: c.area); L_ = [g for g in L_ if g.buffer(0.7).intersects(prin)]
+red = unary_union(L_)
+lineas = list(linemerge(red).geoms) if linemerge(red).geom_type == 'MultiLineString' else [linemerge(red)]
+lineas = [g.simplify(0.5) for g in lineas if g.length >= 8]
 print('pasajes que tocan edificios:', sum(1 for g in lineas if g.intersects(EDIF_POL)))
 ent_pts = {(round(p[0], 1), round(p[1], 1)): nid for nid, p in entradas}
 def clave(p):
@@ -157,11 +178,14 @@ def clave(p):
     for (ex, ey), nid in ent_pts.items():
         if math.dist((ex, ey), p) < 0.6: return nid
     return 'n%.0f_%.0f' % (p[0] * 2, p[1] * 2)
+# se parten en los cruces para que la red sea un grafo (cada tramo de cruce a cruce)
+red_n = unary_union(lineas)
 nuevos = []
-for g in lineas:
+for g in (red_n.geoms if red_n.geom_type == 'MultiLineString' else [red_n]):
     pts = list(g.coords)
     if g.length < 1: continue
     nuevos.append({'a': clave(pts[0]), 'b': clave(pts[-1]), 'p': pts, 'L': g.length, 'hw': 'pasaje', 'nuevo': 1})
+red_nueva = red_n
 print('pasajes nuevos', len(nuevos), 'longitud', round(sum(s['L'] for s in nuevos)), 'm')
 
 # ---------------- sintaxis espacial ----------------

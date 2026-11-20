@@ -64,13 +64,13 @@ export function pintarModelos({ THREE, T3, on }) {
   const caja = new THREE.Box3(), vistos = new Set();
   for (const [k, uso] of MODELOS) {
     const g = T3[k]; const obj = g && (g.isObject3D ? g : g.grupo); if (!obj || !obj.traverse) continue;
-    const tinte = new THREE.Color(USOS[uso].c);
+    const tinte = new THREE.Color(USOS[k === 'bavaria' && T3.escenario === 'proyecto' ? 3 : uso].c); // con la propuesta Bavaria deja de ser industrial: dotacional y educativo
     obj.traverse(o => {
       if (!o.isMesh || o.isInstancedMesh || o.isPoints || /suelo|arbol|palma|planta|huert/i.test(o.name)) return;
       if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
       caja.copy(o.geometry.boundingBox); if (caja.max.y - caja.min.y < 4 && !/^tintal-/.test(o.name)) return;
       for (const m of [].concat(o.material)) {
-        if (!m || !m.color || vistos.has(m)) continue; vistos.add(m);
+        if (!m || !m.color || vistos.has(m)) continue; vistos.add(m); // (se repinta desde el color original: sirve al cambiar de escenario)
         if (!m.userData.colOrig) { m.userData.colOrig = m.color.clone(); m.userData.emiOrig = m.emissive ? m.emissive.clone() : null; }
         if (on) { m.color.copy(m.userData.colOrig).lerp(tinte, 0.7); if (m.emissive) m.emissive.copy(tinte).multiplyScalar(m.map || m.vertexColors ? 0.28 : 0.12); }
         else { m.color.copy(m.userData.colOrig); if (m.emissive && m.userData.emiOrig) m.emissive.copy(m.userData.emiOrig); }

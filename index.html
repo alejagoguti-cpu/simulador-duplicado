@@ -1,5 +1,14 @@
 <!DOCTYPE html>
 <html lang="es">
+<!--
+  SIMULADOR DE KENNEDY · Federación Policéntrica
+  Hecho con UNREAL ENGINE 5 + Cesium for Unreal: el proyecto está en unreal/Kennedy360 (Kennedy360.uproject y scripts de Python).
+  De Unreal vienen el marco de coordenadas del mundo (origen en el humedal El Burro; ver lw() y el desfase 2095.67, -109.06),
+  el modelo de agentes de alimentos y fauna (unreal/Kennedy360/Scripts/simular_agentes.py -> Importar/agentes/nodos.json ->
+  tools/propuesta_datos.py -> data3d/propuesta.json), el giro fotorrealista 360 (giro_render.html) y la calibración de árboles y luz.
+  Detalle: unreal/Kennedy360/README.md
+-->
+
 <head>
 <meta charset="UTF-8">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -160,7 +169,7 @@
 
 <div id="loader">
   <div class="cv-fotos" id="cvFotos">
-    <img class="on" src="presentacion/img/portada_render.jpg?v=5" alt="Kennedy en 3D: humedal El Burro, torres y barrios" />
+    <img class="on" src="presentacion/img/portada_render.webp?v=1" fetchpriority="high" alt="Kennedy en 3D: humedal El Burro, torres y barrios" />
   </div>
   <div class="cv-velo"></div>
   <div class="cv-city" id="cvCity"></div>
@@ -237,6 +246,16 @@
 <script type="module">
 // caché de JSON compartida: cada archivo se descarga y se lee UNA vez aunque lo pidan varios módulos (giro_sim.json, trees.json, estrategias.json…)
 window.cargarJSON = window.cargarJSON || ((c) => (u) => c[u] || (c[u] = fetch(u).then(r => { if (!r.ok) throw new Error(u + ' ' + r.status); return r.json(); })))({});
+/* ARRANQUE EN PARALELO: lo que necesita la portada para abrir con todo cargado se pide YA, todo a la vez. Antes se pedía en cadena (los usos de
+   los edificios esperaban al índice, las estrategias a las vías, los árboles 3D a todo lo anterior) y la conexión quedaba ociosa entre pasos.
+   Los JSON van a la caché compartida (mismas URL que piden los módulos). */
+if (!/[?&](modo|solo)=/.test(location.search)) {
+  ['data3d/trees.json', 'data3d/net.json', 'data3d/parques.json', 'data3d/water_bodies.json', 'data3d/edif/index.json', 'data3d/usos_edif.json?v=1', 'data3d/inem/celdas.json?v=1',
+   'data3d/bavaria.json?v=3', 'data3d/corabastos.json?v=3', 'data3d/tintal.json?v=2', 'data3d/conjuntos.json?v=3', 'data3d/estrategias.json?v=5', 'data3d/giro_sim.json',
+   'data3d/biotica.json?v=2', 'data3d/huertas_barrio.json?v=3', 'data3d/bavaria_arboles.json?v=3'].forEach(u => window.cargarJSON(u).catch(() => {}));
+  { const im = new Image(); im.src = 'data3d/textures/techos_kennedy.jpg'; } /* cubiertas reales (400 KB): antes se pedía tarde, detrás de la foto 3D */
+  /* los modelos 3D de los árboles NO se piden aquí: son ~4 MB y le quitaban la conexión al código de la página (giro_sim.js tardaba 49 s) */
+}
 /* ============================================================
    REN3D · KENNEDY 3D
    - Satélite real (Esri World Imagery)
@@ -832,6 +851,9 @@ function flight(ms) {
       if (T3.ao) { const mov = KEN && ahora - (T3._movT || 0) < 300; T3.ao.enabled = !mov; if (T3.rpLiviano) T3.rpLiviano.enabled = mov; }
     }
     if (T3.seguidor) T3.seguidor.update(dt); // seguir un agente (data3d/seguir.js): la cámara lo acompaña
+    { /* materiales transparentes de doble cara: un solo pase (evita el doble dibujo y las búsquedas de programa por cuadro); se revisa cada 2 s y al cambiar de escenario */
+      const t2 = performance.now(); if (t2 - (T3._fspT || 0) > 2000 || T3._fspEsc !== T3.escenario) { T3._fspT = t2; T3._fspEsc = T3.escenario;
+        T3.scene.traverse(o => { const ms = o.material; if (!ms) return; for (const m of Array.isArray(ms) ? ms : [ms]) if (m.transparent && m.side === T3.THREE.DoubleSide && !m.userData._fsp) { m.userData._fsp = 1; m.forceSinglePass = true; } }); } }
     if (!compilandoGPU(cam)) if (!(SIM && SIM.render(cam))) { if (T3.composer) T3.composer.render(); else T3.renderer.render(T3.scene, cam); } // con un sensor (CRT, NVG, FLIR) dibuja el simulador; si no, render con oclusión ambiental
     requestAnimationFrame(flight); return;
   }
@@ -899,8 +921,8 @@ const enZona = (x, y, margen = 0) => !ZON || (x - ZONA.x) ** 2 + (y - ZONA.y) **
 const MOVIL = QUEST || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (matchMedia('(pointer:coarse)').matches && Math.min(screen.width, screen.height) < 900);
 // ?modo=kennedy (giro.html): simulación de agentes de Kennedy sobre la maqueta (calles pintadas con sintaxis espacial, árboles semitransparentes, sin el tráfico ni el HUD de God's Eye)
 const KEN = true; // repositorio "simulador": siempre el simulador de Kennedy
-/* carga más rápida: lo pesado que se usa al final (modelo INEM, plantas del Tintal) empieza a bajar desde el inicio, solo descarga (sin procesar), así ya está en caché cuando se arma */
-setTimeout(() => ['data3d/inem/inem.glb', 'data3d/models/fern_02.glb', 'data3d/models/calathea_orbifolia_01.glb', 'data3d/models/nettle_plant.glb', 'data3d/models/periwinkle_plant.glb', 'data3d/models/celandine_01.glb', 'data3d/residuos.json?v=1'].forEach(u => fetch(u, { priority: 'low' }).then(r => r.arrayBuffer()).catch(() => {})), 2500);
+/* Sin pre-descargas: el modelo INEM (24 MB) y las plantas del Tintal (2,3 MB) bajaban mientras estaba la portada y le quitaban ancho de banda
+   a lo esencial (medido: la ventana de 25 a 56 s quedaba saturada). Cada módulo pide sus modelos cuando los arma, con la maqueta ya abierta. */
 if (KEN) ZONA.r = MOVIL ? 1500 : 2600; // modo Kennedy: edificios y árboles propios en un radio mayor alrededor de El Burro
 if (MOVIL) { LIVIANO = true; MEDIO = true; } // celular: sin sombras ni tráfico pesado, árboles más livianos y sin los modelos pesados, pero CON los edificios del entorno del humedal (archivo recortado de ~3 MB) desde que abre
 const DIA = { // ambiente de día soleado (se usa al crear la escena y al volver de la noche)
@@ -1192,14 +1214,24 @@ function actualizarMalla(T, dt) {
 function actualizarMallaIn(T, tl, dt) {
   tl.setResolutionFromRenderer(T.camera, T.renderer);
   T.camera.updateMatrixWorld();
-  if (!(T.anim && T.mallaMostrada && (T._tilesN = (T._tilesN || 0) + 1) % 6)) tl.update(); /* en el vuelo de llegada la foto 3D se refina cada 6 cuadros: vuelo fluido */
+  /* CARGA: mientras se arma el panel (árboles, vías, edificios, estrategias) la foto 3D se PAUSA en cuanto tiene su primera capa gruesa: sus teselas
+     son pequeñas y muchas (12 MB en el primer minuto) y le quitaban la conexión a todo lo demás. Con el panel listo se baja con nitidez media
+     antes de abrir la portada y, ya abierta, se afina hasta la nitidez de siempre */
+  const panelOk = !KEN || !!document.getElementById('gs-izq'), st0 = tl.stats;
+  if (!panelOk && !T.tilesPausa && st0.visible > 8 && st0.downloading === 0 && st0.parsing === 0) T.tilesPausa = true;
+  const pausada = !panelOk && T.tilesPausa;
+  if (!pausada && !(T.anim && T.mallaMostrada && (T._tilesN = (T._tilesN || 0) + 1) % 6)) tl.update(); /* en el vuelo de llegada la foto 3D se refina cada 6 cuadros: vuelo fluido */
   actualizarOrto(T);
   if (!T.mallaMostrada) {
     const st = tl.stats, listo = st.downloading === 0 && st.parsing === 0 && st.visible > 8;
     if (listo || REALISTA || performance.now() - T.tilesT0 > 40000) { T.mallaMostrada = true; tl.group.visible = true; marcarPaso('foto'); if (KEN && T.fotoPend === true) fotoReal(true); /* los edificios propios se cambian por los de la foto SOLO cuando la foto ya está cargada */ }
     else tl.group.visible = false;
   }
-  if (tl.errorTarget > T.errMeta && tl.stats.downloading === 0 && tl.stats.parsing === 0 && tl.stats.visible > 3) tl.errorTarget = Math.max(T.errMeta, Math.round(tl.errorTarget * 0.62));
+  /* mientras está la portada, la foto 3D baja gruesa y con pocas descargas a la vez: antes pedía 470 teselas (13 MB) en el primer minuto y dejaba
+     sin conexión a los árboles, las vías y el tráfico. Con la maqueta abierta se afina hasta su nitidez normal (T.errMeta) */
+  const abierta = KEN ? $('loader').classList.contains('hidden') : true, meta = abierta ? T.errMeta : Math.max(T.errMeta, 14); /* antes de abrir: nitidez media */
+  if (tl.downloadQueue) tl.downloadQueue.maxJobs = abierta ? 12 : panelOk ? 6 : 2;
+  if (tl.errorTarget > meta && tl.stats.downloading === 0 && tl.stats.parsing === 0 && tl.stats.visible > 3) tl.errorTarget = Math.max(meta, Math.round(tl.errorTarget * 0.62));
   if (T.debug) {
     const s = tl.stats; let mallas = 0; tl.group.traverse(x => { if (x.isMesh) mallas++; });
     T.dbgN = (T.dbgN || 0) + 1; T.dbgT = (T.dbgT || 0) + dt; if (T.dbgT > 1) { T.dbgFps = T.dbgN / T.dbgT; T.dbgN = 0; T.dbgT = 0; console.log('[debug] fps ' + T.dbgFps.toFixed(1) + ' · triángulos ' + (T.renderer.info.render.triangles / 1e6).toFixed(2) + ' M · teselas ' + s.visible + ' · descargando ' + s.downloading); }
@@ -1212,7 +1244,7 @@ function actualizarMallaIn(T, tl, dt) {
   else if (REALISTA && T.calibXZ && T.tilesT > 4 && Math.hypot(o.x - T.calibXZ[0], o.z - T.calibXZ[1]) > 700) { T.tilesT = 0; calibrarMalla(T); } // al ir a otra zona se vuelve a medir el suelo
   if ((T.tilesAtrib -= dt) <= 0) {
     T.tilesAtrib = 1.5;
-    try { const t = tl.getAttributions().filter(a => a.type === 'string').map(a => a.value).join(' · '); $('atrib').textContent = /^google/i.test(t) ? t : 'Google' + (t ? ' · ' + t : ''); } catch (e) {}
+    try { const t = tl.getAttributions().filter(a => a.type === 'string').map(a => a.value).join(' · '); $('atrib').textContent = (/^google/i.test(t) ? t : 'Google' + (t ? ' · ' + t : '')) + ' · Base: Unreal Engine 5 + Cesium'; } catch (e) {}
   }
 }
 async function initTodoReal() {
@@ -1279,7 +1311,7 @@ async function initTodoReal() {
     const orbit = new OrbitControls(camera, renderer.domElement);
     orbit.target.set(tw[0], 0, tw[1]);
     orbit.enableDamping = true; orbit.dampingFactor = 0.06;
-    orbit.maxPolarAngle = Math.PI * 0.495; orbit.minDistance = 4; orbit.maxDistance = KEN ? 5000 : 9000; /* Kennedy: no alejarse tanto con la rueda */
+    orbit.maxPolarAngle = Math.PI * 0.495; orbit.minDistance = 12; orbit.maxDistance = KEN ? 2600 : 9000; /* Kennedy: zoom más corto (ni tan lejos ni pegado al piso) */
     const hemi = new THREE.HemisphereLight(DIA.hemiCielo, DIA.hemiSuelo, DIA.hemi);
     const sun = new THREE.DirectionalLight(DIA.solColor, DIA.sol);
     sun.position.set(4000, 5000, 2000);
@@ -1327,8 +1359,8 @@ async function initTodoReal() {
     T3.realista = REALISTA; // real3d.js: carros a tamaño real, apoyados en el asfalto y con sombra de contacto
     if (REALISTA && !LIVIANO && new URLSearchParams(location.search).get('ao') !== '0') crearPostproceso(T3).catch(e => console.warn('postproceso:', e)); // luz tipo render (oclusión ambiental)
     if (KEN) { T3.kenFill = 0.62; setTimeout(function capaSombra() { if (!T3.scene || !T3.THREE) return setTimeout(capaSombra, 500); const TH = T3.THREE, m = new TH.Mesh(new TH.PlaneGeometry(9000, 9000).rotateX(-Math.PI / 2), new TH.ShadowMaterial({ opacity: 0.42, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })); m.position.set(1700, 0.42, -200); m.receiveShadow = true; m.renderOrder = 1; m.name = 'capa-sombras'; T3.scene.add(m); }, 500); } /* sombras de edificios y árboles sobre la foto del suelo */
-    if (KEN) import('./data3d/ui_sobrio.js?v=9').then(m => m.iniciarUI()).catch(e => console.warn('interfaz:', e)); /* interfaz sobria: un sistema visual para todos los paneles */
-    /* árboles: reales con sombra hasta ~900 m y siluetas del mismo árbol más lejos (sin copas difusas) */ try { T3.R = await import('./data3d/real3d.js?v=76'); T3.env = T3.R.makeEnv(renderer); T3.fleet = T3.R.createFleet(T3, T3.env); } catch (e) { console.warn('real3d:', e); T3.R = null; T3.env = null; T3.fleet = null; }
+    if (KEN) import('./data3d/ui_sobrio.js?v=14').then(m => m.iniciarUI()).catch(e => console.warn('interfaz:', e)); /* interfaz sobria: un sistema visual para todos los paneles */
+    /* árboles: reales con sombra hasta ~900 m y siluetas del mismo árbol más lejos (sin copas difusas) */ try { T3.R = await import('./data3d/real3d.js?v=77'); T3.env = T3.R.makeEnv(renderer); T3.fleet = T3.R.createFleet(T3, T3.env); } catch (e) { console.warn('real3d:', e); T3.R = null; T3.env = null; T3.fleet = null; }
     // el tráfico empieza a bajar YA (antes esperaba a edificios, vías y árboles): son pocos KB por trozo
     const pTraf = QUEST ? Promise.resolve(null) : buildTraffic(THREE).then(() => { marcarPaso('trafico'); return null; }, e => e); // Kennedy: también, con la simulación SUMO (miles de carros)
     if (QUEST) marcarPaso('trafico');
@@ -1400,17 +1432,19 @@ async function initTodoReal() {
       if (!$('b-aves').classList.contains('on')) api.grp.visible = false;
     }).catch(e => { console.warn('aves 3D:', e); buildAves(THREE); });
     if (KEN) { const t0 = performance.now(); let tilesN = -1, tilesT = performance.now(), tResto = 0;
-      const listo = () => { /* Kennedy: se entra con TODO cargado (máx. 120 s) */
-        const TR = T3.TRAF, trafN = TR ? TR.steps.filter(Boolean).length : 0, trafOk = TR && trafN >= Math.min(TR.NS, 3 * TR.chunk); /* los primeros 5 min de tráfico; el resto sigue bajando sin que se note */
+      const listo = () => { /* Kennedy: se entra con TODO lo que se ve ya cargado: panel, edificios, vías, árboles, tráfico, cubiertas, Bavaria, El Tintal,
+           conjuntos, el carro real y la foto 3D afinada. Para que llegue antes: la foto 3D baja liviana hasta que está el panel y el INEM (24 MB, un sector
+           que se ve al acercarse) baja después. Tope de seguridad: 150 s. */
+        const TR = T3.TRAF, trafN = TR ? TR.steps.filter(Boolean).length : 0, trafOk = TR && trafN >= Math.min(TR.NS, 2 * TR.chunk);
         if (T3.tilesCargadas !== tilesN) { tilesN = T3.tilesCargadas; tilesT = performance.now(); }
         const falta = !(window.KEN3D && document.getElementById('gs-izq')) ? 'Preparando la simulación…'
           : document.querySelectorAll('.cv-steps li.ok').length < PASOS.length ? 'Cargando capas…'
           : !(T3.roofU && T3.roofU.uTechoOn.value > 0) ? 'Cargando cubiertas…'
           : !(T3.tintal && T3.conjuntos && T3.bavaria) ? 'Cargando Bavaria, El Tintal y conjuntos…'
-          : !T3.inem ? 'Cargando el sector INEM…'
-          : !trafOk ? 'Cargando tráfico · ' + Math.min(100, Math.round(100 * trafN / (TR ? 3 * TR.chunk : 1))) + ' %'
-          : (tResto = tResto || performance.now(), performance.now() - tilesT < 2500 && performance.now() - tResto < 6000) ? 'Afinando la foto 3D…' : ''; /* la foto 3D nunca termina de afinarse del todo: máx. 12 s */
-        if (!falta || performance.now() - t0 > 120000) { $('lmsg').textContent = 'Listo'; setTimeout(abrirPortada, 1500); } else { $('lmsg').textContent = falta; setTimeout(listo, 500); } };
+          : !trafOk ? 'Cargando tráfico · ' + Math.min(100, Math.round(100 * trafN / (TR ? 2 * TR.chunk : 1))) + ' %'
+          : !(window.KEN_CARRO_REAL || MOVIL) ? 'Cargando carros…' /* en celular no hay carro real */
+          : (tResto = tResto || performance.now(), performance.now() - tilesT < 2500 && performance.now() - tResto < 15000) ? 'Afinando la foto 3D…' : '';
+        if (!falta || performance.now() - t0 > 150000) { $('lmsg').textContent = 'Listo'; setTimeout(abrirPortada, 600); } else { $('lmsg').textContent = falta; setTimeout(listo, 400); } };
       listo(); } /* Kennedy: se entra con TODO cargado (edificios, vías, árboles, tráfico, foto real, cubiertas y panel; máx. 60 s) */ /* Kennedy: la portada con fotos se queda hasta que el modelo y el panel están listos (máx. 30 s), sin mostrar el suelo vacío */
     else abrirPortada(); // se abre en cuanto están los edificios y las capas; lo demás termina de bajar con la píldora de arriba
     say(REALISTA ? 'Kennedy fotorrealista · cargando la malla 3D de Google y el tráfico…' : '🧱 TODO 3D listo · ' + B.length.toLocaleString('es-CO') + ' edificios · cargando árboles 3D y tráfico…', 5000);
@@ -1484,6 +1518,7 @@ async function crearPostproceso(T) {
   const comp = new EffectComposer(r, new THREE.WebGLRenderTarget(sz.x, sz.y, { type: THREE.HalfFloatType }));
   const ao = new N8AOPass(T.scene, T.camera, sz.x, sz.y);
   Object.assign(ao.configuration, { aoRadius: 9.0, distanceFalloff: 1.5, intensity: 4.5, color: new THREE.Color(0x0b1220), halfRes: true, gammaCorrection: false, screenSpaceRadius: false });
+  ao.autoDetectTransparency = false; ao.configuration.transparencyAware = false; // sin la detección de transparencias: evitaba 2 renders extra de la escena por cuadro
   ao.setQualityMode('Medium');
   comp.addPass(ao);
   { const { RenderPass } = await import('three/addons/postprocessing/RenderPass.js'); const rp = new RenderPass(T.scene, T.camera); rp.enabled = false; comp.insertPass(rp, 0); T.rpLiviano = rp; } /* al girar: dibuja la escena sin oclusión ambiental (antes la imagen se congelaba) */
@@ -2464,7 +2499,7 @@ async function buildTraffic(THREE) {
   T3.scene.add(bodies, cabins, wheels);
   if (KEN) { // Kennedy: la simulación SUMO se dibuja con los vehículos realistas (data3d/vehiculos.js): carros, taxis, camionetas, motos y camiones
     try {
-      const mv = await import('./data3d/vehiculos.js?v=5');
+      const mv = await import('./data3d/vehiculos.js?v=8');
       T3.vehSUMO = mv.crearVehiculos({ T3, movil: LIVIANO, maxDist: LIVIANO ? 1200 : 3200, cuantos: { carro: maxi * 3, moto: Math.ceil(maxi * 3 * 0.32), camion: Math.ceil(maxi * 3 * 0.14) } /* hasta 3 copias de la grabación en hora pico */ });
       T3.sumoActivo = true; // la simulación del giro deja de dibujar sus carros, motos y camiones (sigue contando para los indicadores)
     } catch (e) { console.warn('vehículos SUMO:', e); T3.vehSUMO = null; }
@@ -2472,7 +2507,7 @@ async function buildTraffic(THREE) {
   // arranca a las 16:40 (ya hay unos 2.000 carros en la calle) y en marcha; la barra de abajo permite pausar y mover el tiempo
   TRAF = { steps, NS, NV, dur, maxi, t: tIni, playing: true, vel: 1, pedirTrozo, chunk: I.chunk, bodies, cabins, wheels, dummy: new THREE.Object3D(), head: new Float32Array(maxi * 3),
     vis: { n: 0, x: new Float32Array(maxi * 3), z: new Float32Array(maxi * 3), dx: new Float32Array(maxi * 3), dz: new Float32Array(maxi * 3), v: new Float32Array(maxi * 3), id: new Int32Array(maxi * 3), cam: new Uint8Array(maxi * 3) } }; // vis: posición y velocidad de cada carro en este cuadro (detección y seguimiento del simulador)
-  T3.counts.cars = NV; T3.TRAF = TRAF; /* ruido y cierre de vía (data3d/ruido_cierre.js) leen la simulación */
+  T3.counts.cars = NV; T3.TRAF = TRAF; T3.LC = LC; T3.lw = lw; /* lw: modelo -> mundo, para los módulos que se cargan aparte */ /* data3d/origenes.js pasa las posiciones SUMO al mundo */ /* ruido y cierre de vía (data3d/ruido_cierre.js) leen la simulación */
   if (window.trafficPaint) window.trafficPaint();
   updateTraffic(0);
 }
@@ -2525,16 +2560,24 @@ function updateTraffic(dt) {
   const VS = T3.vehSUMO, F = VS ? null : T3.fleet; // flota de carros reales (data3d/real3d.js): recibe las trayectorias de la simulación
   if (F) F.begin();
   if (T3.alivio) T3.alivio.ini();
+  const OCUP = TRAF.ocup || (TRAF.ocup = new Map()); OCUP.clear(); // dónde ya hay un vehículo en este cuadro (celdas de 8 m)
   if (VS) { VS.inicio(); if (!TRAF.obj) { TRAF.obj = new Array((TRAF.NV + 1) * 3); TRAF.tipo = new Int8Array((TRAF.NV + 1) * 3).fill(-1); TRAF.headF = new Float32Array((TRAF.NV + 1) * 3).fill(NaN); } }
   for (let cl = 0; cl < NCOP; cl++) {
   const ka = (k0 + cl * 487) % TRAF.NS, A = TRAF.steps[ka] || A0, B = TRAF.steps[(ka + 1) % TRAF.NS] || A;
-  const m = new Map();
-  for (let i = 0; i < B.ids.length; i++) m.set(B.ids[i], i);
+  const m = B._idx || (B._idx = (() => { const mm = new Map(); for (let i = 0; i < B.ids.length; i++) mm.set(B.ids[i], i); return mm; })()); // id→índice cacheado en el paso (B se reutiliza entre cuadros y copias)
   for (let i = 0; i < A.ids.length && n < MAXV; i++) {
     const idc = A.ids[i] + cl * (TRAF.NV + 1); /* id propio de cada copia */
     if (pDem < 0.999 && (Math.imul(idc ^ 0x5bd1e995, 0x85ebca6b) >>> 0) / 4294967296 > pDem) continue; /* a esta hora ese vehículo no está en la calle (sorteo propio: con el mismo del tipo, los camiones —el 8 % más alto— desaparecían fuera de la hora pico) */
     const x0 = A.xs[i] - LC.x, y0 = LC.y - A.ys[i];
     if (T3.alivio && T3.alivio(x0, y0, idc) === 2) continue; /* con la propuesta: menos tráfico en la Av. Ciudad de Cali (data3d/alivio_cali.js) */
+    { /* ningún carro encima de otro: las copias desfasadas de la grabación no se ven entre sí; una copia no sale si ya hay un vehículo
+         a menos de 3,3 m (se estarían montando), y si se ocultó sigue oculta hasta tener 5,5 m libres (no parpadea) */
+      const cx = Math.floor(x0 / 8), cz = Math.floor(y0 / 8);
+      if (cl > 0) { const ocu = TRAF.ocuCop || (TRAF.ocuCop = new Set()), lim = ocu.has(idc) ? 30 : 11; /* 3,3 m (y 5,5 m de salida): el carril de al lado, a 3,5 m, no cuenta */ let choca = false;
+        for (let a = -1; a <= 1 && !choca; a++) for (let b = -1; b <= 1 && !choca; b++) { const L = OCUP.get((cx + a) * 100003 + cz + b); if (L) for (let q = 0; q < L.length; q += 2) { const ex = L[q] - x0, ez = L[q + 1] - y0; if (ex * ex + ez * ez < lim) { choca = true; break; } } }
+        if (choca) { ocu.add(idc); continue; } ocu.delete(idc); }
+      const kk = cx * 100003 + cz; let L = OCUP.get(kk); if (!L) OCUP.set(kk, L = []); L.push(x0, y0);
+    }
     const j = m.get(A.ids[i]);
     let x1 = x0, y1 = y0;
     if (j !== undefined) { x1 = B.xs[j] - LC.x; y1 = LC.y - B.ys[j]; }
@@ -2547,11 +2590,14 @@ function updateTraffic(dt) {
     /* camión (8 % por id, mismo reparto de tools/escenarios_build.js). Con la propuesta [SUP]: Corabastos reducido recibe los camiones grandes
        en un patio de transferencia y la carga sigue en vehículos pequeños: el 18,7 % de los camiones (el área de naves retirada,
        data3d/escenarios.json) pasa a ser una furgoneta blanca de reparto. V.cam alimenta el mapa de ruido (un camión pesa más). */
-    const esCam = ((idc * 2654435761) >>> 0) / 4294967296 >= 0.92, aVan = esCam && T3.escenario === 'proyecto' && T3.PROP && T3.PROP.camiones && ((idc * 40503 + 977) % 1000) / 1000 < (T3.retiroCamiones || 0.187);
+    /* HORARIO DE CORABASTOS: la carga llega de noche (los camiones entran de 6 p. m. a 11 p. m. y la venta mayorista abre a las 2 a. m.; boletín
+       SIPSA-DANE y reglamento de la central): cerca de Corabastos, de 18:00 a 03:00, uno de cada cinco vehículos es camión (de día, 8 %) [SUP] */
+    const hR = T3.reloj ? (T3.reloj.t / 60) % 24 : 12, uCam = (hR >= 18 || hR < 3) && Math.hypot(x0 - 1132.1, y0 - 948.6) < 2600 ? 0.80 : 0.92;
+    const esCam = ((idc * 2654435761) >>> 0) / 4294967296 >= uCam, aVan = esCam && T3.escenario === 'proyecto' && T3.PROP && T3.PROP.camiones && ((idc * 40503 + 977) % 1000) / 1000 < (T3.retiroCamiones || 0.187);
     V.cam[n] = esCam && !aVan ? 1 : 0;
     if (VS) { // vehículo realista: tipo y color fijos por id (70 % carros, 22 % motos, 8 % camiones), apoyado en el asfalto
       const id = idc; TRAF.headF[id] = rumboCarro(id, px, pz, dx, dy, TRAF.headF[id], dt); /* recto sobre su vía (no en diagonal), girando suave en las curvas */
-      if (TRAF.tipo[id] < 0) { const r = ((id * 2654435761) >>> 0) / 4294967296; TRAF.tipo[id] = r < 0.70 ? 0 : r < 0.92 ? 1 : 2; TRAF.obj[id] = {}; }
+      if (TRAF.tipo[id] < 0) { const r = ((id * 2654435761) >>> 0) / 4294967296; TRAF.tipo[id] = esCam ? 2 : r < 0.70 ? 0 : r < 0.92 ? 1 : 2; TRAF.obj[id] = {}; } /* de noche cerca de Corabastos hay más camiones (uCam) */
       const yV = (T3.viaY != null ? T3.viaY : 0.62) + 0.02 + (T3.alzaVia ? T3.alzaVia(px, pz) : 0);
       if (aVan) { if (!TRAF.van) TRAF.van = new Map(); let o = TRAF.van.get(id); if (!o) TRAF.van.set(id, o = { _vv: 'van', _vc: 0xeeeeec }); VS.poner(o, 'carro', px, yV, pz, TRAF.headF[id]); n++; continue; }
       VS.poner(TRAF.obj[id], ['carro', 'moto', 'camion'][TRAF.tipo[id]], px, yV, pz, TRAF.headF[id]); n++; continue;
@@ -3583,13 +3629,13 @@ $('b-hd').onclick = async () => {
 if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
   const listoK = () => T3 && T3.ready && T3.net ? Promise.resolve() : new Promise(r => setTimeout(() => r(listoK()), 400));
   // Biblioteca El Tintal (modelo propio) y canchas reales de OpenStreetMap: no dependen de la simulación, se cargan en paralelo
-  listoK().then(() => import('./data3d/tintal.js?v=16')).then(m => m.iniciarTintal({ THREE: T3.THREE, T3, OX: 2095.67, OZ: -109.06, Y0: 0.85, movil: MOVIL })).catch(e => console.warn('Biblioteca El Tintal:', e));
-  listoK().then(() => new Promise(r => { /* rendimiento: el modelo del INEM (25 MB) baja solo cuando el panel ya está listo y la vista se acerca al sector */ const t0 = performance.now(); const mira = () => { const o = T3.orbit && T3.orbit.target, ok = !!document.getElementById('gs-izq'); /* baja apenas está el panel (antes compite con la preparación) */ if (ok) r(); else setTimeout(mira, 1000); }; mira(); })).then(() => import('./data3d/inem.js?v=3')).then(m => m.iniciarInem({ THREE: T3.THREE, T3, OX: 2095.67, OZ: -109.06, Y0: 0.3 })).catch(e => console.warn('INEM Kennedy:', e)); // modelo oficial del sector INEM (IDECA)
+  listoK().then(() => import('./data3d/tintal.js?v=17')).then(m => m.iniciarTintal({ THREE: T3.THREE, T3, OX: 2095.67, OZ: -109.06, Y0: 0.85, movil: MOVIL })).catch(e => console.warn('Biblioteca El Tintal:', e));
+  listoK().then(() => new Promise(r => { /* rendimiento: el modelo del INEM (25 MB) baja solo cuando el panel ya está listo y la vista se acerca al sector */ const t0 = performance.now(); let tAb = 0; const mira = () => { const ok = !!document.getElementById('gs-izq') && $('loader').classList.contains('hidden'); if (ok && !tAb) tAb = performance.now(); /* baja 20 s después de abrir la maqueta: no le quita ancho de banda a lo esencial */ if (ok && performance.now() - tAb > 20000) r(); else setTimeout(mira, 1000); }; mira(); })).then(() => import('./data3d/inem.js?v=3')).then(m => m.iniciarInem({ THREE: T3.THREE, T3, OX: 2095.67, OZ: -109.06, Y0: 0.3 })).catch(e => console.warn('INEM Kennedy:', e)); // modelo oficial del sector INEM (IDECA)
   listoK().then(() => import('./data3d/conjuntos.js?v=5')).then(m => m.iniciarConjuntos({ THREE: T3.THREE, T3, lw, Y0: 0.3, movil: MOVIL })).catch(e => console.warn('conjuntos:', e));
   listoK().then(() => import('./data3d/canchas.js?v=2')).then(m => m.iniciarCanchas({ THREE: T3.THREE, T3, OX: 2095.67, OZ: -109.06, Y0: 0, movil: MOVIL })).catch(e => console.warn('canchas:', e));
   const FAUNA_RED = ['tingua', 'garza', 'pato', 'monjita', 'copeton', 'mirla', 'colibri']; // las mueve la red biótica
   let EST = null; // estrategias de la propuesta (data3d/estrategias.js): reemplazan las convenciones P1-P4
-  Promise.all([import('./data3d/giro_sim.js?v=37'), import('./data3d/estrategias.js?v=17'), listoK()])
+  Promise.all([import('./data3d/giro_sim.js?v=47'), import('./data3d/estrategias.js?v=22'), listoK()])
     .then(async ([m, me]) => {
       /* rendimiento: estrategias, plan de Bavaria y plan de Corabastos se arman a la vez (antes uno tras otro) */
       let PLAN = null, CPLAN = null; // E1 Bavaria Común (data3d/bavaria_plan.js) · E3 Corabastos reducido (data3d/corabastos_plan.js)
@@ -3600,7 +3646,7 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
       T3.planBavaria = PLAN; T3.planCorabastos = CPLAN; T3.EST = EST;
       // selector KENNEDY HOY / CON LA PROPUESTA (data3d/escenario.js): arranca en hoy; la propuesta prende huertas, Bavaria Común,
       // Corabastos reducido, sintaxis con los pasajes, camiones -> furgonetas (ruido) y la fauna de las huertas
-      import('./data3d/escenario.js?v=24').then(me2 => me2.iniciarEscenario({ T3, say })).catch(e => console.warn('escenario:', e));
+      import('./data3d/escenario.js?v=64').then(me2 => me2.iniciarEscenario({ T3, say })).catch(e => console.warn('escenario:', e));
       const lista = EST ? EST.lista.slice() : []; if (PLAN) lista.unshift(PLAN.entrada);
       return m.iniciarSimulacion({ T3, say, sinFauna: FAUNA_RED, sinMalla: ['abeja'], estrategias: lista.length ? lista : null, verEstrategia: (id, on, sola) => { /* la red de gobernanza (data3d/red_gobernanza.js) ya no se muestra al elegir estrategia */ if (on && sola && id !== 'E8' && EST && EST.lugar) volarEstrategia(EST.lugar(id)); if (id === 'E1') { if (EST) EST.marcar('E1', on); if (!window.__colB) window.__colB = import('./data3d/colectivo_bavaria.js?v=4').then(m => m.crearColectivo({ THREE: T3.THREE, T3, lw })); window.__colB.then(cb => cb.ver(on)).catch(e => console.warn('colectivo Bavaria:', e)); return PLAN && PLAN.ver(on); } if (id === 'E3' && CPLAN) { if (EST) EST.marcar('E3', on); return CPLAN.ver(on); } return EST && EST.ver(id, on); } }); // todas muestran su lugar; las conexiones entre estrategias se ven cuando las dos están prendidas
     })
@@ -3620,15 +3666,15 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
       if (KEN && !document.getElementById('us-btn')) { /* usos del suelo: edificios pintados por su uso real + panel (data3d/usos_suelo.js) */
         const fb = document.getElementById('ar-btn'), b = document.createElement('button'); b.id = 'us-btn'; b.textContent = 'Usos del suelo'; b.title = 'Pinta cada edificio con su uso real (shapefile Usos_kennedy)'; b.style.cssText = 'width:100%;margin-top:6px';
         b.onclick = async () => { const on = !b.classList.contains('on'); b.classList.toggle('on', on); T3.roofU.uUsos.value = on ? 1 : 0;
-          import('./data3d/usos_suelo.js?v=6').then(m => m.verPlazas({ THREE: T3.THREE, T3, on })).catch(e => console.warn('plazas:', e)); /* plazas de mercado existentes en color fuerte */
-          const pintar = () => import('./data3d/usos_suelo.js?v=6').then(m => m.pintarModelos({ THREE: T3.THREE, T3, on: b.classList.contains('on') })).catch(e => console.warn('usos modelos:', e)); /* biblioteca, conjuntos, torres, Bavaria, Corabastos */
+          import('./data3d/usos_suelo.js?v=7').then(m => m.verPlazas({ THREE: T3.THREE, T3, on })).catch(e => console.warn('plazas:', e)); /* plazas de mercado existentes en color fuerte */
+          const pintar = () => import('./data3d/usos_suelo.js?v=7').then(m => m.pintarModelos({ THREE: T3.THREE, T3, on: b.classList.contains('on') })).catch(e => console.warn('usos modelos:', e)); /* biblioteca, conjuntos, torres, Bavaria, Corabastos */
           pintar(); if (on) for (const t of [4000, 12000, 30000, 60000]) setTimeout(pintar, t); /* los modelos que terminan de cargar después */
           const pn = document.getElementById('usos-panel'); if (!on) { if (pn) pn.remove(); return; }
-          try { (await import('./data3d/usos_suelo.js?v=6')).panelUsos({ T3 }); } catch (e) { console.warn('usos del suelo:', e); } };
+          try { (await import('./data3d/usos_suelo.js?v=7')).panelUsos({ T3 }); } catch (e) { console.warn('usos del suelo:', e); } };
         (fb || ag.parentElement).insertAdjacentElement('afterend', b);
       }
       if (KEN && !document.getElementById('rc-btn')) { /* ruido de los carros y cierre de vía (data3d/ruido_cierre.js, como en el módulo 08) */
-        const rcApi = async () => { if (!T3.rc) { const m = await import('./data3d/ruido_cierre.js?v=5'); T3.rcMod = m; T3.rc = m.crearRuidoCierre({ THREE: T3.THREE, T3, LC }); } return T3.rc; };
+        const rcApi = async () => { if (!T3.rc) { const m = await import('./data3d/ruido_cierre.js?v=6'); T3.rcMod = m; T3.rc = m.crearRuidoCierre({ THREE: T3.THREE, T3, LC }); } return T3.rc; };
         const b1 = document.createElement('button'); b1.id = 'rc-btn'; b1.textContent = 'Ruido de carros'; b1.title = 'Mapa de ruido en vivo según dónde van los carros'; b1.style.cssText = 'width:100%;margin-top:6px';
         b1.onclick = async () => { const on = !b1.classList.contains('on'); b1.classList.toggle('on', on); try { const a = await rcApi(); a.ruido.ver(on); T3.rcMod.panelRuido(on); } catch (e) { console.warn('ruido:', e); } };
         const b2 = document.createElement('button'); b2.id = 'ci-open'; b2.textContent = 'Cerrar una vía'; b2.title = 'Cierra una vía crítica y desvía los carros por las calles vecinas'; b2.style.cssText = 'width:100%;margin-top:6px';
@@ -3648,7 +3694,7 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
         b4.insertAdjacentElement('afterend', b5);
         /* indicadores en 3D (picos de las láminas: anasoficasca-code.github.io/picos); empieza apagado */
         const b6 = document.createElement('button'); b6.id = 'in-btn'; b6.textContent = 'Indicadores'; b6.title = 'Indicadores del diagnóstico como picos 3D sobre Kennedy'; b6.style.cssText = 'width:100%;margin-top:6px';
-        let pIn = null; b6.onclick = async () => { const on = !b6.classList.contains('on'); b6.classList.toggle('on', on); try { const m = await import('./data3d/indicadores.js?v=2'); if (!pIn) pIn = m.crearIndicadores({ THREE: T3.THREE, T3 }); const a = await pIn; a.ver(on); if (on && !a.sel) a.mostrar('SE'); m.panelIndicadores(a, on); } catch (e) { console.warn('indicadores:', e); } };
+        let pIn = null; b6.onclick = async () => { const on = !b6.classList.contains('on'); b6.classList.toggle('on', on); try { const m = await import('./data3d/indicadores.js?v=5'); if (!pIn) pIn = m.crearIndicadores({ THREE: T3.THREE, T3 }); const a = await pIn; a.ver(on); if (on && !a.sel) a.mostrar('SE'); m.panelIndicadores(a, on); } catch (e) { console.warn('indicadores:', e); } };
         b5.insertAdjacentElement('afterend', b6);
       }
       if (!document.getElementById('vi-btn')) { // Visión: la propuesta encendida sobre el territorio oscuro (data3d/vision.js)
@@ -3659,8 +3705,8 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
       }
       return import('./data3d/cielo.js?v=8');
     }).then(m => { T3.cielo = m.iniciarCielo({ THREE: T3.THREE, T3, luzMalla }); }) // cielo y luz de 24 horas con el reloj de la simulación
-    .then(() => import('./data3d/biotica.js?v=20')).then(m => m.iniciarBiotica({ THREE: T3.THREE, T3, lw, OX: 2095.67, OZ: -109.06, Y0: 2.0, movil: MOVIL, huertas: EST ? EST.sitios() : null }))
-    .then(bio => { T3.bio = bio; import('./data3d/tablero.js?v=18').then(m => { T3.tablero = m.iniciarTablero({ T3, bio }); }).catch(e => console.warn('tablero:', e)); import('./data3d/seguir.js?v=3').then(m => m.iniciarSeguir({ THREE: T3.THREE, T3, say })).catch(e => console.warn('seguir:', e)); }) // tablero en vivo de las relaciones bióticas
+    .then(() => Promise.all([import('./data3d/biotica.js?v=33'), import('./data3d/huertas_barrio.js?v=7'), (window.cargarJSON || ((u) => fetch(u).then(r => r.json())))('data3d/huertas_barrio.json?v=3').catch(() => null)])).then(([m, HBm, HB]) => m.iniciarBiotica({ THREE: T3.THREE, T3, lw, OX: 2095.67, OZ: -109.06, Y0: 2.0, movil: MOVIL, huertas: EST ? EST.sitios().concat(HBm.sitiosHuertasBarrio(HB)) : null }))
+    .then(bio => { T3.bio = bio; import('./data3d/tablero.js?v=27').then(m => { T3.tablero = m.iniciarTablero({ T3, bio }); }).catch(e => console.warn('tablero:', e)); import('./data3d/seguir.js?v=3').then(m => m.iniciarSeguir({ THREE: T3.THREE, T3, say })).catch(e => console.warn('seguir:', e)); }) // tablero en vivo de las relaciones bióticas
     .then(() => import('./data3d/actores.js?v=7')).then(m => m.iniciarActores({ THREE: T3.THREE, T3, lw, OX: 2095.67, OZ: -109.06, Y0: 2.0 })).then(a => { T3.actores = a; }) // capa de redes de actores (9 estrategias del Excel)
     .catch(e => console.warn('simulación Kennedy:', e));
 } else import('./data3d/simulador.js?v=6').then(m => {
@@ -3671,7 +3717,7 @@ if (KEN) { // simulación de Kennedy (data3d/giro_sim.js) dentro de la maqueta
   });
   // propuesta (descentralizar Corabastos): espera la red de vías y el panel del simulador
   const datos = window.cargarJSON('data3d/propuesta.json');
-  const mod = import('./data3d/propuesta.js?v=1');
+  const mod = import('./data3d/propuesta.js?v=2');
   const listo = () => T3 && T3.net && document.querySelector('#gevUI .g-left') ? Promise.resolve() : new Promise(r => setTimeout(() => r(listo()), 400));
   Promise.all([datos, mod, listo()]).then(([d, pm]) => {
     PROP = pm.crearPropuesta({ T3: () => T3, traf: () => TRAF, peat: () => PEAT, sim: SIM, lw, say, datos: d });

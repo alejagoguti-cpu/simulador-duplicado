@@ -2,15 +2,196 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<title>Edificio · Bavaria Común</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Bavaria Común por dentro</title>
+<meta name="description" content="Recorrido inmersivo por dentro de cada edificio del distrito Bavaria Común: laboratorios, aulas, poscosecha, mercado y más, con sus equipos y medidas.">
+<meta name="theme-color" content="#040605">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#040605;--tx:#f1f4f1;--tx2:#a7b2ab;--tx3:#68736c;--c:#34d399;--mono:'JetBrains Mono',ui-monospace,SFMono-Regular,monospace;--sans:Inter,system-ui,-apple-system,sans-serif;--cond:'Barlow Condensed',Inter,sans-serif}
+*{box-sizing:border-box}
+html{background:var(--bg);scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.18) transparent}
+html,body{margin:0}
+body{background:var(--bg);color:var(--tx);font-family:var(--sans);overflow-x:hidden;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body::-webkit-scrollbar{width:8px}
+body::-webkit-scrollbar-thumb{background:rgba(255,255,255,.16);border-radius:8px}
+body::-webkit-scrollbar-track{background:transparent}
+::selection{background:var(--c);color:#04100a}
+body::before{content:'';position:fixed;inset:0;z-index:15;pointer-events:none;background:linear-gradient(90deg,rgba(4,6,5,.62),rgba(4,6,5,.18) 38%,transparent 62%)}
+body::after{content:'';position:fixed;left:0;right:0;bottom:0;height:38vh;z-index:15;pointer-events:none;background:linear-gradient(0deg,rgba(4,6,5,.66),transparent)}
+
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;background:#040605;touch-action:pan-y;cursor:grab}
+body.arrastra #c{cursor:grabbing}
+#scroll{height:calc(var(--n,7) * 100vh);height:calc(var(--n,7) * 100svh);pointer-events:none}
+
+/* barra superior */
+.top{position:fixed;left:0;right:0;top:0;z-index:40;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:18px;padding:12px 20px 26px;background:linear-gradient(180deg,rgba(4,6,5,.94),rgba(4,6,5,.55) 55%,transparent);font:500 10.5px var(--mono);letter-spacing:.08em;opacity:0;transition:opacity .9s .2s}
+body.listo .top{opacity:1}
+.top a{color:var(--tx2);text-decoration:none;white-space:nowrap}
+.top a:hover{color:#fff}
+.edif{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;justify-self:center;max-width:100%}
+.edif::-webkit-scrollbar{display:none}
+.edif button{flex:none;height:28px;padding:0 11px;border:1px solid rgba(255,255,255,.09);border-radius:999px;background:rgba(255,255,255,.025);color:var(--tx2);font:500 10px var(--sans);letter-spacing:.02em;cursor:pointer;white-space:nowrap;transition:color .25s,border-color .25s,background .25s}
+.edif button:hover{color:#fff;border-color:rgba(255,255,255,.28)}
+.edif button.on{color:#03110a;background:var(--c);border-color:var(--c)}
+
+#prog{position:fixed;left:0;top:0;height:2px;width:100%;z-index:60;background:var(--c);transform:scaleX(0);transform-origin:0 50%;box-shadow:0 0 18px var(--c);pointer-events:none}
+
+/* capitulos */
+.cap{position:fixed;left:clamp(18px,3.2vw,52px);bottom:clamp(82px,11vh,120px);z-index:30;max-width:min(430px,44vw);pointer-events:none;opacity:0;will-change:opacity,transform}
+.cap::before{content:'';position:absolute;left:-18px;top:8px;bottom:8px;width:1px;background:linear-gradient(180deg,var(--c),rgba(255,255,255,0))}
+.cap .ey{font:500 10px var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--c)}
+.cap h1{margin:10px 0;font:300 clamp(32px,4.6vw,54px)/.96 var(--cond);letter-spacing:.005em;text-transform:uppercase;text-shadow:0 2px 30px rgba(0,0,0,.65)}
+.cap p{margin:0;max-width:400px;font-size:13px;line-height:1.62;color:#cfd8d2;text-shadow:0 1px 14px rgba(0,0,0,.9)}
+.cap .med{display:none;margin-top:14px;padding:5px 9px;border:1px solid rgba(255,255,255,.14);border-radius:999px;background:rgba(0,0,0,.28);font:500 9.5px var(--mono);letter-spacing:.1em;color:var(--tx2)}
+.cap .kp{display:flex;gap:24px;margin-top:18px}
+.cap .kp b{display:block;font:300 26px/1 var(--cond)}
+.cap .kp span{display:block;margin-top:4px;font:500 8.5px var(--mono);letter-spacing:.16em;color:var(--tx3);text-transform:uppercase}
+.cap .nota{display:none;margin-top:14px;font-size:9.5px;line-height:1.45;color:var(--tx3);max-width:330px}
+.num{position:fixed;right:22px;bottom:clamp(82px,11vh,120px);z-index:30;font:400 10px var(--mono);letter-spacing:.14em;color:var(--tx3);opacity:0;transition:opacity .9s .6s}
+body.listo .num{opacity:1}
+
+/* indice de capitulos */
+.rail{position:fixed;right:20px;top:50%;transform:translateY(-50%);z-index:35;display:flex;flex-direction:column;align-items:flex-end;gap:1px;opacity:0;transition:opacity .9s .5s}
+body.listo .rail{opacity:1}
+.rail button{display:flex;align-items:center;gap:10px;padding:5px 0;border:0;background:none;color:var(--tx3);font:500 9.5px var(--mono);letter-spacing:.1em;text-transform:uppercase;cursor:pointer}
+.rail button b{font-weight:400;transition:color .25s}
+.rail button span{max-width:0;overflow:hidden;white-space:nowrap;opacity:0;transform:translateX(6px);transition:max-width .35s,opacity .35s,transform .35s}
+.rail button:hover span,.rail button.on span{max-width:220px;opacity:1;transform:none}
+.rail button:hover{color:var(--tx)}
+.rail button.on{color:#fff}
+.rail button.on b{color:var(--c)}
+
+/* etiquetas de equipos */
+#etiquetas{position:fixed;inset:0;z-index:20;pointer-events:none;overflow:hidden}
+.lb{position:absolute;left:0;top:0;display:flex;flex-direction:column;align-items:center;gap:2px;padding:0;border:0;background:none;color:var(--tx);cursor:pointer;opacity:0;will-change:transform,opacity;pointer-events:none;transition:opacity .2s;transform-origin:50% 100%}
+.lb b{font:600 9.5px var(--sans);letter-spacing:.07em;text-transform:uppercase;text-shadow:0 1px 4px #000,0 0 12px rgba(0,0,0,.9);white-space:nowrap}
+.lb i{font:400 9px var(--mono);color:var(--tx2);font-style:normal;text-shadow:0 1px 4px #000;white-space:nowrap}
+.lb s{display:block;width:1px;height:18px;margin-top:2px;background:linear-gradient(rgba(255,255,255,.7),rgba(255,255,255,.15))}
+.lb u{display:block;width:6px;height:6px;border:1px solid var(--c);background:rgba(4,6,5,.55);transform:rotate(45deg);box-shadow:0 0 10px rgba(0,0,0,.5)}
+.lb.hov b,.lb.sel b{color:var(--c)}
+.lb.sel u{background:var(--c);box-shadow:0 0 14px var(--c)}
+
+/* ficha */
+#ficha{position:fixed;right:20px;top:70px;z-index:50;width:min(340px,calc(100vw - 32px));padding:18px 18px 16px;border-radius:14px;border:1px solid rgba(255,255,255,.13);background:linear-gradient(160deg,rgba(24,31,27,.9),rgba(5,8,6,.94));-webkit-backdrop-filter:blur(22px);backdrop-filter:blur(22px);box-shadow:0 28px 70px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.06);opacity:0;transform:translateY(-8px);pointer-events:none;transition:opacity .3s,transform .3s}
+#ficha.on{opacity:1;transform:none;pointer-events:auto}
+#ficha small{font:500 9px var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--c)}
+#ficha h2{margin:6px 0 4px;font:400 26px/1.04 var(--cond);text-transform:uppercase}
+#ficha .med{display:inline-flex;margin-top:4px;font:500 10px var(--mono);color:var(--tx2)}
+#ficha p{margin:12px 0 0;font-size:12.5px;line-height:1.58;color:#d3dbd6}
+#ficha .x{position:absolute;right:10px;top:10px;width:28px;height:28px;border-radius:8px;border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.35);color:#fff;font:300 18px/1 var(--sans);cursor:pointer}
+body.ficha .cap{visibility:hidden}
+body.ficha .pista{opacity:0}
+
+/* controles */
+.ctl{position:fixed;right:20px;bottom:22px;z-index:40;display:flex;gap:2px;padding:4px;border:1px solid rgba(255,255,255,.1);border-radius:12px;background:rgba(6,10,8,.62);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);opacity:0;transition:opacity .9s .7s}
+body.listo .ctl{opacity:1}
+.ctl button{height:32px;padding:0 12px;border:0;border-radius:8px;background:none;color:var(--tx2);font:500 9.5px var(--mono);letter-spacing:.12em;text-transform:uppercase;cursor:pointer;white-space:nowrap}
+.ctl button:hover{color:#fff;background:rgba(255,255,255,.06)}
+.ctl button.on{color:#04110a;background:var(--c)}
+
+/* pista de scroll */
+.pista{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:25;display:flex;flex-direction:column;align-items:center;gap:8px;font:500 9px var(--mono);letter-spacing:.24em;text-transform:uppercase;color:var(--tx2);transition:opacity .6s;pointer-events:none}
+.pista i{display:block;width:1px;height:34px;background:linear-gradient(var(--c),transparent);animation:baja 2.2s cubic-bezier(.4,0,.2,1) infinite;transform-origin:top}
+@keyframes baja{0%{transform:scaleY(.15);opacity:0}35%{opacity:1}100%{transform:scaleY(1);opacity:0}}
+
+/* carga */
+.carga{position:fixed;inset:0;z-index:100;display:grid;place-items:center;background:#040605;transition:opacity .85s ease,visibility .85s}
+.carga.listo{opacity:0;visibility:hidden}
+.carga .in{width:min(430px,82vw)}
+.carga .ey{font:500 9.5px var(--mono);letter-spacing:.24em;text-transform:uppercase;color:var(--c)}
+.carga h1{margin:12px 0 8px;font:300 clamp(30px,5vw,46px)/.98 var(--cond);text-transform:uppercase}
+.carga p{margin:0;font-size:12px;line-height:1.55;color:var(--tx3)}
+.carga .bar{height:1px;margin-top:24px;background:rgba(255,255,255,.13);overflow:hidden}
+.carga .bar i{display:block;height:100%;background:var(--c);transform:scaleX(.05);transform-origin:0 50%;transition:transform .45s cubic-bezier(.4,0,.2,1)}
+.carga .fila{display:flex;justify-content:space-between;margin-top:10px;font:500 9px var(--mono);letter-spacing:.1em;color:var(--tx3)}
+.carga.error .bar{display:none}
+
+@media(max-width:760px){
+  .top{grid-template-columns:1fr auto;gap:8px;padding:9px 12px 22px}
+  .top .volver{grid-column:1;font-size:9.5px}
+  .top .sim{grid-column:2}
+  .edif{grid-column:1/-1;grid-row:2;justify-self:start;width:100%;margin-top:2px}
+  .edif button{height:26px;font-size:9.5px;padding:0 9px}
+  .rail,.num{display:none}
+  .cap{left:16px;right:16px;bottom:96px;max-width:none}
+  .cap::before{left:-10px}
+  .cap h1{font-size:clamp(30px,9vw,42px)}
+  .cap p{font-size:12px;max-width:none}
+  .cap .kp{gap:16px}
+  .cap .kp b{font-size:22px}
+  .cap .nota{display:none!important}
+  .ctl{left:8px;right:8px;bottom:calc(10px + env(safe-area-inset-bottom));justify-content:space-between}
+  .ctl button{flex:1;padding:0 6px;font-size:8.5px;letter-spacing:.06em}
+  .pista{bottom:calc(70px + env(safe-area-inset-bottom))}
+  #ficha{left:8px;right:8px;top:auto;bottom:calc(64px + env(safe-area-inset-bottom));width:auto;max-height:52vh;overflow:auto}
+  .lb i{display:none}
+  body::before{background:linear-gradient(180deg,rgba(4,6,5,.55),transparent 30%,transparent 62%,rgba(4,6,5,.55))}
+  body::after{height:52vh;background:linear-gradient(0deg,rgba(4,6,5,.8),transparent)}
+}
+@media(prefers-reduced-motion:reduce){
+  .pista i{animation:none}
+  .carga,.top,.rail,.ctl,.num{transition:none}
+}
+</style>
 </head>
 <body>
-<p>Redirigiendo… <a id="l" href="edificio.html">abrir</a></p>
-<script>
-const k = new URLSearchParams(location.search).get('e') || 'bio';
-const u = 'edificio.html?e=' + encodeURIComponent(k);
-document.getElementById('l').href = u;
-location.replace(u);
-</script>
+<canvas id="c" aria-label="Recorrido inmersivo por el interior del edificio"></canvas>
+<div id="scroll" aria-hidden="true"></div>
+<div id="prog" aria-hidden="true"></div>
+
+<header class="top">
+  <a class="volver" href="bavaria_puntos.html">← Bavaria Común en puntos</a>
+  <nav class="edif" id="edif" aria-label="Edificios"></nav>
+  <a class="sim" href="index.html">Simulador</a>
+</header>
+
+<nav class="rail" id="rail" aria-label="Capítulos del recorrido"></nav>
+
+<section class="cap" id="cap" aria-live="polite">
+  <div class="ey" id="ey"></div>
+  <h1 id="tit"></h1>
+  <p id="des"></p>
+  <div class="med" id="med"></div>
+  <div class="kp" id="kp"></div>
+  <div class="nota" id="nota">Distribución propuesta según el programa del distrito (áreas y puestos); equipos y medidas típicos de cada espacio, para discutir con el grupo.</div>
+</section>
+<div class="num" id="num" aria-hidden="true"></div>
+
+<div id="etiquetas"></div>
+
+<aside id="ficha" aria-live="polite">
+  <button class="x" id="f-cerrar" type="button" aria-label="Cerrar ficha">×</button>
+  <small>Equipo · en detalle</small>
+  <h2 id="f-nombre"></h2>
+  <div class="med" id="f-med"></div>
+  <p id="f-txt"></p>
+</aside>
+
+<nav class="ctl" aria-label="Controles del recorrido">
+  <button id="b-rec" type="button" aria-pressed="false">Recorrer</button>
+  <button id="b-ant" type="button" aria-label="Capítulo anterior">Anterior</button>
+  <button id="b-sig" type="button" aria-label="Capítulo siguiente">Siguiente</button>
+  <button id="b-full" type="button" aria-label="Pantalla completa">Pantalla completa</button>
+</nav>
+
+<div class="pista" id="pista" aria-hidden="true"><span>Desliza para entrar</span><i></i></div>
+
+<div class="carga" id="carga" role="status" aria-live="polite">
+  <div class="in">
+    <div class="ey">Bavaria Común · recorrido inmersivo</div>
+    <h1 id="carga-tit"></h1>
+    <p id="carga-txt">Preparando el interior…</p>
+    <div class="bar"><i id="carga-barra"></i></div>
+    <div class="fila"><span id="carga-pct">0%</span><span id="carga-nombre"></span></div>
+  </div>
+</div>
+
+<noscript><div style="position:fixed;inset:0;z-index:200;display:grid;place-items:center;background:#040605;color:#f1f4f1;font:400 14px system-ui;padding:24px;text-align:center">Este recorrido necesita JavaScript y WebGL. Actívalos para entrar al edificio.</div></noscript>
+
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module" src="./js/inmersivo/main.js"></script>
 </body>
 </html>

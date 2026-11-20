@@ -8,7 +8,7 @@
    - ubica cada especie sobre el punto 3D que está en su píxel de la vista,
    - fotos de iNaturalist con licencia libre (CC) de cada especie, con su atribución.
 """
-import json, math, os, base64, urllib.request, urllib.parse
+import json, math, os, re, base64, urllib.request, urllib.parse
 import numpy as np
 
 RAIZ = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..')
@@ -42,41 +42,38 @@ def foto(sci):
     return None
 
 # especies: [clave, nombre, científico, grupo, píxel x, y, altura sobre el punto, color, qué hace aquí, qué la atrae, qué prospera con ella]
-E = [
-    ['lechuga', 'Lechuga', 'Lactuca sativa', 'cultivo', 560, 700, 0.3, '#a3e635', 'Se cosecha a las 6–8 semanas; va al mercado del distrito y a los comedores escolares.', 'Camas elevadas con compost del distrito.', 'Las mariquitas la protegen de los pulgones; no necesita plaguicidas.'],
-    ['acelga', 'Acelga', 'Beta vulgaris var. cicla', 'cultivo', 150, 730, 0.3, '#84cc16', 'Hoja que se corta y vuelve a crecer: cosecha continua para la cocina escolar.', 'Suelo vivo con lombrices.', 'Las aves insectívoras controlan las orugas que la comen.'],
-    ['fresa', 'Fresa', 'Fragaria × ananassa', 'cultivo', 330, 515, 0.25, '#f43f5e', 'Fruta para comer en el lugar: los niños la cosechan en las salidas de campo.', 'Flores blancas que atraen abejas.', 'Con abejas polinizando, frutos más grandes y parejos.'],
-    ['tomate', 'Tomate', 'Solanum lycopersicum', 'cultivo', 400, 425, 0.6, '#ef4444', 'En el invernadero de túnel: protegido del frío de la sabana.', 'Flores que solo suelta el zumbido del abejorro.', 'Polinizado por abejorro nativo, sin vibrador eléctrico.'],
-    ['calendula', 'Caléndula', 'Calendula officinalis', 'flor', 120, 505, 0.3, '#f59e0b', 'Franja de flores entre camas: comida para polinizadores y planta medicinal.', 'Néctar y polen todo el año.', 'Más abejas, mariposas y mariquitas en todo el campo.'],
-    ['abeja', 'Abeja de miel', 'Apis mellifera', 'fauna', 200, 482, 1.1, '#facc15', 'Poliniza fresa, caléndula y las flores del eucalipto; sale del apiario del distrito.', 'Franjas de flores y el apiario inteligente.', 'Fresa y hortalizas de flor; miel para el mercado.'],
-    ['abejorro', 'Abejorro', 'Bombus atratus', 'fauna', 470, 455, 1.0, '#eab308', 'Poliniza por zumbido el tomate y la fresa; es nativo de la sabana.', 'Nidos de abejorro nativo y flores tubulares.', 'Tomate del invernadero.'],
-    ['mariposa', 'Mariposa', 'Vanessa cardui', 'fauna', 265, 470, 1.6, '#fb923c', 'Visita la caléndula; sus orugas viven en plantas nativas del borde.', 'Franjas de flores y borde nativo.', 'Indicador de un campo sin plaguicidas.'],
-    ['colibri', 'Colibrí', 'Colibri coruscans', 'fauna', 600, 395, 1.8, '#22d3ee', 'Poliniza flores tubulares junto a los invernaderos.', 'Flores tubulares y perchas cerca.', 'Flores nativas del borde.'],
-    ['mariquita', 'Mariquita', 'Coccinellidae', 'fauna', 760, 640, 0.35, '#dc2626', 'Se come los pulgones de la lechuga y la acelga: control natural de plagas.', 'Hoteles de insectos y franjas de flores.', 'Lechuga y acelga sanas.'],
-    ['lombriz', 'Lombriz roja', 'Eisenia fetida', 'fauna', 660, 785, 0.05, '#b87c8c', 'Convierte el compost del distrito en suelo fértil para las camas.', 'Compost y suelo húmedo con materia orgánica.', 'Todas las camas: suelo vivo.'],
-    ['copeton', 'Copetón', 'Zonotrichia capensis', 'fauna', 940, 452, 0.25, '#a3a3a3', 'Come semillas de maleza e insectos entre las camas.', 'Árboles existentes para posarse y nidos.', 'Menos malezas y orugas.'],
-    ['mirla', 'Mirla patiamarilla', 'Turdus fuscater', 'fauna', 1120, 440, 0.3, '#78716c', 'Busca lombrices e insectos en el suelo húmedo del borde del bosque.', 'Árboles existentes y suelo con lombrices.', 'Control de babosas y orugas.'],
-    ['cernicalo', 'Cernícalo', 'Falco sparverius', 'fauna', 1250, 125, 0.6, '#f97316', 'Caza ratones y saltamontes desde las ramas altas.', 'Perchas altas y árboles existentes.', 'Menos roedores en las camas y en el compost.'],
-    ['lechuza', 'Lechuza', 'Tyto alba', 'fauna', 1395, 215, 0.5, '#e7e5e4', 'De noche controla roedores; anida en la caja de los silos.', 'Caja nido en los silos y bosque.', 'Cosecha y compost sin ratas.'],
-    ['murcielago', 'Murciélago', 'Glossophaga soricina', 'fauna', 860, 170, 0.6, '#a78bfa', 'Al anochecer come polillas y poliniza flores nocturnas.', 'Refugios de murciélagos en los árboles.', 'Menos polillas en el invernadero.'],
-    ['eucalipto', 'Eucalipto', 'Eucalyptus globulus', 'arbol', 1310, 250, 2.0, '#4d7c0f', 'Árbol existente del bosque de Bavaria: se conserva. Sus flores dan néctar a las abejas en invierno.', 'Ya está: no se tala.', 'Percha del cernícalo y alimento de abejas.'],
-    ['acacia', 'Acacia negra', 'Acacia melanoxylon', 'arbol', 1010, 255, 2.0, '#65a30d', 'Árbol existente: sombra y nido para copetones y mirlas al borde de las huertas.', 'Ya está: no se tala.', 'Nidos de aves insectívoras.'],
-    ['urapan', 'Urapán', 'Fraxinus uhdei', 'arbol', 770, 235, 2.0, '#3f6212', 'Árbol existente: refugio de aves y murciélagos junto al campo.', 'Ya está: no se tala.', 'Refugio de murciélagos.'],
+E = [  # píxeles sobre la huerta reconstruida desde la fotografía (tools/puntos/huerta_foto_puntos.py, 1440 × 1080)
+    ['cilantro', 'Fríjol trepador', 'Phaseolus coccineus', 'flor', 752, 318, 0.2, '#ef4444', 'Sube por los tutores de caña; sus flores rojas y tubulares son las favoritas del colibrí.', 'Tutores, sol y riego constante.', 'Polinizado por colibríes y abejorros; fija nitrógeno en el suelo.'],
+    ['lechuga', 'Arveja', 'Pisum sativum', 'cultivo', 225, 525, 0.3, '#a3e635', 'Se siembra en la primera práctica del curso: crece rápido y enseña a tutorar.', 'Suelo suelto con compost del distrito.', 'Las mariquitas la protegen de los pulgones; no necesita plaguicidas.'],
+    ['acelga', 'Maíz', 'Zea mays', 'cultivo', 600, 520, 0.6, '#65a30d', 'Parte de la milpa: maíz, fríjol y ahuyama crecen juntos y se ayudan.', 'Sol pleno y suelo rico.', 'Le da tutor al fríjol; las aves insectívoras controlan sus orugas.'],
+    ['zanahoria', 'Cebolla larga', 'Allium fistulosum', 'cultivo', 1162, 600, 0.3, '#84cc16', 'La cebolla de la sabana: se siembra en hileras y se cosecha por tallos.', 'Camas elevadas bien drenadas.', 'Su olor confunde a las plagas de los cultivos vecinos.'],
+    ['tomate', 'Calabacín', 'Cucurbita pepo', 'cultivo', 1125, 862, 0.25, '#facc15', 'Hojas grandes que dan sombra al suelo; sus flores amarillas se abren temprano.', 'Compost maduro y mucha agua.', 'Necesita abejorros y abejas: sin polinizadores no hay fruto.'],
+    ['abeja', 'Abeja de miel', 'Apis mellifera', 'fauna', 760, 330, 0.5, '#facc15', 'Visita las flores del fríjol y las del calabacín; sale del apiario del distrito.', 'Franjas de flores y el apiario.', 'Más fruto y más parejo; miel para el mercado.'],
+    ['abejorro', 'Abejorro', 'Bombus atratus', 'fauna', 1125, 862, 0.4, '#eab308', 'Entra a las flores del calabacín y las poliniza; es nativo de la sabana.', 'Nidos de abejorro nativo y flores grandes.', 'Calabacín y ahuyama con fruto.'],
+    ['mariposa', 'Mariposa', 'Vanessa cardui', 'fauna', 330, 470, 0.6, '#fb923c', 'Toma néctar de las flores de la arveja; sus orugas viven en las plantas nativas del borde.', 'Franjas de flores y borde nativo.', 'Señal de una huerta sin venenos.'],
+    ['colibri', 'Colibrí', 'Colibri coruscans', 'fauna', 700, 300, 0.6, '#22d3ee', 'Flota frente a las flores rojas del fríjol y toma su néctar; se lleva el polen en el pico.', 'Flores rojas y tubulares, perchas cerca.', 'Fríjol polinizado.'],
+    ['mariquita', 'Mariquita', 'Coccinellidae', 'fauna', 225, 525, 0.2, '#dc2626', 'Camina por las hojas de la arveja comiéndose los pulgones: control natural de plagas.', 'Hoteles de insectos y franjas de flores.', 'Arveja y maíz sanos.'],
+    ['lombriz', 'Lombriz roja', 'Eisenia fetida', 'fauna', 975, 937, 0.05, '#b87c8c', 'Convierte el compost del distrito en tierra fértil para los bancales.', 'Compost y suelo húmedo con materia orgánica.', 'Todas las camas: suelo vivo.'],
+    ['copeton', 'Copetón', 'Zonotrichia capensis', 'fauna', 790, 800, 0.02, '#a3a3a3', 'Salta por el camino entre los bancales comiendo semillas de maleza e insectos.', 'Árboles existentes para posarse y anidar.', 'Menos malezas y orugas.'],
+    ['mirla', 'Mirla patiamarilla', 'Turdus fuscater', 'fauna', 520, 975, 0.02, '#78716c', 'Busca lombrices en el pasto húmedo entre los bancales.', 'Árboles existentes y suelo con lombrices.', 'Control de babosas y orugas.'],
+    ['murcielago', 'Murciélago', 'Glossophaga soricina', 'fauna', 900, 60, 0.5, '#a78bfa', 'Al anochecer sale de los refugios de los árboles y caza polillas sobre la huerta.', 'Refugios en los árboles.', 'Menos polillas.'],
+    ['eucalipto', 'Árboles existentes', 'bosque de Bavaria', 'arbol', 1388, 45, 1.0, '#4d7c0f', 'Los árboles del predio se conservan: dan sombra, refugio y flores para las abejas.', 'Ya están: no se talan.', 'Percha y nido de aves; refugio de murciélagos.'],
 ]
 # relaciones críticas que fomenta el campo: [quién, a quién, tipo]
-REL = [['abeja', 'fresa', 'Polinización'], ['abeja', 'calendula', 'Polinización'], ['abeja', 'eucalipto', 'Polinización'], ['abejorro', 'tomate', 'Polinización'],
-       ['abejorro', 'fresa', 'Polinización'], ['mariposa', 'calendula', 'Polinización'], ['colibri', 'calendula', 'Polinización'], ['mariquita', 'lechuga', 'Control de plagas'],
-       ['mariquita', 'acelga', 'Control de plagas'], ['lombriz', 'lechuga', 'Suelo vivo'], ['lombriz', 'acelga', 'Suelo vivo'], ['mirla', 'lombriz', 'Depredación'],
-       ['copeton', 'acelga', 'Control de plagas'], ['copeton', 'acacia', 'Refugio'], ['mirla', 'acacia', 'Refugio'], ['cernicalo', 'eucalipto', 'Percha'],
-       ['lechuza', 'urapan', 'Refugio'], ['murcielago', 'urapan', 'Refugio'], ['murcielago', 'tomate', 'Control de plagas'], ['cernicalo', 'lechuga', 'Control de plagas']]
-TIPOS = {'Polinización': '#facc15', 'Control de plagas': '#f87171', 'Suelo vivo': '#c084fc', 'Depredación': '#fb923c', 'Refugio': '#4ade80', 'Percha': '#38bdf8'}
+REL = [['abeja', 'cilantro', 'Polinización'], ['abeja', 'tomate', 'Polinización'], ['colibri', 'cilantro', 'Polinización'], ['abejorro', 'tomate', 'Polinización'], ['mariposa', 'lechuga', 'Polinización'], ['mariquita', 'lechuga', 'Control de plagas'], ['mariquita', 'acelga', 'Control de plagas'], ['lombriz', 'zanahoria', 'Suelo vivo'], ['lombriz', 'tomate', 'Suelo vivo'], ['mirla', 'lombriz', 'Depredación'], ['copeton', 'acelga', 'Control de plagas'], ['copeton', 'eucalipto', 'Refugio'], ['mirla', 'eucalipto', 'Refugio'], ['murcielago', 'eucalipto', 'Refugio']]
+TIPOS = {'Polinización': '#facc15', 'Control de plagas': '#f87171', 'Suelo vivo': '#c084fc', 'Depredación': '#fb923c', 'Refugio': '#4ade80'}
 FOTOS0 = json.load(open(os.path.join(RAIZ, 'data3d', 'especies_fotos.json'), encoding='utf-8'))['esp']
 out = []
 for k, nom, sci, g, x, y, dy, c, hace, atrae, prospera in E:
-    fo = {'url': FOTOS0[k], 'atr': 'Red de relaciones bióticas del Humedal El Burro / iNaturalist'} if k in FOTOS0 else foto(sci.replace(' var. cicla', '').replace('× ', ''))
+    fo = {'url': FOTOS0[k], 'atr': 'Red de relaciones bióticas del Humedal El Burro / iNaturalist'} if k in FOTOS0 else foto(re.sub(r' var\. \w+', '', sci).replace('× ', ''))
     out.append({'k': k, 'n': nom, 'sci': sci, 'g': g, 'p': punto(x, y, dy), 'c': c, 'hace': hace, 'atrae': atrae, 'prospera': prospera, 'foto': fo})
     print(k, out[-1]['p'], (fo or {}).get('lic', '-'))
-meta = {'fuente': 'Captura del simulador (propuesta, distrito Bavaria Común): color y profundidad del 3D; tools/puntos/bavaria_puntos_build.py',
+# la fauna va pegada a la planta con la que interactúa (el píxel puede caer en un fondo lejano)
+JUNTO = {'abeja': ('cilantro', 0.25, 0.25, 0.2), 'colibri': ('cilantro', -0.5, 0.35, 0.4), 'mariposa': ('lechuga', 0.3, 0.45, 0.2), 'abejorro': ('tomate', 0.2, 0.25, -0.2), 'mariquita': ('lechuga', 0.1, 0.12, 0.05)}
+PK = {o['k']: o for o in out}
+for k, (b, dx, dy, dz) in JUNTO.items():
+    if k in PK and b in PK: q = PK[b]['p']; PK[k]['p'] = [round(q[0] + dx, 2), round(q[1] + dy, 2), round(q[2] + dz, 2)]
+meta = {'fuente': 'Huerta reconstruida con puntos desde una fotografía (Wikimedia Commons, CC BY-SA 4.0) y una profundidad estimada; tools/puntos/huerta_foto_puntos.py', 'foto': CAP.get('foto'),
         'n': n, 'esc': CAP['esc'], 'eye': CAP['eye'], 'look': CAP['look'], 'fov': CAP['fov'], 'W': W, 'H': H,
         'especies': out, 'rel': REL, 'tipos': TIPOS}
 json.dump(meta, open(os.path.join(RAIZ, 'data3d', 'puntos', 'bavaria_campo.json'), 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))

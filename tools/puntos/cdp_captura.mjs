@@ -27,4 +27,4 @@ const r = await call('Runtime.evaluate', { expression: js, awaitPromise: true, r
 const v = r.result && r.result.value;
 if (typeof v === 'string') { writeFileSync(out, v); console.log('guardado', out, v.length); } else console.log('eval:', JSON.stringify(r).slice(0, 1500));
 const shot = await call('Page.captureScreenshot', { format: 'png' }); writeFileSync(out + '.png', Buffer.from(shot.data, 'base64'));
-s.close(); pr.kill(); process.exit(0);
+s.close(); pr.kill(); await sleep(1500); try { rmSync(perfil, { recursive: true, force: true }); } catch {} process.exit(0);

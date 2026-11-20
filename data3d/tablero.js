@@ -146,8 +146,7 @@ body.tb-abierto #dock{display:none}
     <div class="esc" id="tb-esc" role="tablist" aria-label="Escenario"><button data-e="hoy" class="on"><i style="background:${CHOY}"></i>Kennedy hoy</button><button data-e="proyecto"><i style="background:${CPRO}"></i>Con el proyecto</button></div>
     <div class="gr" data-tab="esc"><h3>Hoy vs. proyecto<span id="tb-per">mismos lugares, misma hora</span></h3>
       <div class="ley2"><span><i style="background:${CHOY}"></i>Kennedy hoy</span><span><i style="background:${CPRO}"></i>Con el proyecto</span></div>
-      <canvas id="tb-arana" aria-label="Gráfico de araña: indicadores de los dos escenarios"></canvas>
-      <div class="cmp" id="tb-cmp"><div class="vacio">Cargando indicadores…</div></div>
+      <div class="vss" id="tb-cmp"><div class="vacio">Cargando indicadores…</div></div>
       <div class="nota2" id="tb-nota2"></div>
       <button class="tour" id="tb-tour">Ver cómo se implanta el proyecto, paso a paso</button></div>
     <div class="gr" data-tab="tra"><h3>Av. Ciudad de Cali<span>camino a Corabastos · junto al humedal El Burro</span></h3>
@@ -245,16 +244,18 @@ body.tb-abierto #dock{display:none}
   const fmt = (v, I) => v === null ? '–' : I.ha ? (v >= 1e4 ? (v / 1e4).toLocaleString('es-CO', { maximumFractionDigits: 1 }) + ' ha' : Math.round(v).toLocaleString('es-CO') + ' m²') : v.toLocaleString('es-CO', { maximumFractionDigits: I.d || 0, minimumFractionDigits: I.d || 0 }) + I.u;
   function pintarComparacion() {
     if (!ESC) return; const L = indicadores();
+    // cada indicador: dos barras en la misma escala (hoy / con el proyecto) y una etiqueta que dice cuánto cambia y si mejora
     $('tb-cmp').innerHTML = L.map(I => {
-      let txt = '', w = 0, col = '#4b5257';
-      if (I.hoy !== null && I.pro !== null) {
-        if (!I.hoy) { txt = 'nuevo'; w = 100; col = CPRO; }
-        else { const c = (I.pro - I.hoy) / Math.abs(I.hoy) * 100, mejor = I.menos ? c < 0 : c > 0; w = Math.min(100, Math.abs(c) * 4); col = Math.abs(c) < 0.05 ? '#4b5257' : mejor ? CPRO : '#c96349'; txt = Math.abs(c) < 0.05 ? 'igual' : `${c > 0 ? '+' : '−'}${Math.abs(c).toLocaleString('es-CO', { maximumFractionDigits: 1 })} % ${mejor ? 'mejora' : 'empeora'}`; }
-      }
-      return `<div class="ind"><div class="n">${esc(I.n)}<small>${esc(I.s)}</small></div><div class="v"><span>${fmt(I.hoy, I)}</span><b>${fmt(I.pro, I)}</b><em style="color:${col === '#4b5257' ? '#646c71' : col}">${txt}</em></div><div class="dif"><i style="left:0;width:${w}%;background:${col}"></i></div></div>`;
+      const ok = I.hoy !== null && I.pro !== null, m = ok ? Math.max(Math.abs(I.hoy), Math.abs(I.pro), 1e-9) : 1, w = (v) => v === null ? 0 : Math.max(1.5, Math.abs(v) / m * 100).toFixed(1);
+      let chip = '<em class="igual">midiendo…</em>';
+      if (ok) { if (!I.hoy) chip = '<em class="bien">nuevo · mejor</em>';
+        else { const c = (I.pro - I.hoy) / Math.abs(I.hoy) * 100, mejor = I.menos ? c < 0 : c > 0, igual = Math.abs(c) < 0.05;
+          chip = igual ? '<em class="igual">igual</em>' : `<em class="${mejor ? 'bien' : 'mal'}">${c > 0 ? '+' : '−'}${Math.abs(c).toLocaleString('es-CO', { maximumFractionDigits: Math.abs(c) < 10 ? 1 : 0 })} % · ${mejor ? 'mejor' : 'peor'}</em>`; } }
+      return `<div class="vs"><div class="vs-n"><span>${esc(I.n)}<small>${esc(I.s)}${I.menos ? ' · menos es mejor' : ''}</small></span>${chip}</div>
+        <div class="vs-b"><span>Kennedy hoy</span><i><b style="width:${w(I.hoy)}%;background:${CHOY}"></b></i><strong>${fmt(I.hoy, I)}</strong></div>
+        <div class="vs-b"><span>Con el proyecto</span><i><b style="width:${w(I.pro)}%;background:${CPRO}"></b></i><strong style="color:${CPRO}">${fmt(I.pro, I)}</strong></div></div>`;
     }).join('');
-    $('tb-nota2').innerHTML = `${esc(ESC.periodo)}. Tráfico: grabación SUMO; camión = 8 % de los vehículos, como en el 3D. Proyecto [SUP]: Corabastos reducido retira el ${ESC.corabastos.retiroNaves.toLocaleString('es-CO')} % del área de naves y los viajes de camión bajan en esa proporción (la carga pasa a los mercados de barrio). Ruido: CoRTN a 30 km/h. Sintaxis: integración angular antes y después de los ${(ESC.sintaxis.pasajes_m / 1000).toLocaleString('es-CO', { maximumFractionDigits: 1 })} km de pasajes de Bavaria Común. La barra muestra el cambio (escala ×4).`;
-    dibujarArana(L);
+    $('tb-nota2').innerHTML = `${esc(ESC.periodo)}. Tráfico: grabación SUMO; camión = 8 % de los vehículos, como en el 3D. Proyecto [SUP]: Corabastos reducido retira el ${ESC.corabastos.retiroNaves.toLocaleString('es-CO')} % del área de naves y los viajes de camión bajan en esa proporción (la carga pasa a los mercados de barrio). Ruido: CoRTN a 30 km/h. Sintaxis: integración angular antes y después de los ${(ESC.sintaxis.pasajes_m / 1000).toLocaleString('es-CO', { maximumFractionDigits: 1 })} km de pasajes de Bavaria Común.`;
   }
   let AR = null;
   function dibujarArana(L) {
@@ -572,5 +573,7 @@ body.tb-abierto #dock{display:none}
   setInterval(() => { if (performance.now() - tCambio < 10000) return; const P = PROMT[escAct]; if (!P) return; P.k++; const a = 1 / Math.min(P.k, 60); P.p += ((ENC[5] || 0) - P.p) * a; P.d += ((ENC[0] || 0) - P.d) * a; }, 1000);
   let nT = 0; tick(); setInterval(() => { tick(); pintarTexto(); pintarCali(); pintarFomento(); if (++nT % 8 === 0 && abierto()) pintarComparacion(); }, 500);
   aplicarEsc(T3.escenario || 'hoy');
+  // SIMULACIONES (SIM-01 huertas, SIM-02 orgánicos, SIM-03 fauna): primera pestaña; cambian con Kennedy hoy / Con la propuesta
+  import('./simulaciones.js?v=11').then(m => { m.iniciarSimulaciones({ T3, tb, verPestana }); verPestana('sim'); }).catch(e => console.warn('simulaciones:', e));
   return { abrir, tb, verPestana };
 }

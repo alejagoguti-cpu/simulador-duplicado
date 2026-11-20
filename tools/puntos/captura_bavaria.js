@@ -1,11 +1,12 @@
 (async () => {
   const w = t => new Promise(r => setTimeout(r, t));
-  const V = window.CAP || { eye: [4300, 2.4, 20], look: [4050, 6, 200], fov: 64, W: 1440, H: 810 };
+  const V = window.CAP || { eye: [4322, 2.2, 6], look: [4255, 2.4, 138], fov: 62, W: 1440, H: 810 };
   KEN_ESC.poner('proyecto'); await w(1500);
   document.querySelector('#esc-ley [data-s=bav]').click(); await w(9000);
   const T = KEN3D, THREE = T.THREE, R = T.renderer, S = T.scene;
   // llevar la cámara principal al lugar (para que los árboles y las plantas carguen su detalle alto) y esperar
-  T.anim = null; T.camera.position.set(V.eye[0], V.eye[1] + 6, V.eye[2]); T.orbit.target.set(V.look[0], V.look[1], V.look[2]); T.orbit.update();
+  T.anim = null; T.camera.position.set(V.eye[0], V.eye[1] + 6, V.eye[2]); // las plantas 3D se arman a ~65 m del centro de la vista: el centro va cerca del ojo
+  T.orbit.target.set(V.eye[0] + (V.look[0] - V.eye[0]) * 0.22, V.look[1], V.eye[2] + (V.look[2] - V.eye[2]) * 0.22); T.orbit.update();
   if (T.arboles && T.arboles.update) try { T.arboles.update({ position: T.camera.position }, true); } catch (e) {}
   await w(9000);
   // fuera ayudas gráficas: líneas, partículas, sprites (las etiquetas son HTML y no salen)
@@ -48,5 +49,8 @@
   const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const g = cv.getContext('2d'), im = g.createImageData(W, H);
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const a = ((H - 1 - y) * W + x) * 4, b = (y * W + x) * 4; im.data[a] = LUT[col[b]]; im.data[a + 1] = LUT[col[b + 1]]; im.data[a + 2] = LUT[col[b + 2]]; im.data[a + 3] = 255; }
   g.putImageData(im, 0, 0);
-  return JSON.stringify({ n, eye: V.eye, look: V.look, fov: V.fov, W, H, esc: 0.04, pts: btoa(s), prev: cv.toDataURL('image/jpeg', 0.85) });
+  // zonas de huerta y árboles 3D cerca (para ubicar cada especie sobre su huerta real), relativos al ojo
+  const Z = (window.KEN_BAV && KEN_BAV.zonas || []).map(z => ({ n: z.n, x: z.c[0] - V.eye[0], z: z.c[1] - V.eye[2], ha: z.ha })).filter(z => Math.hypot(z.x, z.z) < 260);
+  const TP = T.trees && T.trees.pos, AR = []; if (TP) for (let i = 0; i < TP.X.length; i++) { const dx = TP.X[i] - V.eye[0], dz = TP.Z[i] - V.eye[2]; if (dx * dx + dz * dz < 200 * 200) AR.push([+dx.toFixed(2), +dz.toFixed(2), +(TP.Hh[i] || 8).toFixed(1)]); }
+  return JSON.stringify({ n, eye: V.eye, look: V.look, fov: V.fov, W, H, esc: 0.04, zonas: Z, arboles: AR, pts: btoa(s), prev: cv.toDataURL('image/jpeg', 0.85) });
 })()
